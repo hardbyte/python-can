@@ -4,9 +4,18 @@ This interface is for Windows only, otherwise use SocketCAN.
 
 import logging
 from ctypes import byref
-from typing import Optional
+from typing import Optional, Union
 
-from can import BusABC, CanInitializationError, CanOperationError, CanProtocol, Message
+from can import (
+    BitTiming,
+    BitTimingFd,
+    BusABC,
+    CanInitializationError,
+    CanOperationError,
+    CanProtocol,
+    Message,
+)
+from can.util import check_or_adjust_timing_clock
 
 from .serial_selector import find_serial_devices
 from .usb2canabstractionlayer import (
@@ -78,6 +87,13 @@ class Usb2canBus(BusABC):
         Bitrate of channel in bit/s. Values will be limited to a maximum of 1000 Kb/s.
         Default is 500 Kbs
 
+    :param timing:
+        Optional :class:`~can.BitTiming` instance to use for custom bit timing setting.
+        If this argument is set then it overrides the bitrate argument. The
+        `f_clock` value of the timing instance must be set to 32_000_000 (32MHz)
+        for standard CAN.
+        CAN FD and the :class:`~can.BitTimingFd` class are not supported.
+
     :param flags:
         Flags to directly pass to open function of the usb2can abstraction layer.
 
@@ -97,8 +113,8 @@ class Usb2canBus(BusABC):
         channel: Optional[str] = None,
         dll: str = "usb2can.dll",
         flags: int = 0x00000008,
-        *_,
         bitrate: int = 500000,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
         serial: Optional[str] = None,
         **kwargs,
     ):
@@ -114,13 +130,28 @@ class Usb2canBus(BusABC):
                 raise CanInitializationError("could not automatically find any device")
             device_id = devices[0]
 
-        # convert to kb/s and cap: max rate is 1000 kb/s
-        baudrate = min(int(bitrate // 1000), 1000)
-
         self.channel_info = f"USB2CAN device {device_id}"
-        self._can_protocol = CanProtocol.CAN_20
 
-        connector = f"{device_id}; {baudrate}"
+        if isinstance(timing, BitTiming):
+            timing = check_or_adjust_timing_clock(timing, valid_clocks=[32_000_000])
+            connector = (
+                f"{device_id};"
+                "0;"
+                f"{timing.tseg1};"
+                f"{timing.tseg2};"
+                f"{timing.sjw};"
+                f"{timing.brp}"
+            )
+        elif isinstance(timing, BitTimingFd):
+            raise NotImplementedError(
+                f"CAN FD is not supported by {self.__class__.__name__}."
+            )
+        else:
+            # convert to kb/s and cap: max rate is 1000 kb/s
+            baudrate = min(int(bitrate // 1000), 1000)
+            connector = f"{device_id};{baudrate}"
+
+        self._can_protocol = CanProtocol.CAN_20
         self.handle = self.can.open(connector, flags)
 
         super().__init__(channel=channel, **kwargs)
