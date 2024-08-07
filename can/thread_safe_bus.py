@@ -49,12 +49,23 @@ class ThreadSafeBus(ObjectProxy):  # pylint: disable=abstract-method
     def recv(
         self, timeout=None, *args, **kwargs
     ):  # pylint: disable=keyword-arg-before-vararg
+        """
+        Receives message from CAN bus.
+
+        :param timeout: Timeout for receiving message.
+        """
         with self._lock_recv:
             return self.__wrapped__.recv(timeout=timeout, *args, **kwargs)
 
     def send(
         self, msg, timeout=None, *args, **kwargs
     ):  # pylint: disable=keyword-arg-before-vararg
+        """
+        Sends a message to the CAN bus.
+
+        :param msg: Message to be sent on CAN bus.
+        :param timeout: Timeout for sending message.
+        """
         with self._lock_send:
             return self.__wrapped__.send(msg, timeout=timeout, *args, **kwargs)
 
@@ -63,34 +74,60 @@ class ThreadSafeBus(ObjectProxy):  # pylint: disable=abstract-method
 
     @property
     def filters(self):
+        """
+        Receives filters on the CAN bus.
+        """
         with self._lock_recv:
             return self.__wrapped__.filters
 
     @filters.setter
     def filters(self, filters):
+        """
+        Sets filters on the CAN bus.
+
+        :param filters: Filters to set.
+        """
         with self._lock_recv:
             self.__wrapped__.filters = filters
 
     def set_filters(
         self, filters=None, *args, **kwargs
     ):  # pylint: disable=keyword-arg-before-vararg
+        """
+        Sets filters on the CAN bus.
+        Takes additional arguments and key word arguments.
+
+        :param filters: Filters to set.
+        """
         with self._lock_recv:
             return self.__wrapped__.set_filters(filters=filters, *args, **kwargs)
 
     def flush_tx_buffer(self, *args, **kwargs):
+        """
+        Flushes the buffer of the CAN bus.
+        """
         with self._lock_send:
             return self.__wrapped__.flush_tx_buffer(*args, **kwargs)
 
     def shutdown(self, *args, **kwargs):
+        """
+        Shuts down the CAN bus.
+        """
         with self._lock_send, self._lock_recv:
             return self.__wrapped__.shutdown(*args, **kwargs)
 
     @property
     def state(self):
+        """
+        Retrieves the current state of the CAN bus.
+        """
         with self._lock_send, self._lock_recv:
             return self.__wrapped__.state
 
     @state.setter
     def state(self, new_state):
+        """
+        Sets the current state of the CAN bus.
+        """
         with self._lock_send, self._lock_recv:
             self.__wrapped__.state = new_state

@@ -65,6 +65,11 @@ class RedirectReader(Listener):  # pylint: disable=abstract-method
         self.bus = bus
 
     def on_message_received(self, msg: Message) -> None:
+        """
+        Sends received message to CAN bus.
+
+        :param msg: Message object to send.
+        """
         self.bus.send(msg)
 
 
@@ -176,4 +181,7 @@ class AsyncBufferedReader(
         return await self.buffer.get()
 
     def stop(self) -> None:
+        """
+        Stops buffer from accepting new messages.
+        """
         self._is_stopped = True

@@ -10,6 +10,9 @@ from can import Logger, LogReader, SizedRotatingLogger
 
 
 class ArgumentParser(argparse.ArgumentParser):
+    """
+    Prints help message and exits with error status.
+    """
     def error(self, message):
         self.print_help(sys.stderr)
         self.exit(errno.EINVAL, f"{self.prog}: error: {message}\n")

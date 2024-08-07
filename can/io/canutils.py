@@ -154,6 +154,11 @@ class CanutilsLogWriter(TextIOMessageWriter):
         self.last_timestamp = None
 
     def on_message_received(self, msg):
+        """
+        Processes and logs incoming CAN messages in appropriate format.
+
+        :param msg: Received CAN message.
+        """
         # this is the case for the very first message:
         if self.last_timestamp is None:
             self.last_timestamp = msg.timestamp or 0.0

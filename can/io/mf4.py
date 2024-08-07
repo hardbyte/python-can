@@ -183,11 +183,15 @@ class MF4Writer(BinaryIOMessageWriter):
         return cast(int, self._mdf._tempfile.tell())  # pylint: disable=protected-access
 
     def stop(self) -> None:
+        """Stops CAN bus logging process and saved recorded data."""
         self._mdf.save(self.file, compression=self._compression_level)
         self._mdf.close()
         super().stop()
 
     def on_message_received(self, msg: Message) -> None:
+        """Processes and logs CAN messsage based on its type
+        :param msg: CAN message received
+        """
         channel = channel2int(msg.channel)
 
         timestamp = msg.timestamp
@@ -481,5 +485,6 @@ class MF4Reader(BinaryIOMessageReader):
         self.stop()
 
     def stop(self) -> None:
+        """Stops CAN logging and closes MDF file."""
         self._mdf.close()
         super().stop()

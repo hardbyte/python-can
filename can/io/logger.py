@@ -67,6 +67,9 @@ def _update_writer_plugins() -> None:
 
 
 def _get_logger_for_suffix(suffix: str) -> Type[MessageWriter]:
+    """Retrieves logger class associated with file suffix.
+
+    :param suffix: File suffix for logger."""
     try:
         return MESSAGE_WRITERS[suffix]
     except KeyError:
@@ -372,9 +375,17 @@ class SizedRotatingLogger(BaseRotatingLogger):
 
     @property
     def writer(self) -> FileIOMessageWriter:
+        """
+        Returns current message wrtier.
+        """
         return self._writer
 
     def should_rollover(self, msg: Message) -> bool:
+        """
+        Determines if log file should be rolled over.
+
+        :param msg: Incoming message for determining rollover.
+        """
         if self.max_bytes <= 0:
             return False
 
@@ -384,6 +395,9 @@ class SizedRotatingLogger(BaseRotatingLogger):
         return False
 
     def do_rollover(self) -> None:
+        """
+        Perform log rollover.
+        """
         if self.writer:
             self.writer.stop()
 

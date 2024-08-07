@@ -530,6 +530,9 @@ class BusABC(metaclass=ABCMeta):
         raise NotImplementedError()
 
     def fileno(self) -> int:
+        """ Raises error which indicates fileno method is not implemented for
+        the current CAN bus
+        """
         raise NotImplementedError("fileno is not implemented using current CAN bus")
 
 
@@ -540,4 +543,7 @@ class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
     """
 
     def stop(self, remove_task: bool = True) -> None:
+        """
+        Stops cyclic task and raises not implemented error.
+        """
         raise NotImplementedError()

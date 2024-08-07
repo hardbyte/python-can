@@ -53,6 +53,14 @@ except ImportError:
 
 
 class CanViewer:  # pylint: disable=too-many-instance-attributes
+    """
+    Terminal-based CAN message viewer.
+
+    :param stdscr: Main window.
+    :param bus: CAN bus receiving messages.
+    :param data_structs: Data structures for formatting messages.
+    :param testing: Indicates if class is initialized for testing.
+    """
     def __init__(self, stdscr, bus, data_structs, testing=False):
         self.stdscr = stdscr
         self.bus = bus
@@ -85,6 +93,9 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
             self.run()
 
     def run(self):
+        """
+        Main loop for CAN bus viewer.
+        """
         # Clear the terminal and draw the header
         self.draw_header()
 
@@ -162,6 +173,13 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
     # Unpack the data and then convert it into SI-units
     @staticmethod
     def unpack_data(cmd: int, cmd_to_struct: Dict, data: bytes) -> List[float]:
+        """
+        Unpacks data from byte stream and converts it into SI units.
+
+        :param cmd: Command indentifier that determines structure and conversion of data.
+        :param cmd_to_struct: Dictionary mapping command to corresponding struct.
+        :param data: Byte stream with data to be unpacked.
+        """
         if not cmd_to_struct or not data:
             # These messages do not contain a data package
             return []
@@ -188,6 +206,12 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
         raise ValueError(f"Unknown command: 0x{cmd:02X}")
 
     def draw_can_bus_message(self, msg, sorting=False):
+        """
+        Draws CAN bus message to terminal interface.
+
+        :param msg: CAN bus message to be displayed.
+        :param sorting: Flag to indicate if messages should be sorted.
+        """
         # Use the CAN-Bus ID as the key in the dict
         key = msg.arbitration_id
 
@@ -312,6 +336,13 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
         return self.ids[key]
 
     def draw_line(self, row, col, txt, *args):
+        """
+        Draws line of text to terminal screen to specified row and column.
+
+        :param row: Row where text is to be drawn to.
+        :param col: Column where text is to be drawn to.
+        :param txt: Text to be drawn.
+        """
         if row - self.scroll < 0:
             # Skip if we have scrolled past the line
             return
@@ -323,6 +354,9 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
             pass
 
     def draw_header(self):
+        """
+        Draws header to terminal screen.
+        """
         self.stdscr.erase()
         self.draw_line(0, 0, "Count", curses.A_BOLD)
         self.draw_line(0, 8, "Time", curses.A_BOLD)
@@ -339,6 +373,9 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
             self.draw_line(0, 77, "Parsed values", curses.A_BOLD)
 
     def redraw_screen(self):
+        """
+        Redraws the entire terminal screen.
+        """
         # Trigger a complete redraw
         self.draw_header()
         for ids in self.ids.values():
@@ -346,14 +383,32 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
 
 
 class SmartFormatter(argparse.HelpFormatter):
+    """
+    Custom argument formatter for argparse.
+    """
     def _get_default_metavar_for_optional(self, action):
+        """
+        Returns default metavar for optional arguments.
+
+        :param action: Action for metvar being determined.
+        """
         return action.dest.upper()
 
     def _format_usage(self, usage, actions, groups, prefix):
+        """
+        Formats usage message.
+
+        :param usage: Usage message.
+        :param actions: Actions for the parser.
+        :param groups: Mutually exclusive groups.
+        :param prefix: Prefix for usage message.
+        """
         # Use uppercase for "Usage:" text
         return super()._format_usage(usage, actions, groups, "Usage: ")
 
     def _format_args(self, action, default_metavar):
+        """
+        """
         if action.nargs not in (argparse.REMAINDER, argparse.ONE_OR_MORE):
             return super()._format_args(action, default_metavar)
 
@@ -362,6 +417,11 @@ class SmartFormatter(argparse.HelpFormatter):
         return str(get_metavar(1))
 
     def _format_action_invocation(self, action):
+        """
+        Formats invocation string for an action.
+
+        :param action: Action for invocation string to be formatted.
+        """
         if not action.option_strings or action.nargs == 0:
             return super()._format_action_invocation(action)
 
@@ -378,12 +438,25 @@ class SmartFormatter(argparse.HelpFormatter):
             return ", ".join(parts)
 
     def _split_lines(self, text, width):
+        """
+        Splits text into lines with specified width.
+
+        :param text: Text to be split.
+        :param width: Max width of lines.
+        """
         # Allow to manually split the lines
         if text.startswith("R|"):
             return text[2:].splitlines()
         return super()._split_lines(text, width)
 
     def _fill_text(self, text, width, indent):
+        """
+        Fills text with given width and indent.
+
+        :param text: Text to be filled.
+        :param width: Max width of line.
+        :param indent: Indentation for each line.
+        """
         if text.startswith("R|"):
             return "".join(indent + line + "\n" for line in text[2:].splitlines())
         else:
@@ -393,6 +466,11 @@ class SmartFormatter(argparse.HelpFormatter):
 def _parse_viewer_args(
     args: List[str],
 ) -> Tuple[argparse.Namespace, TDataStructs, TAdditionalCliArgs]:
+    """
+    Parses command-line arguments for CAN viewer.
+
+    :param args: Command-line arguments to be parsed.
+    """
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         "python -m can.viewer",
