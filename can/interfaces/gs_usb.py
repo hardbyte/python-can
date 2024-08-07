@@ -109,7 +109,7 @@ class GsUsbBus(can.BusABC):
         frame = GsUsbFrame()
         frame.can_id = can_id
         frame.can_dlc = msg.dlc
-        frame.timestamp_us = int(msg.timestamp * 1000000)
+        frame.timestamp_us = 0  # timestamp frame field is only useful on receive
         frame.data = list(msg.data)
 
         try:
