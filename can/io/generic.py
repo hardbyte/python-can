@@ -112,10 +112,12 @@ class FileIOMessageWriter(MessageWriter, metaclass=ABCMeta):
 
 
 class TextIOMessageWriter(FileIOMessageWriter, metaclass=ABCMeta):
+    """The base class for writing messages to a text file."""
     file: TextIO
 
 
 class BinaryIOMessageWriter(FileIOMessageWriter, metaclass=ABCMeta):
+    """The base class for writing messages to a binary file."""
     file: Union[BinaryIO, gzip.GzipFile]
 
 
@@ -124,8 +126,10 @@ class MessageReader(BaseIOHandler, Iterable[Message], metaclass=ABCMeta):
 
 
 class TextIOMessageReader(MessageReader, metaclass=ABCMeta):
+    """The base class for reading messages from a text file."""
     file: TextIO
 
 
 class BinaryIOMessageReader(MessageReader, metaclass=ABCMeta):
+    """The base class for reading messages from a binary file."""
     file: Union[BinaryIO, gzip.GzipFile]

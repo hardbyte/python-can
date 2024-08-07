@@ -43,6 +43,10 @@ class Printer(MessageWriter):
         super().__init__(file, mode=mode)
 
     def on_message_received(self, msg: Message) -> None:
+        """Receives CAN message and either writes message to file or
+        prints message to console.
+        :param msg: CAN message received.
+        """
         if self.write_to_file:
             cast(TextIO, self.file).write(str(msg) + "\n")
         else:

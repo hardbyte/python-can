@@ -59,6 +59,13 @@ class SqliteReader(MessageReader):
 
     @staticmethod
     def _assemble_message(frame_data):
+        """
+        Assembles CAN message from given frame data.
+
+        :param frame_data: Frame containing data for timestamp information,
+        CAN ID, if CAN ID is extended, if message is remote frame, if message
+        is an error frame, the dlc of the message, and the payload of the message.
+        """
         timestamp, can_id, is_extended, is_remote, is_error, dlc, data = frame_data
         return Message(
             timestamp=timestamp,
@@ -192,6 +199,9 @@ class SqliteWriter(MessageWriter, BufferedReader):
         self._conn.commit()
 
     def _db_writer_thread(self):
+        """
+        Writes buffered CAN messages to database in a separate thread.
+        """
         self._create_db()
 
         try:

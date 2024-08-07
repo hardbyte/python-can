@@ -113,6 +113,11 @@ class CSVWriter(TextIOMessageWriter):
             self.file.write("timestamp,arbitration_id,extended,remote,error,dlc,data\n")
 
     def on_message_received(self, msg: Message) -> None:
+        """
+        Processes and logs CAN message in CSV format.
+
+        :param msg: Received CAN message.
+        """
         row = ",".join(
             [
                 repr(msg.timestamp),  # cannot use str() here because that is rounding
