@@ -13,6 +13,8 @@ Usage: pass device ``index`` or ``channel`` (starting from 0) if using automatic
 ::
 
     import can
+    import usb
+    dev = usb.core.find(idVendor=0x1D50, idProduct=0x606F)
 
     bus = can.Bus(interface="gs_usb", channel=dev.product, index=0, bitrate=250000)
     bus = can.Bus(interface="gs_usb", channel=0, bitrate=250000)  # same
