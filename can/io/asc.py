@@ -72,6 +72,14 @@ class ASCReader(TextIOMessageReader):
         self.internal_events_logged = False
 
     def _extract_header(self) -> None:
+        """
+        Takes a file and reads line by line looking for header
+        information and parses that data out, setting it to the appropriate
+        variable.
+
+        Comment lines will be skipped and parsing will be stopped after
+        necessary information is acquired.
+        """
         for _line in self.file:
             line = _line.strip()
 
