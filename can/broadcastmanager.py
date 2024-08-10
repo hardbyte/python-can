@@ -33,7 +33,7 @@ log = logging.getLogger("can.bcm")
 NANOSECONDS_IN_SECOND: Final[int] = 1_000_000_000
 
 
-class Pywin32Event:
+class _Pywin32Event:
     handle: int
 
 
@@ -45,7 +45,7 @@ class _Pywin32:
         self.pywintypes = pywintypes
         self.win32event = win32event
 
-    def create_timer(self) -> Pywin32Event:
+    def create_timer(self) -> _Pywin32Event:
         try:
             event = self.win32event.CreateWaitableTimerEx(
                 None,
@@ -60,18 +60,18 @@ class _Pywin32:
         ):
             event = self.win32event.CreateWaitableTimer(None, False, None)
 
-        return cast(Pywin32Event, event)
+        return cast(_Pywin32Event, event)
 
-    def set_timer(self, event: Pywin32Event, period_ms: int) -> None:
+    def set_timer(self, event: _Pywin32Event, period_ms: int) -> None:
         self.win32event.SetWaitableTimer(event.handle, 0, period_ms, None, None, False)
 
-    def stop_timer(self, event: Pywin32Event) -> None:
+    def stop_timer(self, event: _Pywin32Event) -> None:
         self.win32event.SetWaitableTimer(event.handle, 0, 0, None, None, False)
 
-    def wait_0(self, event: Pywin32Event) -> None:
+    def wait_0(self, event: _Pywin32Event) -> None:
         self.win32event.WaitForSingleObject(event.handle, 0)
 
-    def wait_inf(self, event: Pywin32Event) -> None:
+    def wait_inf(self, event: _Pywin32Event) -> None:
         self.win32event.WaitForSingleObject(
             event.handle,
             self.win32event.INFINITE,
@@ -305,7 +305,7 @@ class ThreadBasedCyclicSendTask(
 
         self.period_ms = int(round(period * 1000, 0))
 
-        self.event: Optional[Pywin32Event] = None
+        self.event: Optional[_Pywin32Event] = None
         if PYWIN32:
             self.event = PYWIN32.create_timer()
         elif sys.platform == "win32" and sys.version_info < (3, 11):
