@@ -5,7 +5,7 @@ from typing import cast
 
 import serial
 
-import can
+import can.interfaces.slcan
 
 from .config import IS_PYPY
 
@@ -58,9 +58,8 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x12ABCDEF, is_extended_id=True, data=[0xAA, 0x55]
         )
         self.bus.send(msg)
-        expected = b"T12ABCDEF2AA55\r"
-        data = self.serial.read(len(expected))
-        self.assertEqual(data, expected)
+        rx_msg = self.bus.recv(TIMEOUT)
+        self.assertTrue(msg.equals(rx_msg, timestamp_delta=None))
 
     def test_recv_standard(self):
         self.serial.write(b"t4563112233\r")
@@ -77,9 +76,8 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x456, is_extended_id=False, data=[0x11, 0x22, 0x33]
         )
         self.bus.send(msg)
-        expected = b"t4563112233\r"
-        data = self.serial.read(len(expected))
-        self.assertEqual(data, expected)
+        rx_msg = self.bus.recv(TIMEOUT)
+        self.assertTrue(msg.equals(rx_msg, timestamp_delta=None))
 
     def test_recv_standard_remote(self):
         self.serial.write(b"r1238\r")
@@ -95,9 +93,8 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x123, is_extended_id=False, is_remote_frame=True, dlc=8
         )
         self.bus.send(msg)
-        expected = b"r1238\r"
-        data = self.serial.read(len(expected))
-        self.assertEqual(data, expected)
+        rx_msg = self.bus.recv(TIMEOUT)
+        self.assertTrue(msg.equals(rx_msg, timestamp_delta=None))
 
     def test_recv_extended_remote(self):
         self.serial.write(b"R12ABCDEF6\r")
@@ -113,9 +110,8 @@ class slcanTestCase(unittest.TestCase):
             arbitration_id=0x12ABCDEF, is_extended_id=True, is_remote_frame=True, dlc=6
         )
         self.bus.send(msg)
-        expected = b"R12ABCDEF6\r"
-        data = self.serial.read(len(expected))
-        self.assertEqual(data, expected)
+        rx_msg = self.bus.recv(TIMEOUT)
+        self.assertTrue(msg.equals(rx_msg, timestamp_delta=None))
 
     def test_partial_recv(self):
         self.serial.write(b"T12ABCDEF")
