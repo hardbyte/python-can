@@ -7,7 +7,7 @@ import functools
 import logging
 import threading
 import time
-from typing import Awaitable, Callable, Iterable, List, Optional, Union, cast
+from typing import Any, Awaitable, Callable, Iterable, List, Optional, Union
 
 from can.bus import BusABC
 from can.listener import Listener
@@ -110,16 +110,13 @@ class Notifier:
 
     def _rx_thread(self, bus: BusABC) -> None:
         # determine message handling callable early, not inside while loop
-        handle_message = cast(
-            Callable[[Message], None],
-            (
-                self._on_message_received
-                if self._loop is None
-                else functools.partial(
-                    self._loop.call_soon_threadsafe, self._on_message_received
-                )
-            ),
-        )
+        if self._loop:
+            handle_message: Callable[[Message], Any] = functools.partial(
+                self._loop.call_soon_threadsafe,
+                self._on_message_received,  # type: ignore[arg-type]
+            )
+        else:
+            handle_message = self._on_message_received
 
         while self._running:
             try:
