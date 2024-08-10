@@ -12,7 +12,6 @@ dependencies = [
     "packaging >= 23.1",
     "typing_extensions>=3.10.0.0",
     "msgpack~=1.0.0; platform_system != 'Windows'",
-    "pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'",
 ]
 requires-python = ">=3.8"
 license = { text = "LGPL v3" }
@@ -65,6 +64,7 @@ lint = [
     "black==24.8.*",
     "mypy==1.11.*",
 ]
+pywin32 = ["pywin32>=305"]
 seeedstudio = ["pyserial>=3.0"]
 serial = ["pyserial~=3.0"]
 neovi = ["filelock", "python-ics>=2.12"]
@@ -171,6 +171,7 @@ known-first-party = ["can"]
 
 [tool.pylint]
 disable = [
+    "c-extension-no-member",
     "cyclic-import",
     "duplicate-code",
     "fixme",

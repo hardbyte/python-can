@@ -10,7 +10,17 @@ import logging
 import sys
 import threading
 import time
-from typing import TYPE_CHECKING, Callable, Final, Optional, Sequence, Tuple, Union
+import warnings
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Final,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
 from can import typechecking
 from can.message import Message
@@ -19,22 +29,61 @@ if TYPE_CHECKING:
     from can.bus import BusABC
 
 
-# try to import win32event for event-based cyclic send task (needs the pywin32 package)
-USE_WINDOWS_EVENTS = False
-try:
-    import pywintypes
-    import win32event
-
-    # Python 3.11 provides a more precise sleep implementation on Windows, so this is not necessary.
-    # Put version check here, so mypy does not complain about `win32event` not being defined.
-    if sys.version_info < (3, 11):
-        USE_WINDOWS_EVENTS = True
-except ImportError:
-    pass
-
 log = logging.getLogger("can.bcm")
-
 NANOSECONDS_IN_SECOND: Final[int] = 1_000_000_000
+
+
+class Pywin32Event:
+    handle: int
+
+
+class _Pywin32:
+    def __init__(self) -> None:
+        import pywintypes  # pylint: disable=import-outside-toplevel
+        import win32event  # pylint: disable=import-outside-toplevel
+
+        self.pywintypes = pywintypes
+        self.win32event = win32event
+
+    def create_timer(self) -> Pywin32Event:
+        try:
+            event = self.win32event.CreateWaitableTimerEx(
+                None,
+                None,
+                self.win32event.CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+                self.win32event.TIMER_ALL_ACCESS,
+            )
+        except (
+            AttributeError,
+            OSError,
+            self.pywintypes.error,  # pylint: disable=no-member
+        ):
+            event = self.win32event.CreateWaitableTimer(None, False, None)
+
+        return cast(Pywin32Event, event)
+
+    def set_timer(self, event: Pywin32Event, period_ms: int) -> None:
+        self.win32event.SetWaitableTimer(event.handle, 0, period_ms, None, None, False)
+
+    def stop_timer(self, event: Pywin32Event) -> None:
+        self.win32event.SetWaitableTimer(event.handle, 0, 0, None, None, False)
+
+    def wait_0(self, event: Pywin32Event) -> None:
+        self.win32event.WaitForSingleObject(event.handle, 0)
+
+    def wait_inf(self, event: Pywin32Event) -> None:
+        self.win32event.WaitForSingleObject(
+            event.handle,
+            self.win32event.INFINITE,
+        )
+
+
+PYWIN32: Optional[_Pywin32] = None
+if sys.platform == "win32" and sys.version_info < (3, 11):
+    try:
+        PYWIN32 = _Pywin32()
+    except ImportError:
+        pass
 
 
 class CyclicTask(abc.ABC):
@@ -254,25 +303,26 @@ class ThreadBasedCyclicSendTask(
         self.on_error = on_error
         self.modifier_callback = modifier_callback
 
-        if USE_WINDOWS_EVENTS:
-            self.period_ms = int(round(period * 1000, 0))
-            try:
-                self.event = win32event.CreateWaitableTimerEx(
-                    None,
-                    None,
-                    win32event.CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
-                    win32event.TIMER_ALL_ACCESS,
-                )
-            except (AttributeError, OSError, pywintypes.error):
-                self.event = win32event.CreateWaitableTimer(None, False, None)
+        self.period_ms = int(round(period * 1000, 0))
+
+        self.event: Optional[Pywin32Event] = None
+        if PYWIN32:
+            self.event = PYWIN32.create_timer()
+        elif sys.platform == "win32" and sys.version_info < (3, 11):
+            warnings.warn(
+                f"{self.__class__.__name__} may achieve better timing accuracy "
+                f"if the 'pywin32' package is installed.",
+                RuntimeWarning,
+                stacklevel=1,
+            )
 
         self.start()
 
     def stop(self) -> None:
         self.stopped = True
-        if USE_WINDOWS_EVENTS:
+        if self.event and PYWIN32:
             # Reset and signal any pending wait by setting the timer to 0
-            win32event.SetWaitableTimer(self.event.handle, 0, 0, None, None, False)
+            PYWIN32.stop_timer(self.event)
 
     def start(self) -> None:
         self.stopped = False
@@ -281,10 +331,8 @@ class ThreadBasedCyclicSendTask(
             self.thread = threading.Thread(target=self._run, name=name)
             self.thread.daemon = True
 
-            if USE_WINDOWS_EVENTS:
-                win32event.SetWaitableTimer(
-                    self.event.handle, 0, self.period_ms, None, None, False
-                )
+            if self.event and PYWIN32:
+                PYWIN32.set_timer(self.event, self.period_ms)
 
             self.thread.start()
 
@@ -292,9 +340,9 @@ class ThreadBasedCyclicSendTask(
         msg_index = 0
         msg_due_time_ns = time.perf_counter_ns()
 
-        if USE_WINDOWS_EVENTS:
+        if self.event and PYWIN32:
             # Make sure the timer is non-signaled before entering the loop
-            win32event.WaitForSingleObject(self.event.handle, 0)
+            PYWIN32.wait_0(self.event)
 
         while not self.stopped:
             if self.end_time is not None and time.perf_counter() >= self.end_time:
@@ -319,16 +367,13 @@ class ThreadBasedCyclicSendTask(
                         self.stop()
                         break
 
-            if not USE_WINDOWS_EVENTS:
+            if not self.event:
                 msg_due_time_ns += self.period_ns
 
             msg_index = (msg_index + 1) % len(self.messages)
 
-            if USE_WINDOWS_EVENTS:
-                win32event.WaitForSingleObject(
-                    self.event.handle,
-                    win32event.INFINITE,
-                )
+            if self.event and PYWIN32:
+                PYWIN32.wait_inf(self.event)
             else:
                 # Compensate for the time it takes to send the message
                 delay_ns = msg_due_time_ns - time.perf_counter_ns()
