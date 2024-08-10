@@ -353,24 +353,24 @@ class ThreadBasedCyclicSendTask(
             if self.end_time is not None and time.perf_counter() >= self.end_time:
                 break
 
-            # Prevent calling bus.send from multiple threads
-            with self.send_lock:
-                try:
-                    if self.modifier_callback is not None:
-                        self.modifier_callback(self.messages[msg_index])
+            try:
+                if self.modifier_callback is not None:
+                    self.modifier_callback(self.messages[msg_index])
+                with self.send_lock:
+                    # Prevent calling bus.send from multiple threads
                     self.bus.send(self.messages[msg_index])
-                except Exception as exc:  # pylint: disable=broad-except
-                    log.exception(exc)
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception(exc)
 
-                    # stop if `on_error` callback was not given
-                    if self.on_error is None:
-                        self.stop()
-                        raise exc
+                # stop if `on_error` callback was not given
+                if self.on_error is None:
+                    self.stop()
+                    raise exc
 
-                    # stop if `on_error` returns False
-                    if not self.on_error(exc):
-                        self.stop()
-                        break
+                # stop if `on_error` returns False
+                if not self.on_error(exc):
+                    self.stop()
+                    break
 
             if not self.event:
                 msg_due_time_ns += self.period_ns
