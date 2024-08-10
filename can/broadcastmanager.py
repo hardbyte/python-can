@@ -7,6 +7,7 @@ The main entry point to these classes should be through
 
 import abc
 import logging
+import platform
 import sys
 import threading
 import time
@@ -308,7 +309,11 @@ class ThreadBasedCyclicSendTask(
         self.event: Optional[_Pywin32Event] = None
         if PYWIN32:
             self.event = PYWIN32.create_timer()
-        elif sys.platform == "win32" and sys.version_info < (3, 11):
+        elif (
+            sys.platform == "win32"
+            and sys.version_info < (3, 11)
+            and platform.python_implementation() == "CPython"
+        ):
             warnings.warn(
                 f"{self.__class__.__name__} may achieve better timing accuracy "
                 f"if the 'pywin32' package is installed.",
