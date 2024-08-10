@@ -241,7 +241,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         msg_list: List[can.Message] = []
 
         def increment_first_byte(msg: can.Message) -> None:
-            msg.data[0] += 1
+            msg.data[0] = (msg.data[0] + 1) % 256
 
         original_msg = can.Message(
             is_extended_id=False, arbitration_id=0x123, data=[0] * 8
