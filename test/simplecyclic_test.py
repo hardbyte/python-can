@@ -154,7 +154,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
     def test_restart_perodic_tasks(self):
         period = 0.01
-        safe_timeout = period * 5
+        safe_timeout = period * 5 if not IS_PYPY else 1.0
 
         msg = can.Message(
             is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7]
@@ -241,7 +241,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         msg_list: List[can.Message] = []
 
         def increment_first_byte(msg: can.Message) -> None:
-            msg.data[0] += 1
+            msg.data[0] = (msg.data[0] + 1) % 256
 
         original_msg = can.Message(
             is_extended_id=False, arbitration_id=0x123, data=[0] * 8

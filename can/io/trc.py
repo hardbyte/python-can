@@ -343,7 +343,9 @@ class TRCWriter(TextIOMessageWriter):
         self.file.writelines(line + "\n" for line in lines)
 
     def _write_header_v2_1(self, start_time: datetime) -> None:
-        header_time = start_time - datetime(year=1899, month=12, day=30)
+        header_time = start_time - datetime(
+            year=1899, month=12, day=30, tzinfo=timezone.utc
+        )
         lines = [
             ";$FILEVERSION=2.1",
             f";$STARTTIME={header_time/timedelta(days=1)}",
@@ -399,7 +401,7 @@ class TRCWriter(TextIOMessageWriter):
 
     def write_header(self, timestamp: float) -> None:
         # write start of file header
-        start_time = datetime.utcfromtimestamp(timestamp)
+        start_time = datetime.fromtimestamp(timestamp, timezone.utc)
 
         if self.file_version == TRCFileVersion.V1_0:
             self._write_header_v1_0(start_time)
