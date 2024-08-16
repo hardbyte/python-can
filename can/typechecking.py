@@ -2,7 +2,15 @@
 """
 
 import gzip
+import struct
+import sys
 import typing
+
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
+
 
 if typing.TYPE_CHECKING:
     import os
@@ -39,6 +47,13 @@ StringPathLike = typing.Union[str, "os.PathLike[str]"]
 AcceptedIOType = typing.Union[FileLike, StringPathLike]
 
 BusConfig = typing.NewType("BusConfig", typing.Dict[str, typing.Any])
+
+# Used by CLI scripts
+TAdditionalCliArgs: TypeAlias = typing.Dict[str, typing.Union[str, int, float, bool]]
+TDataStructs: TypeAlias = typing.Dict[
+    typing.Union[int, typing.Tuple[int, ...]],
+    typing.Union[struct.Struct, typing.Tuple, None],
+]
 
 
 class AutoDetectedConfig(typing.TypedDict):

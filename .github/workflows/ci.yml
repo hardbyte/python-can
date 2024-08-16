@@ -23,23 +23,10 @@ jobs:
           "3.10",
           "3.11",
           "3.12",
+          "3.13",
           "pypy-3.8",
           "pypy-3.9",
         ]
-        # Python 3.9 is on macos-13 but not macos-latest (macos-14-arm64)
-        # https://github.com/actions/setup-python/issues/696#issuecomment-1637587760
-        exclude:
-          - { python-version: "3.8", os: "macos-latest", experimental: false }
-          - { python-version: "3.9", os: "macos-latest", experimental: false }
-        include:
-          - { python-version: "3.8", os: "macos-13", experimental: false }
-          - { python-version: "3.9", os: "macos-13", experimental: false }
-        # uncomment when python 3.13.0 alpha is available
-        #include:
-        #  # Only test on a single configuration while there are just pre-releases
-        #  - os: ubuntu-latest
-        #    experimental: true
-        #    python-version: "3.13.0-alpha - 3.13.0"
       fail-fast: false
     steps:
     - uses: actions/checkout@v4
@@ -47,6 +34,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        allow-prereleases: true
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -161,6 +149,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # fetch tags for setuptools-scm
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

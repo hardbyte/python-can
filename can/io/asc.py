@@ -275,6 +275,11 @@ class ASCReader(TextIOMessageReader):
                 )
                 continue
 
+            # Handle the "Start of measurement" line
+            if re.match(r"^\d+\.\d+\s+Start of measurement", line):
+                # Skip this line as it's just an indicator
+                continue
+
             if not ASC_MESSAGE_REGEX.match(line):
                 # line might be a comment, chip status,
                 # J1939 message or some other unsupported event

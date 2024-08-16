@@ -84,7 +84,7 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
         ready = threading.Event()
         msg_read = threading.Event()
 
-        self.server_bus = can.interface.Bus(channel=channel)
+        self.server_bus = can.interface.Bus(channel=channel, interface="virtual")
 
         t = threading.Thread(target=self.producer, args=(ready, msg_read))
         t.start()
