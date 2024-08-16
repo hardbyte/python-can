@@ -24,8 +24,8 @@ jobs:
           "3.11",
           "3.12",
           "3.13",
-          "pypy-3.8",
           "pypy-3.9",
+          "pypy-3.10",
         ]
       fail-fast: false
     steps:
