@@ -321,7 +321,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
                 and self.arbitration_id == other.arbitration_id
                 and self.is_extended_id == other.is_extended_id
                 and self.dlc == other.dlc
-                and self.data == other.data
+                and self.data[: self.dlc] == other.data[: other.dlc]
                 and self.is_remote_frame == other.is_remote_frame
                 and self.is_error_frame == other.is_error_frame
                 and (self.channel == other.channel or not check_channel)
