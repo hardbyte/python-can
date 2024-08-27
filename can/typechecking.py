@@ -11,17 +11,22 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
+if sys.version_info >= (3, 12):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
+
 
 if typing.TYPE_CHECKING:
     import os
 
 
-class CanFilter(typing.TypedDict):
+class CanFilter(TypedDict):
     can_id: int
     can_mask: int
 
 
-class CanFilterExtended(typing.TypedDict):
+class CanFilterExtended(TypedDict):
     can_id: int
     can_mask: int
     extended: bool
@@ -56,7 +61,7 @@ TDataStructs: TypeAlias = typing.Dict[
 ]
 
 
-class AutoDetectedConfig(typing.TypedDict):
+class AutoDetectedConfig(TypedDict):
     interface: str
     channel: Channel
 
@@ -64,7 +69,7 @@ class AutoDetectedConfig(typing.TypedDict):
 ReadableBytesLike = typing.Union[bytes, bytearray, memoryview]
 
 
-class BitTimingDict(typing.TypedDict):
+class BitTimingDict(TypedDict):
     f_clock: int
     brp: int
     tseg1: int
@@ -73,7 +78,7 @@ class BitTimingDict(typing.TypedDict):
     nof_samples: int
 
 
-class BitTimingFdDict(typing.TypedDict):
+class BitTimingFdDict(TypedDict):
     f_clock: int
     nom_brp: int
     nom_tseg1: int
