@@ -308,6 +308,9 @@ class ThreadBasedCyclicSendTask(
 
         self.event: Optional[_Pywin32Event] = None
         if PYWIN32:
+            if self.period_ms == 0:
+                # A period of 0 would mean that the timer is signaled only once
+                raise ValueError("The period cannot be smaller than 0.001 (1 ms)")
             self.event = PYWIN32.create_timer()
         elif (
             sys.platform == "win32"
