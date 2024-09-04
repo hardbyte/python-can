@@ -45,6 +45,7 @@ from .basic import (
     PCAN_ERROR_BUSLIGHT,
     PCAN_ERROR_OK,
     PCAN_ERROR_QRCVEMPTY,
+    PCAN_ERROR_ILLDATA,
     PCAN_FD_PARAMETER_LIST,
     PCAN_LANBUS1,
     PCAN_LISTEN_ONLY,
@@ -554,6 +555,10 @@ class PcanBus(BusABC):
 
             elif result & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
                 log.warning(self._get_formatted_error(result))
+
+            elif result == PCAN_ERROR_ILLDATA:
+                # Ignore this
+                pass
 
             else:
                 raise PcanCanOperationError(self._get_formatted_error(result))
