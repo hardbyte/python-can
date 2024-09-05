@@ -238,7 +238,8 @@ def build_can_frame(msg: Message) -> bytes:
 
     data = bytes(msg.data).ljust(max_len, b"\x00")
 
-    return CAN_FRAME_HEADER_STRUCT.pack(can_id, len(msg.data), flags, msg.dlc) + data
+    data_len = min(i for i in can.util.CAN_FD_DLC if i >= len(msg.data))
+    return CAN_FRAME_HEADER_STRUCT.pack(can_id, data_len, flags, msg.dlc) + data
 
 
 def build_bcm_header(
@@ -321,17 +322,20 @@ def dissect_can_frame(frame: bytes) -> Tuple[int, int, int, bytes]:
         # Flags not valid in non-FD frames
         flags = 0
 
+    if data_len not in can.util.CAN_FD_DLC:
+        data_len = min(i for i in can.util.CAN_FD_DLC if i >= data_len)
+
     # Allow deprecated can frames with old struct
     if (
-        data_len == constants.CAN_MAX_DLEN and
-        len8_dlc > constants.CAN_MAX_DLEN and
-        len8_dlc <= constants.CAN_MAX_RAW_DLC
+        data_len == constants.CAN_MAX_DLEN
+        and len8_dlc > constants.CAN_MAX_DLEN
+        and len8_dlc <= constants.CAN_MAX_RAW_DLC
     ):
         can_dlc = len8_dlc
     else:
         can_dlc = data_len
 
-    return can_id, can_dlc, flags, frame[8: 8 + data_len]
+    return can_id, can_dlc, flags, frame[8 : 8 + data_len]
 
 
 def create_bcm_socket(channel: str) -> socket.socket:
@@ -359,8 +363,7 @@ def send_bcm(bcm_socket: socket.socket, data: bytes) -> int:
         else:
             specific_message = ""
 
-        raise can.CanOperationError(
-            base + specific_message, error.errno) from error
+        raise can.CanOperationError(base + specific_message, error.errno) from error
 
 
 def _compose_arbitration_id(message: Message) -> int:
