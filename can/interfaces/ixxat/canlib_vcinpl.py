@@ -793,6 +793,7 @@ class IXXATBus(BusABC):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        autostart: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> CyclicSendTaskABC:
         """Send a message using built-in cyclic transmit list functionality."""
@@ -821,6 +822,7 @@ class IXXATBus(BusABC):
             msgs=msgs,
             period=period,
             duration=duration,
+            autostart=autostart,
             modifier_callback=modifier_callback,
         )
 

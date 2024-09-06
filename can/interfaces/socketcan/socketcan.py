@@ -813,6 +813,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        autostart: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
@@ -823,13 +824,16 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         :class:`CyclicSendTask` within BCM provides flexibility to schedule
         CAN messages sending with the same CAN ID, but different CAN data.
 
-        :param messages:
+        :param msgs:
             The message(s) to be sent periodically.
         :param period:
             The rate in seconds at which to send the messages.
         :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
+        :param autostart:
+            If True (the default) the sending task will immediately start after creation.
+            Otherwise, the task has to be started by calling start() on it.
 
         :raises ValueError:
             If task identifier passed to :class:`CyclicSendTask` can't be used
@@ -868,6 +872,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             msgs=msgs,
             period=period,
             duration=duration,
+            autostart=autostart,
             modifier_callback=modifier_callback,
         )
 
