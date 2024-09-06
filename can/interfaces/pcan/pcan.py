@@ -43,6 +43,7 @@ from .basic import (
     PCAN_DICT_STATUS,
     PCAN_ERROR_BUSHEAVY,
     PCAN_ERROR_BUSLIGHT,
+    PCAN_ERROR_ILLDATA,
     PCAN_ERROR_OK,
     PCAN_ERROR_QRCVEMPTY,
     PCAN_FD_PARAMETER_LIST,
@@ -554,6 +555,12 @@ class PcanBus(BusABC):
 
             elif result & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
                 log.warning(self._get_formatted_error(result))
+
+            elif result == PCAN_ERROR_ILLDATA:
+                # When there is an invalid frame on CAN bus (in our case CAN FD), PCAN first reports result PCAN_ERROR_ILLDATA
+                # and then it sends the error frame. If the PCAN_ERROR_ILLDATA is not ignored, python-can throws an exception.
+                # So we ignore any PCAN_ERROR_ILLDATA results here.
+                pass
 
             else:
                 raise PcanCanOperationError(self._get_formatted_error(result))
