@@ -238,8 +238,10 @@ def build_can_frame(msg: Message) -> bytes:
 
     data = bytes(msg.data).ljust(max_len, b"\x00")
 
-    data_len = min(i for i in can.util.CAN_FD_DLC if i >= len(msg.data))
-    return CAN_FRAME_HEADER_STRUCT.pack(can_id, data_len, flags, msg.dlc) + data
+    if msg.is_remote_frame:
+        data_len = msg.dlc
+    else:
+        data_len = min(i for i in can.util.CAN_FD_DLC if i >= len(msg.data))
 
 
 def build_bcm_header(
