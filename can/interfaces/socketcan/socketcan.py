@@ -224,7 +224,7 @@ def build_can_frame(msg: Message) -> bytes:
     flags = 0
 
     # The socketcan code identify the received FD frame by the packet length.
-    # Therefore, padding to the data length is performed according to the message type (Classic / FD)
+    # So, padding to the data length is performed according to the message type (Classic / FD)
     if msg.is_fd:
         flags |= constants.CANFD_FDF
         max_len = constants.CANFD_MAX_DLEN
@@ -242,6 +242,8 @@ def build_can_frame(msg: Message) -> bytes:
         data_len = msg.dlc
     else:
         data_len = min(i for i in can.util.CAN_FD_DLC if i >= len(msg.data))
+    header = CAN_FRAME_HEADER_STRUCT.pack(can_id, data_len, flags, msg.dlc)
+    return header + data
 
 
 def build_bcm_header(
@@ -330,8 +332,7 @@ def dissect_can_frame(frame: bytes) -> Tuple[int, int, int, bytes]:
     # Allow deprecated can frames with old struct
     if (
         data_len == constants.CAN_MAX_DLEN
-        and len8_dlc > constants.CAN_MAX_DLEN
-        and len8_dlc <= constants.CAN_MAX_RAW_DLC
+        and constants.CAN_MAX_DLEN < len8_dlc <= constants.CAN_MAX_RAW_DLC
     ):
         can_dlc = len8_dlc
     else:
