@@ -276,7 +276,9 @@ class BusABC(metaclass=ABCMeta):
         # Create a backend specific task; will be patched to a _SelfRemovingCyclicTask later
         task = cast(
             _SelfRemovingCyclicTask,
-            self._send_periodic_internal(msgs, period, duration, autostart, modifier_callback),
+            self._send_periodic_internal(
+                msgs, period, duration, autostart, modifier_callback
+            ),
         )
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         periodic_tasks = self._periodic_tasks
