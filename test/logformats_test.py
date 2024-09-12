@@ -665,7 +665,9 @@ class TestAscFileFormat(ReaderWriterTest):
                 writer = can.ASCWriter(self.test_file_name)
 
             msg = can.Message(
-                timestamp=now.timestamp(), arbitration_id=0x123, data=(_ for _ in range(64))
+                timestamp=now.timestamp(),
+                arbitration_id=0x123,
+                data=(_ for _ in range(64)),
             )
 
             with writer:
