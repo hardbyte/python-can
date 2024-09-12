@@ -651,6 +651,31 @@ class TestAscFileFormat(ReaderWriterTest):
 
         self.assertEqual(expected_file.read_text(), actual_file.read_text())
 
+    def test_write(self):
+        now = datetime(
+            year=2017, month=9, day=30, hour=15, minute=6, second=13, microsecond=191456
+        )
+
+        # We temporarily set the locale to C to ensure test reproducibility
+        with override_locale(category=locale.LC_TIME, locale_str="C"):
+            # We mock datetime.now during ASCWriter __init__ for reproducibility
+            # Unfortunately, now() is a readonly attribute, so we mock datetime
+            with patch("can.io.asc.datetime") as mock_datetime:
+                mock_datetime.now.return_value = now
+                writer = can.ASCWriter(self.test_file_name)
+
+            msg = can.Message(
+                timestamp=now.timestamp(), arbitration_id=0x123, data=(_ for _ in range(64))
+            )
+
+            with writer:
+                writer.on_message_received(msg)
+
+        actual_file = Path(self.test_file_name)
+        expected_file = self._get_logfile_location("single_frame.asc")
+
+        self.assertEqual(expected_file.read_text(), actual_file.read_text())
+
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
