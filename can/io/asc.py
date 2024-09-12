@@ -9,7 +9,7 @@ Example .asc files:
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, Final, Generator, List, Optional, TextIO, Union
+from typing import Any, Dict, Final, Generator, Optional, TextIO, Union
 
 from ..message import Message
 from ..typechecking import StringPathLike
