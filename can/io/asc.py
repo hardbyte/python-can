@@ -439,10 +439,10 @@ class ASCWriter(TextIOMessageWriter):
             return
         if msg.is_remote_frame:
             dtype = f"r {msg.dlc:x}"  # New after v8.5
-            data: List[str] = []
+            data: str = ""
         else:
             dtype = f"d {msg.dlc:x}"
-            data = [f"{byte:02X}" for byte in msg.data]
+            data = msg.data.hex(" ").upper()
         arb_id = f"{msg.arbitration_id:X}"
         if msg.is_extended_id:
             arb_id += "x"
@@ -462,7 +462,7 @@ class ASCWriter(TextIOMessageWriter):
                 esi=1 if msg.error_state_indicator else 0,
                 dlc=len2dlc(msg.dlc),
                 data_length=len(msg.data),
-                data=" ".join(data),
+                data=data,
                 message_duration=0,
                 message_length=0,
                 flags=flags,
@@ -478,6 +478,6 @@ class ASCWriter(TextIOMessageWriter):
                 id=arb_id,
                 dir="Rx" if msg.is_rx else "Tx",
                 dtype=dtype,
-                data=" ".join(data),
+                data=data,
             )
         self.log_event(serialized, msg.timestamp)
