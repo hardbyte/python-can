@@ -667,7 +667,7 @@ class TestAscFileFormat(ReaderWriterTest):
             msg = can.Message(
                 timestamp=now.timestamp(),
                 arbitration_id=0x123,
-                data=(_ for _ in range(64)),
+                data=range(64),
             )
 
             with writer:
