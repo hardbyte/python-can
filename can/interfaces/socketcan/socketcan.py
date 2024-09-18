@@ -327,6 +327,7 @@ class CyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        autostart: bool = False,
     ) -> None:
         """Construct and :meth:`~start` a task.
 
@@ -350,6 +351,9 @@ class CyclicSendTask(
         self.bcm_socket = bcm_socket
         self.task_id = task_id
         self._tx_setup(self.messages)
+
+        if autostart:
+            self.start()
 
     def _tx_setup(
         self, messages: Sequence[Message], raise_if_task_exists: bool = True
@@ -858,7 +862,9 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
             bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
             task_id = self._get_next_task_id()
-            task = CyclicSendTask(bcm_socket, task_id, msgs, period, duration)
+            task = CyclicSendTask(
+                bcm_socket, task_id, msgs, period, duration, autostart=autostart
+            )
             return task
 
         # fallback to thread based cyclic task
