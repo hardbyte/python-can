@@ -954,7 +954,12 @@ class IXXATBus(BusABC):
                 )  # TODO: confirm
                 _canlib.canSchedulerActivate(self._scheduler, constants.TRUE)
             return CyclicSendTask(
-                self._scheduler, msgs, period, duration, self._scheduler_resolution
+                self._scheduler,
+                msgs,
+                period,
+                duration,
+                self._scheduler_resolution,
+                autostart=autostart,
             )
 
         # fallback to thread based cyclic task
@@ -985,7 +990,15 @@ class IXXATBus(BusABC):
 class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC):
     """A message in the cyclic transmit list."""
 
-    def __init__(self, scheduler, msgs, period, duration, resolution):
+    def __init__(
+        self,
+        scheduler,
+        msgs,
+        period,
+        duration,
+        resolution,
+        autostart: bool = True,
+    ):
         super().__init__(msgs, period, duration)
         if len(self.messages) != 1:
             raise ValueError(
@@ -1005,7 +1018,8 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC)
         self._msg.uMsgInfo.Bits.dlc = self.messages[0].dlc
         for i, b in enumerate(self.messages[0].data):
             self._msg.abData[i] = b
-        self.start()
+        if autostart:
+            self.start()
 
     def start(self):
         """Start transmitting message (add to list if needed)."""
