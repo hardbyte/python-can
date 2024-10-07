@@ -839,7 +839,8 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             no duration is provided, the task will continue indefinitely.
         :param autostart:
             If True (the default) the sending task will immediately start after creation.
-            Otherwise, the task has to be started by calling start() on it.
+            Otherwise, the task has to be started by calling the tasks :meth:`~can.broadcastmanager.CyclicTask.start`
+            method on it.
 
         :raises ValueError:
             If task identifier passed to :class:`CyclicSendTask` can't be used

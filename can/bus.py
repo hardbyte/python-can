@@ -240,7 +240,8 @@ class BusABC(metaclass=ABCMeta):
             Disable to instead manage tasks manually.
         :param autostart:
             If True (the default) the sending task will immediately start after creation.
-            Otherwise, the task has to be started by calling start() on it.
+            Otherwise, the task has to be started by calling the tasks :meth:`~can.broadcastmanager.CyclicTask.start`
+            method on it.
         :param modifier_callback:
             Function which should be used to modify each message's data before
             sending. The callback modifies the :attr:`~can.Message.data` of the
@@ -321,7 +322,8 @@ class BusABC(metaclass=ABCMeta):
             no duration is provided, the task will continue indefinitely.
         :param autostart:
             If True (the default) the sending task will immediately start after creation.
-            Otherwise, the task has to be started by calling start() on it.
+            Otherwise, the task has to be started by calling the tasks :meth:`~can.broadcastmanager.CyclicTask.start`
+            method on it.
         :return:
             A started task instance. Note the task can be stopped (and
             depending on the backend modified) by calling the
