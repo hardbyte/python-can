@@ -95,6 +95,11 @@ def _append_filter_argument(
 
 
 def _create_bus(parsed_args: argparse.Namespace, **kwargs: Any) -> can.BusABC:
+    """
+    Creates and configures a CAN bus based on the passed arguments.
+
+    :param parsed_args: Parsed arguments.
+    """
     logging_level_names = ["critical", "error", "warning", "info", "debug", "subdebug"]
     can.set_logging_level(logging_level_names[min(5, parsed_args.verbosity)])
 
@@ -114,6 +119,9 @@ def _create_bus(parsed_args: argparse.Namespace, **kwargs: Any) -> can.BusABC:
 
 
 class _CanFilterAction(argparse.Action):
+    """
+    Argparse action for handling CAN filter arguments.
+    """
     def __call__(
         self,
         parser: argparse.ArgumentParser,
@@ -144,11 +152,22 @@ class _CanFilterAction(argparse.Action):
 
 
 def _parse_additional_config(unknown_args: Sequence[str]) -> TAdditionalCliArgs:
+    """
+    Parses additional arguments from a sequence of unknown arguements.
+
+    :param unknown_args: Unknown arguments.
+    """
     for arg in unknown_args:
         if not re.match(r"^--[a-zA-Z][a-zA-Z0-9\-]*=\S*?$", arg):
             raise ValueError(f"Parsing argument {arg} failed")
 
     def _split_arg(_arg: str) -> Tuple[str, str]:
+        """
+        Helper function to split arguments in --key=value format
+        and returns as tuple with the newly formatted key_value.
+
+        :param _arg: Argument to be split
+        """
         left, right = _arg.split("=", 1)
         return left.lstrip("-").replace("-", "_"), right
 

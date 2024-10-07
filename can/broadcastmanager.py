@@ -327,12 +327,18 @@ class ThreadBasedCyclicSendTask(
         self.start()
 
     def stop(self) -> None:
+        """
+        Stops cyclic send task.
+        """
         self.stopped = True
         if self.event and PYWIN32:
             # Reset and signal any pending wait by setting the timer to 0
             PYWIN32.stop_timer(self.event)
 
     def start(self) -> None:
+        """
+        Starts cyclic send task using a daemon thread.
+        """
         self.stopped = False
         if self.thread is None or not self.thread.is_alive():
             name = f"Cyclic send task for 0x{self.messages[0].arbitration_id:X}"
@@ -345,6 +351,10 @@ class ThreadBasedCyclicSendTask(
             self.thread.start()
 
     def _run(self) -> None:
+        """
+        Sends messages on the bus periodically using a daemon thread.
+        Handles error conditions to maintain thread integrity.
+        """
         msg_index = 0
         msg_due_time_ns = time.perf_counter_ns()
 

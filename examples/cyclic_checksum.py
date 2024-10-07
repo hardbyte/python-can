@@ -32,12 +32,18 @@ def cyclic_checksum_send(bus: can.BusABC) -> None:
 
 
 def update_message(message: can.Message) -> None:
+    """
+    Updates given CAN message with a new counter and checksum.
+    """
     counter = increment_counter(message)
     checksum = compute_xbr_checksum(message, counter)
     message.data[7] = (checksum << 4) + counter
 
 
 def increment_counter(message: can.Message) -> int:
+    """
+    Increments 4-bit counter for given CAN message.
+    """
     counter = message.data[7] & 0x0F
     counter += 1
     counter %= 16

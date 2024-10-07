@@ -78,6 +78,9 @@ class BitTiming(Mapping):
             self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
+        """
+        Validates CAN bus nominal timing parameters.
+        """
         if not 1 <= self.brp <= 64:
             raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
 
@@ -105,6 +108,10 @@ class BitTiming(Mapping):
             raise ValueError("nof_samples must be 1 or 3")
 
     def _restrict_to_minimum_range(self) -> None:
+        """
+        Restricts and error checks for nominal bit time, bitrate prescaler
+        and bit range to the specified ranges.
+        """
         if not 8 <= self.nbt <= 25:
             raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
 
@@ -584,6 +591,9 @@ class BitTimingFd(Mapping):
             self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
+        """
+        Validates CAN bus nominal timing parameters.
+        """
         for param, value in self._data.items():
             if value < 0:  # type: ignore[operator]
                 err_msg = f"'{param}' (={value}) must not be negative."
@@ -630,6 +640,11 @@ class BitTimingFd(Mapping):
             )
 
     def _restrict_to_minimum_range(self) -> None:
+        """
+        Restricts and error checks for nominal bit time, time segment 1 and 2
+        for both nominal and data phases, and synchronization jump width for both
+        nominal and data pahses to ranges as specified in ISO 11898.
+        """
         # restrict to minimum required range as defined in ISO 11898
         if not 8 <= self.nbt <= 80:
             raise ValueError(f"Nominal bit time (={self.nbt}) must be in [8...80]")

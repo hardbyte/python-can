@@ -17,11 +17,24 @@ if typing.TYPE_CHECKING:
 
 
 class CanFilter(typing.TypedDict):
+    """
+    CAN filter configuration.
+
+    :param can_id: CAN ID to filter.
+    :param can_mask: CAN mask to apply.
+    """
     can_id: int
     can_mask: int
 
 
 class CanFilterExtended(typing.TypedDict):
+    """
+    Extended CAN filter configuration.
+
+    :param can_id: CAN ID to filter.
+    :param can_mask: CAN mask to apply.
+    :param extended: Indicates if filter is for extended CAN.
+    """
     can_id: int
     can_mask: int
     extended: bool
@@ -57,6 +70,12 @@ TDataStructs: TypeAlias = typing.Dict[
 
 
 class AutoDetectedConfig(typing.TypedDict):
+    """
+    Auto-detected CAN interface configuration.
+
+    :param interface: Name of CAN interface.
+    : param channel: Channel on CAN interface.
+    """
     interface: str
     channel: Channel
 
@@ -65,6 +84,16 @@ ReadableBytesLike = typing.Union[bytes, bytearray, memoryview]
 
 
 class BitTimingDict(typing.TypedDict):
+    """
+    Bit timing CAN configuration.
+
+    :param f_clock: Frequency of CAN controller clock.
+    :param brp: Baud rate prescaler.
+    :param tseg1: Time segment 1.
+    :param tseg2: Time segment 2.
+    :param sjw: Synchronization jump width.
+    :param nof_samples: Number of samples.
+    """
     f_clock: int
     brp: int
     tseg1: int
@@ -74,6 +103,19 @@ class BitTimingDict(typing.TypedDict):
 
 
 class BitTimingFdDict(typing.TypedDict):
+    """
+    Bit timing CAN FD configuration.
+
+    :param f_clock: Frequency of CAN controller clock.
+    :param brp: Baud rate prescaler.
+    :param nom_tseg1: Nominal time segment 1.
+    :param nom_tseg2: Nominal time segment 2.
+    :param nom_sjw: Nominal synchronization jump width.
+    :param data_brp: Data phase baud rate prescaler.
+    :param data_tseg1: Data time segment 1.
+    :param data_tseg2: Data time segment 2.
+    :param data_sjw: Data synchronization jump width.
+    """
     f_clock: int
     nom_brp: int
     nom_tseg1: int

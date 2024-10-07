@@ -109,6 +109,10 @@ class Notifier:
                 listener.stop()
 
     def _rx_thread(self, bus: BusABC) -> None:
+        """Receives messages from CAN Bus and processes them.
+
+        :param bus: CAN bus from which messages are received.
+        """
         # determine message handling callable early, not inside while loop
         if self._loop:
             handle_message: Callable[[Message], Any] = functools.partial(
@@ -137,10 +141,20 @@ class Notifier:
                     logger.debug("suppressed exception: %s", exc)
 
     def _on_message_available(self, bus: BusABC) -> None:
+        """Processes available messages on CAN bus as soon as it is
+        received.
+
+        : param bus: CAN bus from which messages are received.
+        """
         if msg := bus.recv(0):
             self._on_message_received(msg)
 
     def _on_message_received(self, msg: Message) -> None:
+        """Handles received CAN message by notifying registered listeners. If
+        the listener returns a coroutine, event loop will be scheduled to run.
+
+        :param msg: CAN message received.
+        """
         for callback in self.listeners:
             res = callback(msg)
             if res and self._loop and asyncio.iscoroutine(res):
