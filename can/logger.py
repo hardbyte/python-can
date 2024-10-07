@@ -145,7 +145,7 @@ class _CanFilterAction(argparse.Action):
 
 def _parse_additional_config(unknown_args: Sequence[str]) -> TAdditionalCliArgs:
     for arg in unknown_args:
-        if not re.match(r"^--[a-zA-Z\-]*?=\S*?$", arg):
+        if not re.match(r"^--[a-zA-Z][a-zA-Z0-9\-]*=\S*?$", arg):
             raise ValueError(f"Parsing argument {arg} failed")
 
     def _split_arg(_arg: str) -> Tuple[str, str]:
