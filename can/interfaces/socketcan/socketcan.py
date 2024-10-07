@@ -350,13 +350,13 @@ class CyclicSendTask(
 
         self.bcm_socket = bcm_socket
         self.task_id = task_id
-        self._tx_setup(self.messages, send=autostart)
+        if autostart:
+            self._tx_setup(self.messages)
 
     def _tx_setup(
         self,
         messages: Sequence[Message],
         raise_if_task_exists: bool = True,
-        send: bool = True,
     ) -> None:
         # Create a low level packed frame to pass to the kernel
         body = bytearray()
@@ -380,9 +380,7 @@ class CyclicSendTask(
         for message in messages:
             body += build_can_frame(message)
         log.debug("Sending BCM command")
-
-        if send:
-            send_bcm(self.bcm_socket, header + body)
+        send_bcm(self.bcm_socket, header + body)
 
     def _check_bcm_task(self) -> None:
         # Do a TX_READ on a task ID, and check if we get EINVAL. If so,
