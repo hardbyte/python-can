@@ -155,10 +155,11 @@ class IXXATBus(BusABC):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        autostart: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> CyclicSendTaskABC:
         return self.bus._send_periodic_internal(
-            msgs, period, duration, modifier_callback
+            msgs, period, duration, autostart, modifier_callback
         )
 
     def shutdown(self) -> None:

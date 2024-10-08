@@ -327,6 +327,7 @@ class CyclicSendTask(
         messages: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        autostart: bool = True,
     ) -> None:
         """Construct and :meth:`~start` a task.
 
@@ -349,10 +350,13 @@ class CyclicSendTask(
 
         self.bcm_socket = bcm_socket
         self.task_id = task_id
-        self._tx_setup(self.messages)
+        if autostart:
+            self._tx_setup(self.messages)
 
     def _tx_setup(
-        self, messages: Sequence[Message], raise_if_task_exists: bool = True
+        self,
+        messages: Sequence[Message],
+        raise_if_task_exists: bool = True,
     ) -> None:
         # Create a low level packed frame to pass to the kernel
         body = bytearray()
@@ -813,6 +817,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        autostart: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
@@ -823,13 +828,17 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         :class:`CyclicSendTask` within BCM provides flexibility to schedule
         CAN messages sending with the same CAN ID, but different CAN data.
 
-        :param messages:
+        :param msgs:
             The message(s) to be sent periodically.
         :param period:
             The rate in seconds at which to send the messages.
         :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
+        :param autostart:
+            If True (the default) the sending task will immediately start after creation.
+            Otherwise, the task has to be started by calling the
+            tasks :meth:`~can.RestartableCyclicTaskABC.start` method on it.
 
         :raises ValueError:
             If task identifier passed to :class:`CyclicSendTask` can't be used
@@ -854,7 +863,9 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
             bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
             task_id = self._get_next_task_id()
-            task = CyclicSendTask(bcm_socket, task_id, msgs, period, duration)
+            task = CyclicSendTask(
+                bcm_socket, task_id, msgs, period, duration, autostart=autostart
+            )
             return task
 
         # fallback to thread based cyclic task
@@ -868,6 +879,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             msgs=msgs,
             period=period,
             duration=duration,
+            autostart=autostart,
             modifier_callback=modifier_callback,
         )
 

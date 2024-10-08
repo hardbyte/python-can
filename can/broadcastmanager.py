@@ -276,6 +276,7 @@ class ThreadBasedCyclicSendTask(
         period: float,
         duration: Optional[float] = None,
         on_error: Optional[Callable[[Exception], bool]] = None,
+        autostart: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> None:
         """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
@@ -324,7 +325,8 @@ class ThreadBasedCyclicSendTask(
                 stacklevel=1,
             )
 
-        self.start()
+        if autostart:
+            self.start()
 
     def stop(self) -> None:
         self.stopped = True
