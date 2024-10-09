@@ -155,14 +155,21 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
     def test_restart_perodic_tasks(self):
         period = 0.01
         safe_timeout = period * 5 if not IS_PYPY else 1.0
+        duration = 0.3
 
         msg = can.Message(
             is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7]
         )
 
+        def _read_all_messages(_bus: can.interfaces.virtual.VirtualBus) -> None:
+            sleep(safe_timeout)
+            while not _bus.queue.empty():
+                _bus.recv(timeout=period)
+            sleep(safe_timeout)
+
         with can.ThreadSafeBus(interface="virtual", receive_own_messages=True) as bus:
             task = bus.send_periodic(msg, period)
-            self.assertIsInstance(task, can.broadcastmanager.RestartableCyclicTaskABC)
+            self.assertIsInstance(task, can.broadcastmanager.ThreadBasedCyclicSendTask)
 
             # Test that the task is sending messages
             sleep(safe_timeout)
@@ -170,10 +177,27 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
             # Stop the task and check that messages are no longer being sent
             bus.stop_all_periodic_tasks(remove_tasks=False)
+            _read_all_messages(bus)
+            assert bus.queue.empty(), "messages should not have been transmitted"
+
+            # Restart the task and check that messages are being sent again
+            task.start()
             sleep(safe_timeout)
-            while not bus.queue.empty():
-                bus.recv(timeout=period)
-            sleep(safe_timeout)
+            assert not bus.queue.empty(), "messages should have been transmitted"
+
+            # Stop the task and check that messages are no longer being sent
+            bus.stop_all_periodic_tasks(remove_tasks=False)
+            _read_all_messages(bus)
+            assert bus.queue.empty(), "messages should not have been transmitted"
+
+            # Restart the task with limited duration and wait until it stops
+            task.duration = duration
+            task.start()
+            sleep(duration + safe_timeout)
+            assert task.stopped
+            assert time.time() > task.end_time
+            assert not bus.queue.empty(), "messages should have been transmitted"
+            _read_all_messages(bus)
             assert bus.queue.empty(), "messages should not have been transmitted"
 
             # Restart the task and check that messages are being sent again

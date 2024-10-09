@@ -182,6 +182,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
         """
         super().__init__(messages, period)
         self.duration = duration
+        self.end_time: Optional[float] = None
 
 
 class RestartableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
@@ -299,9 +300,6 @@ class ThreadBasedCyclicSendTask(
         self.send_lock = lock
         self.stopped = True
         self.thread: Optional[threading.Thread] = None
-        self.end_time: Optional[float] = (
-            time.perf_counter() + duration if duration else None
-        )
         self.on_error = on_error
         self.modifier_callback = modifier_callback
 
@@ -341,6 +339,10 @@ class ThreadBasedCyclicSendTask(
             self.thread = threading.Thread(target=self._run, name=name)
             self.thread.daemon = True
 
+            self.end_time: Optional[float] = (
+                time.perf_counter() + self.duration if self.duration else None
+            )
+
             if self.event and PYWIN32:
                 PYWIN32.set_timer(self.event, self.period_ms)
 
@@ -356,6 +358,7 @@ class ThreadBasedCyclicSendTask(
 
         while not self.stopped:
             if self.end_time is not None and time.perf_counter() >= self.end_time:
+                self.stop()
                 break
 
             try:
