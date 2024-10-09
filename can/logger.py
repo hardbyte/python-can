@@ -17,7 +17,7 @@ from typing import (
 import can
 from can import Bus, BusState, Logger, SizedRotatingLogger
 from can.typechecking import TAdditionalCliArgs
-from can.util import cast_from_string
+from can.util import _dict2timing, cast_from_string
 
 if TYPE_CHECKING:
     from can.io import BaseRotatingLogger
@@ -56,6 +56,19 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
         "--data_bitrate",
         type=int,
         help="Bitrate to use for the data phase in case of CAN-FD.",
+    )
+
+    parser.add_argument(
+        "--timing",
+        action=_BitTimingAction,
+        nargs=argparse.ONE_OR_MORE,
+        help="Configure bit rate and bit timing. For example, use "
+        "`--timing f_clock=8_000_000 tseg1=5 tseg2=2 sjw=2 brp=2 nof_samples=1` for classical CAN "
+        "or `--timing f_clock=80_000_000 nom_tseg1=119 nom_tseg2=40 nom_sjw=40 nom_brp=1 "
+        "data_tseg1=29 data_tseg2=10 data_sjw=10 data_brp=1` for CAN FD. "
+        "Check the python-can documentation to verify whether your "
+        "CAN interface supports the `timing` argument.",
+        metavar="TIMING_ARG",
     )
 
     parser.add_argument(
@@ -109,6 +122,8 @@ def _create_bus(parsed_args: argparse.Namespace, **kwargs: Any) -> can.BusABC:
         config["data_bitrate"] = parsed_args.data_bitrate
     if getattr(parsed_args, "can_filters", None):
         config["can_filters"] = parsed_args.can_filters
+    if parsed_args.timing:
+        config["timing"] = parsed_args.timing
 
     return Bus(parsed_args.channel, **config)
 
@@ -141,6 +156,36 @@ class _CanFilterAction(argparse.Action):
             can_filters.append({"can_id": can_id, "can_mask": can_mask})
 
         setattr(namespace, self.dest, can_filters)
+
+
+class _BitTimingAction(argparse.Action):
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Union[str, Sequence[Any], None],
+        option_string: Optional[str] = None,
+    ) -> None:
+        if not isinstance(values, list):
+            raise argparse.ArgumentError(None, "Invalid --timing argument")
+
+        timing_dict: Dict[str, int] = {}
+        for arg in values:
+            try:
+                key, value_string = arg.split("=")
+                value = int(value_string)
+                timing_dict[key] = value
+            except ValueError:
+                raise argparse.ArgumentError(
+                    None, f"Invalid timing argument: {arg}"
+                ) from None
+
+        if not (timing := _dict2timing(timing_dict)):
+            err_msg = "Invalid --timing argument. Incomplete parameters."
+            raise argparse.ArgumentError(None, err_msg)
+
+        setattr(namespace, self.dest, timing)
+        print(timing)
 
 
 def _parse_additional_config(unknown_args: Sequence[str]) -> TAdditionalCliArgs:
