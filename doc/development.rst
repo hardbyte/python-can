@@ -48,8 +48,7 @@ The unit tests can be run with::
 
 The documentation can be built with::
 
-    pip install -r doc/doc-requirements.txt
-    python -m sphinx -an doc build
+    pipx run tox -e docs
 
 The linters can be run with::
 
