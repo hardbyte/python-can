@@ -2,17 +2,19 @@
 This module contains the implementation of :class:`can.Message`.
 
 .. note::
-    Could use `@dataclass <https://docs.python.org/3.7/library/dataclasses.html>`__
-    starting with Python 3.7.
+    Could use `@dataclass(slots=True, weakref_slot=True) <https://docs.python.org/3.11/library/dataclasses.html>`__
+    starting with Python 3.11.
 """
 
 from copy import deepcopy
+from dataclasses import dataclass
 from math import isinf, isnan
 from typing import Optional
 
 from . import typechecking
 
 
+@dataclass
 class Message:  # pylint: disable=too-many-instance-attributes; OK for a dataclass
     """
     The :class:`~can.Message` object is used to represent CAN messages for
@@ -46,6 +48,19 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         "error_state_indicator",
         "__weakref__",  # support weak references to messages
     )
+
+    timestamp: float
+    arbitration_id: int
+    is_extended_id: bool
+    is_remote_frame: bool
+    is_error_frame: bool
+    channel: Optional[typechecking.Channel]
+    dlc: Optional[int]
+    data: Optional[typechecking.CanData]
+    is_fd: bool
+    is_rx: bool
+    bitrate_switch: bool
+    error_state_indicator: bool
 
     def __init__(  # pylint: disable=too-many-locals, too-many-arguments
         self,
