@@ -182,6 +182,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
         """
         super().__init__(messages, period)
         self.duration = duration
+        self.end_time: Optional[float] = None
 
 
 class RestartableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
@@ -276,6 +277,7 @@ class ThreadBasedCyclicSendTask(
         period: float,
         duration: Optional[float] = None,
         on_error: Optional[Callable[[Exception], bool]] = None,
+        autostart: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
     ) -> None:
         """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
@@ -298,9 +300,6 @@ class ThreadBasedCyclicSendTask(
         self.send_lock = lock
         self.stopped = True
         self.thread: Optional[threading.Thread] = None
-        self.end_time: Optional[float] = (
-            time.perf_counter() + duration if duration else None
-        )
         self.on_error = on_error
         self.modifier_callback = modifier_callback
 
@@ -308,6 +307,9 @@ class ThreadBasedCyclicSendTask(
 
         self.event: Optional[_Pywin32Event] = None
         if PYWIN32:
+            if self.period_ms == 0:
+                # A period of 0 would mean that the timer is signaled only once
+                raise ValueError("The period cannot be smaller than 0.001 (1 ms)")
             self.event = PYWIN32.create_timer()
         elif (
             sys.platform == "win32"
@@ -321,7 +323,8 @@ class ThreadBasedCyclicSendTask(
                 stacklevel=1,
             )
 
-        self.start()
+        if autostart:
+            self.start()
 
     def stop(self) -> None:
         self.stopped = True
@@ -335,6 +338,10 @@ class ThreadBasedCyclicSendTask(
             name = f"Cyclic send task for 0x{self.messages[0].arbitration_id:X}"
             self.thread = threading.Thread(target=self._run, name=name)
             self.thread.daemon = True
+
+            self.end_time: Optional[float] = (
+                time.perf_counter() + self.duration if self.duration else None
+            )
 
             if self.event and PYWIN32:
                 PYWIN32.set_timer(self.event, self.period_ms)
@@ -351,6 +358,7 @@ class ThreadBasedCyclicSendTask(
 
         while not self.stopped:
             if self.end_time is not None and time.perf_counter() >= self.end_time:
+                self.stop()
                 break
 
             try:

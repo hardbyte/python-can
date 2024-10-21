@@ -11,7 +11,7 @@ dependencies = [
     "wrapt~=1.10",
     "packaging >= 23.1",
     "typing_extensions>=3.10.0.0",
-    "msgpack~=1.0.0; platform_system != 'Windows'",
+    "msgpack~=1.1.0; platform_system != 'Windows'",
 ]
 requires-python = ">=3.8"
 license = { text = "LGPL v3" }
@@ -61,9 +61,9 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 [project.optional-dependencies]
 lint = [
     "pylint==3.2.*",
-    "ruff==0.5.7",
-    "black==24.8.*",
-    "mypy==1.11.*",
+    "ruff==0.7.0",
+    "black==24.10.*",
+    "mypy==1.12.*",
 ]
 pywin32 = ["pywin32>=305"]
 seeedstudio = ["pyserial>=3.0"]
@@ -78,6 +78,7 @@ pcan = ["uptime~=3.0.1"]
 remote = ["python-can-remote"]
 sontheim = ["python-can-sontheim>=0.1.2"]
 canine = ["python-can-canine>=0.2.2"]
+zlgcan = ["zlgcan-driver-py"]
 viewer = [
     "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
 ]

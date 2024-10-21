@@ -146,6 +146,7 @@ class TestLoggerScriptModule(unittest.TestCase):
             "--receive-own-messages=True",
             "--false-boolean=False",
             "--offset=1.5",
+            "--tseg1-abr=127",
         ]
         parsed_args = can.logger._parse_additional_config(unknown_args)
 
@@ -169,6 +170,9 @@ class TestLoggerScriptModule(unittest.TestCase):
 
         assert "offset" in parsed_args
         assert parsed_args["offset"] == 1.5
+
+        assert "tseg1_abr" in parsed_args
+        assert parsed_args["tseg1_abr"] == 127
 
         with pytest.raises(ValueError):
             can.logger._parse_additional_config(["--wrong-format"])

@@ -73,8 +73,11 @@ The table below lists interface drivers that can be added by installing addition
 +----------------------------+-------------------------------------------------------+
 | `python-can-sontheim`_     | CAN Driver for Sontheim CAN interfaces (e.g. CANfox)  |
 +----------------------------+-------------------------------------------------------+
+| `zlgcan-driver-py`_        | Python wrapper for zlgcan-driver-rs                   |
++----------------------------+-------------------------------------------------------+
 
 .. _python-can-canine: https://github.com/tinymovr/python-can-canine
 .. _python-can-cvector: https://github.com/zariiii9003/python-can-cvector
 .. _python-can-remote: https://github.com/christiansandberg/python-can-remote
 .. _python-can-sontheim: https://github.com/MattWoodhead/python-can-sontheim
+.. _zlgcan-driver-py: https://github.com/zhuyu4839/zlgcan-driver
