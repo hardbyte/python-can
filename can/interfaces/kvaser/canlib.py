@@ -586,7 +586,7 @@ class KvaserBus(BusABC):
             canBusOn(self._read_handle)
         canBusOn(self._write_handle)
 
-        # timestamp must be set after bus is online
+        # timestamp must be set after bus is online, otherwise kvReadTimer may return erroneous values
         self._timestamp_offset = self._update_timestamp_offset()
 
     def _update_timestamp_offset(self) -> float:
