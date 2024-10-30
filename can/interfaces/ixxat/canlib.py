@@ -181,6 +181,8 @@ try:
         (HANDLE, ctypes.c_uint32, ctypes.c_long, PHANDLE),
         __check_status,
     )
+    # HRESULT VCIAPI vciDeviceGetInfo( IN  HANDLE hDevice, OUT PVCIDEVICEINFO pInfo );
+    _canlib.map_symbol("vciDeviceGetInfo", hresult_type, (HANDLE, structures.PVCIDEVICEINFO), __check_status)
     # EXTERN_C HRESULT VCIAPI
     #   canChannelInitialize( IN HANDLE hCanChn,
     #                         IN UINT16 wRxFifoSize,
@@ -257,6 +259,13 @@ try:
         "canControlOpen",
         hresult_type,
         (HANDLE, ctypes.c_uint32, PHANDLE),
+        __check_status,
+    )
+    # EXTERN_C HRESULT VCIAPI canChannelGetControl( IN  HANDLE  hCanChn, OUT PHANDLE phCanCtl );
+    _canlib.map_symbol(
+        "canChannelGetControl",
+        hresult_type,
+        (HANDLE, PHANDLE),
         __check_status,
     )
     # EXTERN_C HRESULT VCIAPI
@@ -612,121 +621,153 @@ class IXXATBus(BusABC):
         _canlib.canControlOpen(
             self._device_handle, channel, ctypes.byref(self._control_handle)
         )
+        log.info("canControl status: %s", self._status)
 
-        log.debug("Fetching capabilities for interface channel %d", channel)
         _canlib.canControlGetCaps(
             self._control_handle, ctypes.byref(self._channel_capabilities)
         )
+        log.info("canControlGetCaps result: %s", self._channel_capabilities)
 
-        # check capabilities
-        bOpMode = constants.CAN_OPMODE_UNDEFINED
-        if (
-            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT
-        ) != 0:
-            # controller supports CAN_OPMODE_STANDARD and CAN_OPMODE_EXTENDED at the same time
-            bOpMode |= constants.CAN_OPMODE_STANDARD  # enable both 11 bits reception
-            if extended:  # parameter from configuration
-                bOpMode |= constants.CAN_OPMODE_EXTENDED  # enable 29 bits reception
-        elif (
-            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT
-        ) != 0:
-            log.warning(
-                "Channel %d capabilities allow either basic or extended IDs, but not both. using %s according to parameter [extended=%s]",
+        if self._status.dwStatus == constants.CAN_STATUS_ININIT:
+
+            # check capabilities
+            bOpMode = constants.CAN_OPMODE_UNDEFINED
+            if (
+                self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT
+            ) != 0:
+                # controller supports CAN_OPMODE_STANDARD and CAN_OPMODE_EXTENDED at the same time
+                bOpMode |= constants.CAN_OPMODE_STANDARD  # enable both 11 bits reception
+                if extended:  # parameter from configuration
+                    bOpMode |= constants.CAN_OPMODE_EXTENDED  # enable 29 bits reception
+            elif (
+                self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_STDANDEXT
+            ) != 0:
+                log.warning(
+                    "Channel %d capabilities allow either basic or extended IDs, but not both. using %s according to parameter [extended=%s]",
+                    channel,
+                    "extended" if extended else "basic",
+                    "True" if extended else "False",
+                )
+                # controller supports either CAN_OPMODE_STANDARD or CAN_OPMODE_EXTENDED, but not both simultaneously
+                bOpMode |= (
+                    constants.CAN_OPMODE_EXTENDED
+                    if extended
+                    else constants.CAN_OPMODE_STANDARD
+                )
+
+            if (  # controller supports receiving error frames:
+                self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_ERRFRAME
+            ) != 0:
+                bOpMode |= constants.CAN_OPMODE_ERRFRAME
+
+            if (  # controller supports receiving error frames:
+                self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_BUSLOAD
+            ) != 0:
+                self._bus_load_calculation = True
+            else:
+                self._bus_load_calculation = False
+
+            if (  # controller supports hardware scheduling of cyclic messages
+                self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_SCHEDULER
+            ) != 0:
+                self._interface_scheduler_capable = True
+            else:
+                self._interface_scheduler_capable = False
+
+            bExMode = constants.CAN_EXMODE_DISABLED
+            self._can_protocol = CanProtocol.CAN_20  # default to standard CAN protocol
+            if fd:
+                if (
+                    self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_EXTDATA
+                ) != 0:
+                    bExMode |= constants.CAN_EXMODE_EXTDATALEN
+                else:
+                    raise CanInitializationError(
+                        "The interface %s does not support extended data frames (FD)"
+                        % self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
+                    )
+                if (
+                    self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_FASTDATA
+                ) != 0:
+                    bExMode |= constants.CAN_EXMODE_FASTDATA
+                else:
+                    raise CanInitializationError(
+                        "The interface %s does not support fast data rates (FD)"
+                        % self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
+                    )
+                # set bus to CAN FD protocol once FD capability is verified
+                self._can_protocol = CanProtocol.CAN_FD
+
+            if timing and not isinstance(timing, (BitTiming, BitTimingFd)):
+                raise CanInitializationError(
+                    "The timing parameter to the Ixxat Bus must be None, or an instance of can.BitTiming or can.BitTimingFd"
+                )
+
+            pBtpSDR, pBtpFDR = self._bit_timing_constructor(
+                timing,
+                bitrate,
+                tseg1_abr,  # deprecated
+                tseg2_abr,  # deprecated
+                sjw_abr,  # deprecated
+                data_bitrate,
+                tseg1_dbr,  # deprecated
+                tseg2_dbr,  # deprecated
+                sjw_dbr,  # deprecated
+                ssp_dbr,  # deprecated
+            )
+
+            log.info(
+                "Initialising Channel %d with the following parameters:\n"
+                "bOpMode=%d, bExMode=%d\n"
+                "pBtpSDR=%s\n"
+                "pBtpFDR=%s",
                 channel,
-                "extended" if extended else "basic",
-                "True" if extended else "False",
-            )
-            # controller supports either CAN_OPMODE_STANDARD or CAN_OPMODE_EXTENDED, but not both simultaneously
-            bOpMode |= (
-                constants.CAN_OPMODE_EXTENDED
-                if extended
-                else constants.CAN_OPMODE_STANDARD
+                bOpMode,
+                bExMode,
+                pBtpSDR,
+                pBtpFDR,
             )
 
-        if (  # controller supports receiving error frames:
-            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_ERRFRAME
-        ) != 0:
-            bOpMode |= constants.CAN_OPMODE_ERRFRAME
+            _canlib.canControlInitialize(
+                self._control_handle,
+                bOpMode,
+                bExMode,
+                constants.CAN_FILTER_PASS,
+                constants.CAN_FILTER_PASS,
+                0,
+                0,
+                # ctypes.byref(pBtpSDR),
+                # ctypes.byref(pBtpFDR),
+                pBtpSDR,
+                pBtpFDR,
+            )
 
-        if (  # controller supports receiving error frames:
-            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_BUSLOAD
-        ) != 0:
-            self._bus_load_calculation = True
+            # Setup filters before starting the channel
+            if can_filters:
+                log.info("The IXXAT VCI backend is filtering messages")
+                # Disable every message coming in
+                for extended_filter in (False, True):
+                    _canlib.canControlSetAccFilter(
+                        self._control_handle,
+                        extended_filter,
+                        constants.CAN_ACC_CODE_NONE,
+                        constants.CAN_ACC_MASK_NONE,
+                    )
+                for can_filter in can_filters:
+                    # Filters define what messages are accepted
+                    code = int(can_filter["can_id"])
+                    mask = int(can_filter["can_mask"])
+                    extended = can_filter.get("extended", False)
+                    _canlib.canControlAddFilterIds(
+                        self._control_handle, 1 if extended else 0, code << 1, mask << 1
+                    )
+                    log.info("Accepting ID: 0x%X MASK: 0x%X", code, mask)
+
+            # Start the CAN controller. Messages will be forwarded to the channel
+            _canlib.canControlStart(self._control_handle, constants.TRUE)
         else:
-            self._bus_load_calculation = False
-
-        if (  # controller supports hardware scheduling of cyclic messages
-            self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_SCHEDULER
-        ) != 0:
-            self._interface_scheduler_capable = True
-        else:
-            self._interface_scheduler_capable = False
-
-        bExMode = constants.CAN_EXMODE_DISABLED
-        self._can_protocol = CanProtocol.CAN_20  # default to standard CAN protocol
-        if fd:
-            if (
-                self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_EXTDATA
-            ) != 0:
-                bExMode |= constants.CAN_EXMODE_EXTDATALEN
-            else:
-                raise CanInitializationError(
-                    "The interface %s does not support extended data frames (FD)"
-                    % self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
-                )
-            if (
-                self._channel_capabilities.dwFeatures & constants.CAN_FEATURE_FASTDATA
-            ) != 0:
-                bExMode |= constants.CAN_EXMODE_FASTDATA
-            else:
-                raise CanInitializationError(
-                    "The interface %s does not support fast data rates (FD)"
-                    % self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
-                )
-            # set bus to CAN FD protocol once FD capability is verified
-            self._can_protocol = CanProtocol.CAN_FD
-
-        if timing and not isinstance(timing, (BitTiming, BitTimingFd)):
-            raise CanInitializationError(
-                "The timing parameter to the Ixxat Bus must be None, or an instance of can.BitTiming or can.BitTimingFd"
-            )
-
-        pBtpSDR, pBtpFDR = self._bit_timing_constructor(
-            timing,
-            bitrate,
-            tseg1_abr,  # deprecated
-            tseg2_abr,  # deprecated
-            sjw_abr,  # deprecated
-            data_bitrate,
-            tseg1_dbr,  # deprecated
-            tseg2_dbr,  # deprecated
-            sjw_dbr,  # deprecated
-            ssp_dbr,  # deprecated
-        )
-
-        log.info(
-            "Initialising Channel %d with the following parameters:\n"
-            "bOpMode=%d, bExMode=%d\n"
-            "pBtpSDR=%s\n"
-            "pBtpFDR=%s",
-            channel,
-            bOpMode,
-            bExMode,
-            pBtpSDR,
-            pBtpFDR,
-        )
-
-        _canlib.canControlInitialize(
-            self._control_handle,
-            bOpMode,
-            bExMode,
-            constants.CAN_FILTER_PASS,
-            constants.CAN_FILTER_PASS,
-            0,
-            0,
-            ctypes.byref(pBtpSDR),
-            ctypes.byref(pBtpFDR),
-        )
+            _canlib.canChannelGetControl(self._channel_handle, ctypes.byref(self._control_handle))
+            warnings.warn("The BUS is already active from another thread. Attepting to access channel from already active BUS.")
 
         # With receive messages, this field contains the relative reception time of
         # the message in ticks. The resolution of a tick can be calculated from the fields
@@ -736,30 +777,6 @@ class IXXATBus(BusABC):
             self._channel_capabilities.dwTscClkFreq
             / self._channel_capabilities.dwTscDivisor
         )
-
-        # Setup filters before starting the channel
-        if can_filters:
-            log.info("The IXXAT VCI backend is filtering messages")
-            # Disable every message coming in
-            for extended_filter in (False, True):
-                _canlib.canControlSetAccFilter(
-                    self._control_handle,
-                    extended_filter,
-                    constants.CAN_ACC_CODE_NONE,
-                    constants.CAN_ACC_MASK_NONE,
-                )
-            for can_filter in can_filters:
-                # Filters define what messages are accepted
-                code = int(can_filter["can_id"])
-                mask = int(can_filter["can_mask"])
-                extended = can_filter.get("extended", False)
-                _canlib.canControlAddFilterIds(
-                    self._control_handle, 1 if extended else 0, code << 1, mask << 1
-                )
-                log.info("Accepting ID: 0x%X MASK: 0x%X", code, mask)
-
-        # Start the CAN controller. Messages will be forwarded to the channel
-        _canlib.canControlStart(self._control_handle, constants.TRUE)
 
         # For cyclic transmit list. Set when .send_periodic() is first called
         self._scheduler = None
@@ -1026,6 +1043,7 @@ class IXXATBus(BusABC):
             warnings.warn("The current adapter does not support bus load measurement")
             return 0
 
+    @property
     def _status(self) -> structures.CANLINESTATUS2:
         status = structures.CANLINESTATUS2()
         _canlib.canControlGetStatus(self._control_handle, ctypes.byref(status))

@@ -121,6 +121,7 @@ CAN_OPMODE_ERRFRAME = 0x04  # reception of error frames
 CAN_OPMODE_LISTONLY = 0x08  # listen only mode (TX passive)
 CAN_OPMODE_LOWSPEED = 0x10  # use low speed bus interface
 CAN_OPMODE_AUTOBAUD = 0x20  # automatic bit rate detection
+CAN_OPMODE_TXSELFACK = 0x40  # enable TX self acknowledge
 
 # Extended operating modes
 CAN_EXMODE_DISABLED = 0x00  # no extended operation
@@ -145,12 +146,15 @@ CAN_INFO_RESET = 3
 
 # Information supplied in the abData[0] field of info frames
 # (CANMSGINFO.Bytes.bType = CAN_MSGTYPE_ERROR).
+CAN_ERROR_NONE = 0  # no additional error information
 CAN_ERROR_STUFF = 1  # stuff error
 CAN_ERROR_FORM = 2  # form error
 CAN_ERROR_ACK = 3  # acknowledgment error
 CAN_ERROR_BIT = 4  # bit error
+CAN_ERROR_FDB = 5  # fast data bit error
 CAN_ERROR_CRC = 6  # CRC error
-CAN_ERROR_OTHER = 7  # other (unspecified) error
+CAN_ERROR_DLC = 7  # data length error
+CAN_ERROR_OTHER = 8  # other (unspecified) error
 
 # acceptance code and mask to reject all CAN IDs
 CAN_ACC_MASK_NONE = 0xFFFFFFFF
@@ -187,7 +191,8 @@ CAN_MSGFLAGS2_HPM = 0x02  # [bit 1] high priority message
 CAN_MSGFLAGS2_EDL = 0x04  # [bit 2] extended data length
 CAN_MSGFLAGS2_FDR = 0x08  # [bit 3] fast data bit rate
 CAN_MSGFLAGS2_ESI = 0x10  # [bit 4] error state indicator
-CAN_MSGFLAGS2_RES = 0xE0  # [bit 5..7] reserved bits
+CAN_MSGFLAGS2_DTM = 0x20  # [bit 5] transmit delay mode (0=pre delay, 1=post delay)
+CAN_MSGFLAGS2_RES = 0xC0  # [bit 6..7] reserved bits
 
 
 CAN_ACCEPT_REJECT = 0x00  # message not accepted
@@ -289,11 +294,14 @@ CAN_INFO_MESSAGES = {
 }
 
 CAN_ERROR_MESSAGES = {
+    CAN_ERROR_NONE: "CAN error - no additional information",
     CAN_ERROR_STUFF: "CAN bit stuff error",
     CAN_ERROR_FORM: "CAN form error",
     CAN_ERROR_ACK: "CAN acknowledgment error",
     CAN_ERROR_BIT: "CAN bit error",
+    CAN_ERROR_FDB: "CAN fast data bit error",
     CAN_ERROR_CRC: "CAN CRC error",
+    CAN_ERROR_DLC: "CAN DLC error",
     CAN_ERROR_OTHER: "Other (unknown) CAN error",
 }
 

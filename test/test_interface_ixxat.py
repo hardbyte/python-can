@@ -370,16 +370,19 @@ class TestHardwareCaseStd(unittest.TestCase):
                     bus3_msg.arbitration_id = bus3_msg.arbitration_id | 0x3000000
                     # send a message on bus 1, and try to receive it on bus 2 and bus 3
                     bus1.send(bus1_msg)
-                    response2from1 = bus2.recv(0.1)
-                    response3from1 = bus3.recv(0.1)
+                    bus1.recv(0.25)  # discard own message
+                    response2from1 = bus2.recv(0.25)
+                    response3from1 = bus3.recv(0.25)
                     # send the same message on bus 2, and try to receive it on bus 1 and bus 3
                     bus2.send(bus2_msg)
-                    response1from2 = bus1.recv(0.1)
-                    response3from2 = bus3.recv(0.1)
+                    bus2.recv(0.25)  # discard own message
+                    response1from2 = bus1.recv(0.25)
+                    response3from2 = bus3.recv(0.25)
                     # send the same message on bus 3, and try to receive it on bus 1 and bus 2
                     bus3.send(bus3_msg)
-                    response1from3 = bus1.recv(0.1)
-                    response2from3 = bus2.recv(0.1)
+                    bus3.recv(0.25)  # discard own message
+                    response1from3 = bus1.recv(0.25)
+                    response2from3 = bus2.recv(0.25)
 
         if response2from1 and response3from1 and response1from2 and response3from2 and response1from3 and response2from3:
             bus_checks = {
