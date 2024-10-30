@@ -47,6 +47,13 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "-H",
+        "--hardwarets",
+        help="Read hardware timestamps instead of system timestamps.",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "-b", "--bitrate", type=int, help="Bitrate to use for the CAN bus."
     )
 
@@ -109,6 +116,8 @@ def _create_bus(parsed_args: argparse.Namespace, **kwargs: Any) -> can.BusABC:
         config["data_bitrate"] = parsed_args.data_bitrate
     if getattr(parsed_args, "can_filters", None):
         config["can_filters"] = parsed_args.can_filters
+    if parsed_args.hardwarets:
+        config["can_hardware_timestamps"] = True
 
     return Bus(parsed_args.channel, **config)
 
