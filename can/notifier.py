@@ -7,10 +7,20 @@ import functools
 import logging
 import threading
 import time
-import typing
 from contextlib import AbstractContextManager
 from types import TracebackType
-from typing import Any, Awaitable, Callable, Iterable, List, NamedTuple, Optional, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Final,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Type,
+    Union,
+)
 
 from can.bus import BusABC
 from can.listener import Listener
@@ -34,7 +44,7 @@ class _NotifierRegistry:
 
     def __init__(self) -> None:
         """Initialize the registry with an empty list of bus-notifier pairs and a threading lock."""
-        self.pairs: typing.List[_BusNotifierPair] = []
+        self.pairs: List[_BusNotifierPair] = []
         self.lock = threading.Lock()
 
     def register(self, bus: BusABC, notifier: "Notifier") -> None:
@@ -68,7 +78,7 @@ class _NotifierRegistry:
             The Notifier instance associated with the bus.
         """
         with self.lock:
-            registered_pairs_to_remove: typing.List[_BusNotifierPair] = []
+            registered_pairs_to_remove: List[_BusNotifierPair] = []
             for pair in self.pairs:
                 if pair.bus is bus and pair.notifier is notifier:
                     registered_pairs_to_remove.append(pair)
@@ -78,7 +88,7 @@ class _NotifierRegistry:
 
 class Notifier(AbstractContextManager):
 
-    _registry: typing.Final = _NotifierRegistry()
+    _registry: Final = _NotifierRegistry()
 
     def __init__(
         self,
@@ -266,7 +276,7 @@ class Notifier(AbstractContextManager):
 
     def __exit__(
         self,
-        exc_type: Optional[typing.Type[BaseException]],
+        exc_type: Optional[Type[BaseException]],
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
