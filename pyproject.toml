@@ -184,6 +184,7 @@ ignore = [
 ]
 "can/logger.py" = ["T20"]  # flake8-print
 "can/player.py" = ["T20"]  # flake8-print
+"examples/*" = ["T20"]  # flake8-print
 
 [tool.ruff.lint.isort]
 known-first-party = ["can"]

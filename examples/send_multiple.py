@@ -4,8 +4,8 @@
 This demo creates multiple processes of producers to spam a socketcan bus.
 """
 
-from time import sleep
 from concurrent.futures import ProcessPoolExecutor
+from time import sleep
 
 import can
 
