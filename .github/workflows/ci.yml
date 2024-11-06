@@ -35,6 +35,10 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tox
     - name: Setup SocketCAN
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
@@ -42,7 +46,7 @@ jobs:
         sudo ./test/open_vcan.sh
     - name: Test with pytest via tox
       run: |
-        pipx run tox -e gh
+        tox -e gh
       env:
         # SocketCAN tests currently fail with PyPy because it does not support raw CAN sockets
         # See: https://foss.heptapod.net/pypy/pypy/-/issues/3809
@@ -128,9 +132,13 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tox
     - name: Build documentation
       run: |
-        pipx run tox -e docs
+        tox -e docs
 
   build:
     name: Packaging
