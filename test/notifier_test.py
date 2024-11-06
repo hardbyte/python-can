@@ -12,16 +12,19 @@ class NotifierTest(unittest.TestCase):
         with can.Bus("test", interface="virtual", receive_own_messages=True) as bus:
             reader = can.BufferedReader()
             notifier = can.Notifier(bus, [reader], 0.1)
+            self.assertFalse(notifier.stopped)
             msg = can.Message()
             bus.send(msg)
             self.assertIsNotNone(reader.get_message(1))
             notifier.stop()
+            self.assertTrue(notifier.stopped)
 
     def test_multiple_bus(self):
         with can.Bus(0, interface="virtual", receive_own_messages=True) as bus1:
             with can.Bus(1, interface="virtual", receive_own_messages=True) as bus2:
                 reader = can.BufferedReader()
                 notifier = can.Notifier([bus1, bus2], [reader], 0.1)
+                self.assertFalse(notifier.stopped)
                 msg = can.Message()
                 bus1.send(msg)
                 time.sleep(0.1)
@@ -33,6 +36,30 @@ class NotifierTest(unittest.TestCase):
                 self.assertIsNotNone(recv_msg)
                 self.assertEqual(recv_msg.channel, 1)
                 notifier.stop()
+                self.assertTrue(notifier.stopped)
+
+    def test_context_manager(self):
+        with can.Bus("test", interface="virtual", receive_own_messages=True) as bus:
+            reader = can.BufferedReader()
+            with can.Notifier(bus, [reader], 0.1) as notifier:
+                self.assertFalse(notifier.stopped)
+                msg = can.Message()
+                bus.send(msg)
+                self.assertIsNotNone(reader.get_message(1))
+                notifier.stop()
+                self.assertTrue(notifier.stopped)
+
+    def test_registry(self):
+        with can.Bus("test", interface="virtual", receive_own_messages=True) as bus:
+            reader = can.BufferedReader()
+            with can.Notifier(bus, [reader], 0.1):
+                # creating a second notifier for the same bus must fail
+                self.assertRaises(ValueError, can.Notifier, bus, [reader], 0.1)
+
+            # now the first notifier is stopped, a new notifier can be created without error:
+            with can.Notifier(bus, [reader], 0.1):
+                # the next notifier call should fail again since there is an active notifier already
+                self.assertRaises(ValueError, can.Notifier, bus, [reader], 0.1)
 
 
 class AsyncNotifierTest(unittest.TestCase):
