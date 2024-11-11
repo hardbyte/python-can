@@ -6,6 +6,7 @@ the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
 """
 
 import abc
+import heapq
 import logging
 from datetime import datetime
 from hashlib import md5
@@ -292,8 +293,6 @@ class FrameIterator(metaclass=abc.ABCMeta):
             if str(channel.name).startswith(f"{self._name}."):
                 self._channel_names.append(channel.name)
 
-        return
-
     def _get_data(self, current_offset: int) -> Signal:
         # NOTE: asammdf suggests using select instead of get. Select seem to miss converting some
         #       channels which get does convert as expected.
@@ -311,8 +310,6 @@ class FrameIterator(metaclass=abc.ABCMeta):
     def __iter__(self) -> Generator[Message, None, None]:
         pass
 
-    pass
-
 
 class MF4Reader(BinaryIOMessageReader):
     """
@@ -327,8 +324,6 @@ class MF4Reader(BinaryIOMessageReader):
 
         def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_DataFrame")
-
-            return
 
         def __iter__(self) -> Generator[Message, None, None]:
             for current_offset in range(
@@ -365,16 +360,10 @@ class MF4Reader(BinaryIOMessageReader):
 
                     yield Message(**kv)
 
-            return None
-
-        pass
-
     class _CANErrorFrameIterator(FrameIterator):
 
         def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_ErrorFrame")
-
-            return
 
         def __iter__(self) -> Generator[Message, None, None]:
             for current_offset in range(
@@ -422,16 +411,10 @@ class MF4Reader(BinaryIOMessageReader):
 
                     yield Message(**kv)
 
-            return None
-
-        pass
-
     class _CANRemoteFrameIterator(FrameIterator):
 
         def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_RemoteFrame")
-
-            return
 
         def __iter__(self) -> Generator[Message, None, None]:
             for current_offset in range(
@@ -460,10 +443,6 @@ class MF4Reader(BinaryIOMessageReader):
 
                     yield Message(**kv)
 
-            return None
-
-        pass
-
     def __init__(
         self,
         file: Union[StringPathLike, BinaryIO],
@@ -491,8 +470,6 @@ class MF4Reader(BinaryIOMessageReader):
         self._start_timestamp = self._mdf.header.start_time.timestamp()
 
     def __iter__(self) -> Iterator[Message]:
-        import heapq
-
         # To handle messages split over multiple channel groups, create a single iterator per
         # channel group and merge these iterators into a single iterator using heapq.
         iterators: List[FrameIterator] = []
@@ -512,7 +489,7 @@ class MF4Reader(BinaryIOMessageReader):
             if acquisition_source is None:
                 # No source information, skip
                 continue
-            elif not acquisition_source.source_type & Source.SOURCE_BUS:
+            if not acquisition_source.source_type & Source.SOURCE_BUS:
                 # Not a bus type (likely already covered by the channel group flag), skip
                 continue
 
