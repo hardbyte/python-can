@@ -295,7 +295,7 @@ class MF4Reader(BinaryIOMessageReader):
             self._channel_names = []
             
             for channel in channel_group.channels:
-                if channel.name.startwith(f"{self._name}."):
+                if str(channel.name).startswith(f"{self._name}."):
                     self._channel_names.append(channel.name)
             
             return
