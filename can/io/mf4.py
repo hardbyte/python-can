@@ -272,34 +272,36 @@ class MF4Reader(BinaryIOMessageReader):
 
     The MF4Reader only supports MF4 files with CAN bus logging.
     """
-    
+
     # NOTE: Readout based on the bus logging code from asammdf GUI
-    
+
     class FrameIterator(object):
         """
         Iterator helper class for common handling among CAN DataFrames, ErrorFrames and RemoteFrames.
         """
-        
+
         # Number of records to request for each asammdf call
         _chunk_size = 1000
-        
-        def __init__(self, mdf: MDF, group_index: int, start_timestamp: float, name: str):
+
+        def __init__(
+            self, mdf: MDF, group_index: int, start_timestamp: float, name: str
+        ):
             self._mdf = mdf
             self._group_index = group_index
             self._start_timestamp = start_timestamp
             self._name = name
-            
+
             # Extract names
             channel_group: ChannelGroup = self._mdf.groups[self._group_index]
-            
+
             self._channel_names = []
-            
+
             for channel in channel_group.channels:
                 if str(channel.name).startswith(f"{self._name}."):
                     self._channel_names.append(channel.name)
-            
+
             return
-        
+
         def _get_data(self, current_offset: int) -> asammdf.Signal:
             # NOTE: asammdf suggests using select instead of get. Select seem to miss converting some channels which
             #       get does convert as expected.
@@ -308,34 +310,40 @@ class MF4Reader(BinaryIOMessageReader):
                 self._group_index,
                 record_offset=current_offset,
                 record_count=self._chunk_size,
-                raw=False
+                raw=False,
             )
-            
+
             return data_raw
-        
+
         pass
-    
+
     class CANDataFrameIterator(FrameIterator):
-        
+
         def __init__(self, mdf: MDF, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_DataFrame")
-            
+
             return
-        
+
         def __iter__(self) -> Generator[Message, None, None]:
-            for current_offset in range(0, self._mdf.groups[self._group_index].channel_group.cycles_nr, self._chunk_size):
+            for current_offset in range(
+                0,
+                self._mdf.groups[self._group_index].channel_group.cycles_nr,
+                self._chunk_size,
+            ):
                 data = self._get_data(current_offset)
                 names = data.samples[0].dtype.names
-                
+
                 for i in range(len(data)):
                     data_length = int(data["CAN_DataFrame.DataLength"][i])
-                    
+
                     kv = {
                         "timestamp": float(data.timestamps[i]) + self._start_timestamp,
                         "arbitration_id": int(data["CAN_DataFrame.ID"][i]) & 0x1FFFFFFF,
-                        "data": data["CAN_DataFrame.DataBytes"][i][:data_length].tobytes(),
+                        "data": data["CAN_DataFrame.DataBytes"][i][
+                            :data_length
+                        ].tobytes(),
                     }
-                
+
                     if "CAN_DataFrame.BusChannel" in names:
                         kv["channel"] = int(data["CAN_DataFrame.BusChannel"][i])
                     if "CAN_DataFrame.Dir" in names:
@@ -348,37 +356,43 @@ class MF4Reader(BinaryIOMessageReader):
                         kv["bitrate_switch"] = bool(data["CAN_DataFrame.BRS"][i])
                     if "CAN_DataFrame.ESI" in names:
                         kv["error_state_indicator"] = bool(data["CAN_DataFrame.ESI"][i])
-                    
+
                     yield Message(**kv)
-            
+
             return None
-        
+
         pass
-    
+
     class CANErrorFrameIterator(FrameIterator):
-        
+
         def __init__(self, mdf: MDF, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_ErrorFrame")
-            
+
             return
-        
+
         def __iter__(self) -> Generator[Message, None, None]:
-            for current_offset in range(0, self._mdf.groups[self._group_index].channel_group.cycles_nr, self._chunk_size):
+            for current_offset in range(
+                0,
+                self._mdf.groups[self._group_index].channel_group.cycles_nr,
+                self._chunk_size,
+            ):
                 data = self._get_data(current_offset)
                 names = data.samples[0].dtype.names
-                
+
                 for i in range(len(data)):
                     kv = {
                         "timestamp": float(data.timestamps[i]) + self._start_timestamp,
                         "is_error_frame": True,
                     }
-                    
+
                     if "CAN_ErrorFrame.BusChannel" in names:
                         kv["channel"] = int(data["CAN_ErrorFrame.BusChannel"][i])
                     if "CAN_ErrorFrame.Dir" in names:
                         kv["is_rx"] = int(data["CAN_ErrorFrame.Dir"][i]) == 0
                     if "CAN_ErrorFrame.ID" in names:
-                        kv["arbitration_id"] = int(data["CAN_ErrorFrame.ID"][i]) & 0x1FFFFFFF
+                        kv["arbitration_id"] = (
+                            int(data["CAN_ErrorFrame.ID"][i]) & 0x1FFFFFFF
+                        )
                     if "CAN_ErrorFrame.IDE" in names:
                         kv["is_extended_id"] = bool(data["CAN_ErrorFrame.IDE"][i])
                     if "CAN_ErrorFrame.EDL" in names:
@@ -386,52 +400,64 @@ class MF4Reader(BinaryIOMessageReader):
                     if "CAN_ErrorFrame.BRS" in names:
                         kv["bitrate_switch"] = bool(data["CAN_ErrorFrame.BRS"][i])
                     if "CAN_ErrorFrame.ESI" in names:
-                        kv["error_state_indicator"] = bool(data["CAN_ErrorFrame.ESI"][i])
+                        kv["error_state_indicator"] = bool(
+                            data["CAN_ErrorFrame.ESI"][i]
+                        )
                     if "CAN_ErrorFrame.RTR" in names:
                         kv["is_remote_frame"] = bool(data["CAN_ErrorFrame.RTR"][i])
-                    if "CAN_ErrorFrame.DataLength" in names and "CAN_ErrorFrame.DataBytes" in names:
+                    if (
+                        "CAN_ErrorFrame.DataLength" in names
+                        and "CAN_ErrorFrame.DataBytes" in names
+                    ):
                         data_length = int(data["CAN_ErrorFrame.DataLength"][i])
-                        kv["data"] = data["CAN_ErrorFrame.DataBytes"][i][:data_length].tobytes()
-                    
+                        kv["data"] = data["CAN_ErrorFrame.DataBytes"][i][
+                            :data_length
+                        ].tobytes()
+
                     yield Message(**kv)
-            
+
             return None
-        
+
         pass
-    
+
     class CANRemoteFrameIterator(FrameIterator):
-        
+
         def __init__(self, mdf: MDF, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_RemoteFrame")
-            
+
             return
-        
+
         def __iter__(self) -> Generator[Message, None, None]:
-            for current_offset in range(0, self._mdf.groups[self._group_index].channel_group.cycles_nr, self._chunk_size):
+            for current_offset in range(
+                0,
+                self._mdf.groups[self._group_index].channel_group.cycles_nr,
+                self._chunk_size,
+            ):
                 data = self._get_data(current_offset)
                 names = data.samples[0].dtype.names
-                
+
                 for i in range(len(data)):
                     kv = {
                         "timestamp": float(data.timestamps[i]) + self._start_timestamp,
-                        "arbitration_id": int(data["CAN_RemoteFrame.ID"][i]) & 0x1FFFFFFF,
+                        "arbitration_id": int(data["CAN_RemoteFrame.ID"][i])
+                        & 0x1FFFFFFF,
                         "dlc": int(data["CAN_RemoteFrame.DLC"][i]),
                         "is_remote_frame": True,
                     }
-                    
+
                     if "CAN_RemoteFrame.BusChannel" in names:
                         kv["channel"] = int(data["CAN_RemoteFrame.BusChannel"][i])
                     if "CAN_RemoteFrame.Dir" in names:
                         kv["is_rx"] = int(data["CAN_RemoteFrame.Dir"][i]) == 0
                     if "CAN_RemoteFrame.IDE" in names:
                         kv["is_extended_id"] = bool(data["CAN_RemoteFrame.IDE"][i])
-                    
+
                     yield Message(**kv)
-            
+
             return None
-        
+
         pass
-    
+
     def __init__(
         self,
         file: Union[StringPathLike, BinaryIO],
@@ -455,48 +481,60 @@ class MF4Reader(BinaryIOMessageReader):
             self._mdf = MDF(BytesIO(file.read()))
         else:
             self._mdf = MDF(file)
-        
+
         self._start_timestamp = self._mdf.header.start_time.timestamp()
 
     def __iter__(self) -> Iterable[Message]:
         import heapq
-        
+
         # To handle messages split over multiple channel groups, create a single iterator per channel group and merge
         # these iterators into a single iterator using heapq.
         iterators = []
         for group_index, group in enumerate(self._mdf.groups):
             channel_group: ChannelGroup = group.channel_group
-            
+
             if not channel_group.flags & FLAG_CG_BUS_EVENT:
                 # Not a bus event, skip
                 continue
-            
+
             if channel_group.cycles_nr == 0:
                 # No data, skip
                 continue
-            
+
             acquisition_source: Optional[Source] = channel_group.acq_source
-            
+
             if acquisition_source is None:
                 # No source information, skip
                 continue
             elif not acquisition_source.source_type & Source.SOURCE_BUS:
                 # Not a bus type (likely already covered by the channel group flag), skip
                 continue
-            
+
             channel_names = [channel.name for channel in group.channels]
-            
+
             if acquisition_source.bus_type == Source.BUS_TYPE_CAN:
                 if "CAN_DataFrame" in channel_names:
-                    iterators.append(self.CANDataFrameIterator(self._mdf, group_index, self._start_timestamp))
+                    iterators.append(
+                        self.CANDataFrameIterator(
+                            self._mdf, group_index, self._start_timestamp
+                        )
+                    )
                 elif "CAN_ErrorFrame" in channel_names:
-                    iterators.append(self.CANErrorFrameIterator(self._mdf, group_index, self._start_timestamp))
+                    iterators.append(
+                        self.CANErrorFrameIterator(
+                            self._mdf, group_index, self._start_timestamp
+                        )
+                    )
                 elif "CAN_RemoteFrame" in channel_names:
-                    iterators.append(self.CANRemoteFrameIterator(self._mdf, group_index, self._start_timestamp))
+                    iterators.append(
+                        self.CANRemoteFrameIterator(
+                            self._mdf, group_index, self._start_timestamp
+                        )
+                    )
             else:
                 # Unknown bus type, skip
                 continue
-        
+
         # Create merged iterator over all the groups, using the timestamps as comparison key
         return heapq.merge(*iterators, key=lambda x: x.timestamp)
 
