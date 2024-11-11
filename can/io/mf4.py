@@ -269,7 +269,7 @@ class MF4Writer(BinaryIOMessageWriter):
         self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
 
 
-class FrameIterator(object, metaclass=abc.ABCMeta):
+class FrameIterator(metaclass=abc.ABCMeta):
     """
     Iterator helper class for common handling among CAN DataFrames, ErrorFrames and RemoteFrames.
     """
@@ -295,8 +295,8 @@ class FrameIterator(object, metaclass=abc.ABCMeta):
         return
 
     def _get_data(self, current_offset: int) -> Signal:
-        # NOTE: asammdf suggests using select instead of get. Select seem to miss converting some channels which
-        #       get does convert as expected.
+        # NOTE: asammdf suggests using select instead of get. Select seem to miss converting some
+        #       channels which get does convert as expected.
         data_raw = self._mdf.get(
             self._name,
             self._group_index,
@@ -493,8 +493,8 @@ class MF4Reader(BinaryIOMessageReader):
     def __iter__(self) -> Iterator[Message]:
         import heapq
 
-        # To handle messages split over multiple channel groups, create a single iterator per channel group and merge
-        # these iterators into a single iterator using heapq.
+        # To handle messages split over multiple channel groups, create a single iterator per
+        # channel group and merge these iterators into a single iterator using heapq.
         iterators: List[FrameIterator] = []
         for group_index, group in enumerate(self._mdf.groups):
             channel_group: ChannelGroup = group.channel_group
