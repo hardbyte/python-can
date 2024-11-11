@@ -323,7 +323,7 @@ class MF4Reader(BinaryIOMessageReader):
 
     # NOTE: Readout based on the bus logging code from asammdf GUI
 
-    class CANDataFrameIterator(FrameIterator):
+    class _CANDataFrameIterator(FrameIterator):
 
         def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_DataFrame")
@@ -369,7 +369,7 @@ class MF4Reader(BinaryIOMessageReader):
 
         pass
 
-    class CANErrorFrameIterator(FrameIterator):
+    class _CANErrorFrameIterator(FrameIterator):
 
         def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_ErrorFrame")
@@ -426,7 +426,7 @@ class MF4Reader(BinaryIOMessageReader):
 
         pass
 
-    class CANRemoteFrameIterator(FrameIterator):
+    class _CANRemoteFrameIterator(FrameIterator):
 
         def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_RemoteFrame")
@@ -521,19 +521,19 @@ class MF4Reader(BinaryIOMessageReader):
             if acquisition_source.bus_type == Source.BUS_TYPE_CAN:
                 if "CAN_DataFrame" in channel_names:
                     iterators.append(
-                        self.CANDataFrameIterator(
+                        self._CANDataFrameIterator(
                             self._mdf, group_index, self._start_timestamp
                         )
                     )
                 elif "CAN_ErrorFrame" in channel_names:
                     iterators.append(
-                        self.CANErrorFrameIterator(
+                        self._CANErrorFrameIterator(
                             self._mdf, group_index, self._start_timestamp
                         )
                     )
                 elif "CAN_RemoteFrame" in channel_names:
                     iterators.append(
-                        self.CANRemoteFrameIterator(
+                        self._CANRemoteFrameIterator(
                             self._mdf, group_index, self._start_timestamp
                         )
                     )
