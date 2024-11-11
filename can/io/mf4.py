@@ -5,12 +5,13 @@ MF4 files represent Measurement Data Format (MDF) version 4 as specified by
 the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
 """
 
+import abc
 import logging
 from datetime import datetime
 from hashlib import md5
 from io import BufferedIOBase, BytesIO
 from pathlib import Path
-from typing import Any, BinaryIO, Generator, Iterable, Optional, Union, cast
+from typing import Any, BinaryIO, Dict, Generator, Iterator, List, Optional, Union, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -70,6 +71,8 @@ try:
     )
 except ImportError:
     asammdf = None
+    MDF4 = None
+    Signal = None
 
 
 CAN_MSG_EXT = 0x80000000
@@ -266,6 +269,51 @@ class MF4Writer(BinaryIOMessageWriter):
         self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
 
 
+class FrameIterator(object, metaclass=abc.ABCMeta):
+    """
+    Iterator helper class for common handling among CAN DataFrames, ErrorFrames and RemoteFrames.
+    """
+
+    # Number of records to request for each asammdf call
+    _chunk_size = 1000
+
+    def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float, name: str):
+        self._mdf = mdf
+        self._group_index = group_index
+        self._start_timestamp = start_timestamp
+        self._name = name
+
+        # Extract names
+        channel_group: ChannelGroup = self._mdf.groups[self._group_index]
+
+        self._channel_names = []
+
+        for channel in channel_group.channels:
+            if str(channel.name).startswith(f"{self._name}."):
+                self._channel_names.append(channel.name)
+
+        return
+
+    def _get_data(self, current_offset: int) -> Signal:
+        # NOTE: asammdf suggests using select instead of get. Select seem to miss converting some channels which
+        #       get does convert as expected.
+        data_raw = self._mdf.get(
+            self._name,
+            self._group_index,
+            record_offset=current_offset,
+            record_count=self._chunk_size,
+            raw=False,
+        )
+
+        return data_raw
+
+    @abc.abstractmethod
+    def __iter__(self) -> Generator[Message, None, None]:
+        pass
+
+    pass
+
+
 class MF4Reader(BinaryIOMessageReader):
     """
     Iterator of CAN messages from a MF4 logging file.
@@ -275,51 +323,9 @@ class MF4Reader(BinaryIOMessageReader):
 
     # NOTE: Readout based on the bus logging code from asammdf GUI
 
-    class FrameIterator(object):
-        """
-        Iterator helper class for common handling among CAN DataFrames, ErrorFrames and RemoteFrames.
-        """
-
-        # Number of records to request for each asammdf call
-        _chunk_size = 1000
-
-        def __init__(
-            self, mdf: MDF, group_index: int, start_timestamp: float, name: str
-        ):
-            self._mdf = mdf
-            self._group_index = group_index
-            self._start_timestamp = start_timestamp
-            self._name = name
-
-            # Extract names
-            channel_group: ChannelGroup = self._mdf.groups[self._group_index]
-
-            self._channel_names = []
-
-            for channel in channel_group.channels:
-                if str(channel.name).startswith(f"{self._name}."):
-                    self._channel_names.append(channel.name)
-
-            return
-
-        def _get_data(self, current_offset: int) -> asammdf.Signal:
-            # NOTE: asammdf suggests using select instead of get. Select seem to miss converting some channels which
-            #       get does convert as expected.
-            data_raw = self._mdf.get(
-                self._name,
-                self._group_index,
-                record_offset=current_offset,
-                record_count=self._chunk_size,
-                raw=False,
-            )
-
-            return data_raw
-
-        pass
-
     class CANDataFrameIterator(FrameIterator):
 
-        def __init__(self, mdf: MDF, group_index: int, start_timestamp: float):
+        def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_DataFrame")
 
             return
@@ -336,7 +342,7 @@ class MF4Reader(BinaryIOMessageReader):
                 for i in range(len(data)):
                     data_length = int(data["CAN_DataFrame.DataLength"][i])
 
-                    kv = {
+                    kv: Dict[str, Any] = {
                         "timestamp": float(data.timestamps[i]) + self._start_timestamp,
                         "arbitration_id": int(data["CAN_DataFrame.ID"][i]) & 0x1FFFFFFF,
                         "data": data["CAN_DataFrame.DataBytes"][i][
@@ -365,7 +371,7 @@ class MF4Reader(BinaryIOMessageReader):
 
     class CANErrorFrameIterator(FrameIterator):
 
-        def __init__(self, mdf: MDF, group_index: int, start_timestamp: float):
+        def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_ErrorFrame")
 
             return
@@ -380,7 +386,7 @@ class MF4Reader(BinaryIOMessageReader):
                 names = data.samples[0].dtype.names
 
                 for i in range(len(data)):
-                    kv = {
+                    kv: Dict[str, Any] = {
                         "timestamp": float(data.timestamps[i]) + self._start_timestamp,
                         "is_error_frame": True,
                     }
@@ -422,7 +428,7 @@ class MF4Reader(BinaryIOMessageReader):
 
     class CANRemoteFrameIterator(FrameIterator):
 
-        def __init__(self, mdf: MDF, group_index: int, start_timestamp: float):
+        def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_RemoteFrame")
 
             return
@@ -437,7 +443,7 @@ class MF4Reader(BinaryIOMessageReader):
                 names = data.samples[0].dtype.names
 
                 for i in range(len(data)):
-                    kv = {
+                    kv: Dict[str, Any] = {
                         "timestamp": float(data.timestamps[i]) + self._start_timestamp,
                         "arbitration_id": int(data["CAN_RemoteFrame.ID"][i])
                         & 0x1FFFFFFF,
@@ -476,20 +482,20 @@ class MF4Reader(BinaryIOMessageReader):
 
         super().__init__(file, mode="rb")
 
-        self._mdf: MDF
+        self._mdf: MDF4
         if isinstance(file, BufferedIOBase):
-            self._mdf = MDF(BytesIO(file.read()))
+            self._mdf = cast(MDF4, MDF(BytesIO(file.read())))
         else:
-            self._mdf = MDF(file)
+            self._mdf = cast(MDF4, MDF(file))
 
         self._start_timestamp = self._mdf.header.start_time.timestamp()
 
-    def __iter__(self) -> Iterable[Message]:
+    def __iter__(self) -> Iterator[Message]:
         import heapq
 
         # To handle messages split over multiple channel groups, create a single iterator per channel group and merge
         # these iterators into a single iterator using heapq.
-        iterators = []
+        iterators: List[FrameIterator] = []
         for group_index, group in enumerate(self._mdf.groups):
             channel_group: ChannelGroup = group.channel_group
 
@@ -536,7 +542,7 @@ class MF4Reader(BinaryIOMessageReader):
                 continue
 
         # Create merged iterator over all the groups, using the timestamps as comparison key
-        return heapq.merge(*iterators, key=lambda x: x.timestamp)
+        return iter(heapq.merge(*iterators, key=lambda x: x.timestamp))
 
     def stop(self) -> None:
         self._mdf.close()
