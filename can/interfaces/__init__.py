@@ -36,6 +36,7 @@ __all__ = [
 
 # interface_name => (module, classname)
 BACKENDS: Dict[str, Tuple[str, str]] = {
+    "zlg": ("can.interfaces.zlg", "ZlgBus"),
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
     "socketcan": ("can.interfaces.socketcan", "SocketcanBus"),
     "serial": ("can.interfaces.serial.serial_can", "SerialBus"),
