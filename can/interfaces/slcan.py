@@ -293,6 +293,31 @@ class slcanBus(BusABC):
         except Exception as exception:
             raise CanOperationError("Cannot fetch fileno") from exception
 
+    def _read(self, timeout: Optional[float]) -> Optional[str]:
+        _timeout = serial.Timeout(timeout)
+
+        with error_check("Could not read from serial device"):
+            while True:
+                # Due to accessing `serialPortOrig.in_waiting` too often will reduce the performance.
+                # We read the `serialPortOrig.in_waiting` only once here.
+                in_waiting = self.serialPortOrig.in_waiting
+                for _ in range(max(1, in_waiting)):
+                    new_byte = self.serialPortOrig.read(size=1)
+                    if new_byte:
+                        self._buffer.extend(new_byte)
+                    else:
+                        break
+
+                    if new_byte in (self._ERROR, self._OK):
+                        string = self._buffer.decode()
+                        self._buffer.clear()
+                        return string
+
+                if _timeout.expired():
+                    break
+
+            return None
+
     def get_version(self, timeout: Optional[float]) -> Tuple[Optional[int], Optional[int]]:
         """Get HW and SW version of the slcan interface.
 
