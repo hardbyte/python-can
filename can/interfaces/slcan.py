@@ -29,7 +29,6 @@ except ImportError:
     )
     serial = None
 
-
 HAS_EVENTS = False
 
 try:
@@ -59,6 +58,8 @@ class slcanBus(BusABC):
         750000: "S7",
         1000000: "S8",
         83300: "S9",
+        2000000: "Y2",
+        5000000: "Y5",
     }
 
     _SLEEP_AFTER_SERIAL_OPEN = 2  # in seconds
@@ -69,11 +70,33 @@ class slcanBus(BusABC):
 
     LINE_TERMINATOR = b"\r"
 
+    DLC2BYTE_LEN = {
+        0: 0,
+        1: 1,
+        2: 2,
+        3: 3,
+        4: 4,
+        5: 5,
+        6: 6,
+        7: 7,
+        8: 8,
+        9: 12,
+        10: 16,
+        11: 20,
+        12: 24,
+        13: 32,
+        14: 48,
+        15: 64,
+    }
+    BYTE_LEN2DLC = {j: i for i, j in DLC2BYTE_LEN.items()}
+
     def __init__(
         self,
         channel: typechecking.ChannelStr,
         ttyBaudrate: int = 115200,
         bitrate: Optional[int] = None,
+        fd: bool = False,
+        data_bitrate: Optional[int] = None,
         btr: Optional[str] = None,
         poll_interval: float = _POLL_INTERVAL,
         receive_own_messages: bool = False,
@@ -91,6 +114,10 @@ class slcanBus(BusABC):
             baudrate of underlying serial or usb device (Ignored if set via the ``channel`` parameter)
         :param bitrate:
             Bitrate in bit/s
+        :param bool fd:
+            If CAN-FD frames should be supported.
+        :param int data_bitrate:
+            Which bitrate to use for data phase in CAN FD.
         :param btr:
             BTR register value to set custom can speed
         :param receive_own_messages:
@@ -144,6 +171,8 @@ class slcanBus(BusABC):
                 self.set_bitrate(bitrate)
             if btr is not None:
                 self.set_bitrate_reg(btr)
+            if fd and data_bitrate is not None:
+                self.set_data_bitrate(data_bitrate)
             self.open()
 
         self._timestamp_offset = time.time() - time.perf_counter()
@@ -174,6 +203,23 @@ class slcanBus(BusABC):
 
         self.close()
         self._write(bitrate_code)
+        self.open()
+
+    def set_data_bitrate(self, data_bitrate: int) -> None:
+        """
+        :param data_bitrate:
+            Bitrate in bit/s
+
+        :raise ValueError: if ``data_bitrate`` is not among the possible values
+        """
+        if data_bitrate in self._BITRATES:
+            data_bitrate_code = self._BITRATES[data_bitrate]
+        else:
+            data_bitrates = ", ".join(str(k) for k in self._BITRATES.keys())
+            raise ValueError(f"Invalid bitrate, choose one of {data_bitrates}.")
+
+        self.close()
+        self._write(data_bitrate_code)
         self.open()
 
     def set_bitrate_reg(self, btr: str) -> None:
@@ -222,12 +268,7 @@ class slcanBus(BusABC):
                 time.sleep(self.poll_interval)
 
     def _read_can(self) -> List[Message]:
-        canId = None
-        remote = False
-        extended = False
-        data = None
         msgs = []
-
         with error_check("Could not read from serial device"):
             # Due to accessing `serialPortOrig.in_waiting` too often will reduce the performance.
             # We read the `serialPortOrig.in_waiting` only once here.
@@ -242,37 +283,72 @@ class slcanBus(BusABC):
                 if new_byte in (self._ERROR, self._OK):
                     string = self._buffer.decode()
                     self._buffer.clear()
-
                     if not string:
-                        pass
-                    elif string[0] in (
-                        "T",
-                        "x",  # x is an alternative extended message identifier for CANDapter
-                    ):
+                        continue
+                    canId = None
+                    remote = False
+                    extended = False
+                    brs = False
+                    fd = False
+                    data = None
+                    s0 = string[0]
+                    if s0 in ("T", "x"):
                         # extended frame
                         canId = int(string[1:9], 16)
                         dlc = int(string[9])
                         extended = True
                         data = bytearray.fromhex(string[10 : 10 + dlc * 2])
-                    elif string[0] == "t":
+                    elif s0 == "t":
                         # normal frame
                         canId = int(string[1:4], 16)
                         dlc = int(string[4])
                         data = bytearray.fromhex(string[5 : 5 + dlc * 2])
-                    elif string[0] == "r":
+                    elif s0 == "r":
                         # remote frame
                         canId = int(string[1:4], 16)
                         dlc = int(string[4])
                         remote = True
-                    elif string[0] == "R":
+                        data = bytearray.fromhex(string[5 : 5 + dlc * 2])
+                    elif s0 == "R":
                         # remote extended frame
                         canId = int(string[1:9], 16)
                         dlc = int(string[9])
                         extended = True
                         remote = True
+                        data = bytearray.fromhex(string[10 : 10 + dlc * 2])
+                    elif s0 == "d":
+                        # fd_frame
+                        fd = True
+                        canId = int(string[1:4], 16)
+                        dlc = self.DLC2BYTE_LEN[int(string[4])]
+                        data = bytearray.fromhex(string[5 : 5 + dlc * 2])
+                    elif s0 == "D":
+                        # extended fd_frame
+                        fd = True
+                        extended = True
+                        canId = int(string[1:9], 16)
+                        dlc = self.DLC2BYTE_LEN[int(string[9])]
+                        data = bytearray.fromhex(string[10 : 10 + dlc * 2])
+                    elif s0 == "b":
+                        # fd_frame
+                        fd = True
+                        brs = True
+                        canId = int(string[1:4], 16)
+                        dlc = self.DLC2BYTE_LEN[int(string[4])]
+                        data = bytearray.fromhex(string[5 : 5 + dlc * 2])
+                    elif s0 == "B":
+                        # extended fd_frame
+                        fd = True
+                        brs = True
+                        extended = True
+                        canId = int(string[1:9], 16)
+                        dlc = self.DLC2BYTE_LEN[int(string[9])]
+                        data = bytearray.fromhex(string[10 : 10 + dlc * 2])
 
                     if canId is not None:
                         msg = Message(
+                            is_fd=fd,
+                            bitrate_switch=brs,
                             arbitration_id=canId,
                             is_extended_id=extended,
                             timestamp=self._timestamp_offset
@@ -287,20 +363,33 @@ class slcanBus(BusABC):
     def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         if timeout != self.serialPortOrig.write_timeout:
             self.serialPortOrig.write_timeout = timeout
-        if msg.is_remote_frame:
-            if msg.is_extended_id:
-                sendStr = f"R{msg.arbitration_id:08X}{msg.dlc:d}"
+        if msg.is_fd:
+            dlc = self.BYTE_LEN2DLC[msg.dlc]
+            if not msg.bitrate_switch:
+                if not msg.is_extended_id:
+                    sendStr = f"d{msg.arbitration_id:03X}{dlc:x}"
+                else:
+                    sendStr = f"D{msg.arbitration_id:08X}{dlc:x}"
             else:
-                sendStr = f"r{msg.arbitration_id:03X}{msg.dlc:d}"
+                if not msg.is_extended_id:
+                    sendStr = f"b{msg.arbitration_id:03X}{dlc:x}"
+                else:
+                    sendStr = f"B{msg.arbitration_id:08X}{dlc:x}"
         else:
-            if msg.is_extended_id:
-                sendStr = f"T{msg.arbitration_id:08X}{msg.dlc:d}"
+            if msg.is_remote_frame:
+                if msg.is_extended_id:
+                    sendStr = f"R{msg.arbitration_id:08X}{msg.dlc:d}"
+                else:
+                    sendStr = f"r{msg.arbitration_id:03X}{msg.dlc:d}"
             else:
-                sendStr = f"t{msg.arbitration_id:03X}{msg.dlc:d}"
-            sendStr += msg.data.hex().upper()
+                if msg.is_extended_id:
+                    sendStr = f"T{msg.arbitration_id:08X}{msg.dlc:d}"
+                else:
+                    sendStr = f"t{msg.arbitration_id:03X}{msg.dlc:d}"
+        sendStr += msg.data.hex().upper()
         if self.receive_own_messages:
             msg.is_rx = False
-            msg.timestamp = self._timestamp_offset + time.perf_counter() # Better than nothing...
+            msg.timestamp = self._timestamp_offset + time.perf_counter()  # Better than nothing...
             self.queue_read.put(msg)
         self._write(sendStr)
 
