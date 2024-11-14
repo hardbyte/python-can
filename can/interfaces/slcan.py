@@ -9,6 +9,7 @@ from typing import Any, Optional, Tuple, List
 from queue import Queue, Empty
 import threading
 from serial.tools import list_ports
+import platform
 from can import BusABC, CanProtocol, Message, typechecking
 
 from ..exceptions import (
@@ -27,6 +28,18 @@ except ImportError:
         "You won't be able to use the slcan can backend without " "the serial module installed!"
     )
     serial = None
+
+
+HAS_EVENTS = False
+
+try:
+    from _overlapped import CreateEvent
+    from _winapi import WaitForSingleObject
+
+    HAS_EVENTS = True
+except ImportError:
+    WaitForSingleObject = None
+    HAS_EVENTS = False
 
 
 class slcanBus(BusABC):
@@ -49,6 +62,7 @@ class slcanBus(BusABC):
     }
 
     _SLEEP_AFTER_SERIAL_OPEN = 2  # in seconds
+    _POLL_INTERVAL = 0.001
 
     _OK = b"\r"
     _ERROR = b"\a"
@@ -61,6 +75,8 @@ class slcanBus(BusABC):
         ttyBaudrate: int = 115200,
         bitrate: Optional[int] = None,
         btr: Optional[str] = None,
+        poll_interval: float = _POLL_INTERVAL,
+        receive_own_messages: bool = False,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
         listen_only: bool = False,
@@ -77,6 +93,8 @@ class slcanBus(BusABC):
             Bitrate in bit/s
         :param btr:
             BTR register value to set custom can speed
+        :param receive_own_messages:
+            See :class:`can.BusABC`.
         :param poll_interval:
             Poll interval in seconds when reading messages
         :param sleep_after_open:
@@ -94,6 +112,8 @@ class slcanBus(BusABC):
         :raise CanInitializationError: if the underlying serial connection could not be established
         """
         self._listen_only = listen_only
+        self.poll_interval = poll_interval
+        self.receive_own_messages = receive_own_messages
 
         if serial is None:
             raise CanInterfaceNotImplementedError("The serial module is not installed")
@@ -126,6 +146,11 @@ class slcanBus(BusABC):
                 self.set_bitrate_reg(btr)
             self.open()
 
+        self._timestamp_offset = time.time() - time.perf_counter()
+        self.queue_read = Queue()
+        self.event_read = threading.Event()
+        self._recv_event = CreateEvent(None, 0, 0, None) if HAS_EVENTS else None
+        threading.Thread(None, target=self._read_can_thread, args=(self.event_read,)).start()
         super().__init__(
             channel,
             ttyBaudrate=115200,
@@ -133,10 +158,6 @@ class slcanBus(BusABC):
             rtscts=False,
             **kwargs,
         )
-        self._timestamp_offset = time.time() - time.perf_counter()
-        self.queue_read = Queue()
-        self.event_read = threading.Event()
-        threading.Thread(None, target=self._read_can_thread, args=(self.event_read,)).start()
 
     def set_bitrate(self, bitrate: int) -> None:
         """
@@ -190,12 +211,15 @@ class slcanBus(BusABC):
         except Empty:
             return None, False
 
-    def _read_can_thread(self, event_recv_send_batch_zlg):
-        while not event_recv_send_batch_zlg.is_set():
+    def _read_can_thread(self, event_read):
+        while not event_read.is_set():
             msgs = self._read_can()
             for i in msgs:
                 self.queue_read.put(i)
-            time.sleep(0.005)
+            if HAS_EVENTS:
+                WaitForSingleObject(self._recv_event, int(self.poll_interval * 1000))
+            else:
+                time.sleep(self.poll_interval)
 
     def _read_can(self) -> List[Message]:
         canId = None
@@ -274,6 +298,10 @@ class slcanBus(BusABC):
             else:
                 sendStr = f"t{msg.arbitration_id:03X}{msg.dlc:d}"
             sendStr += msg.data.hex().upper()
+        if self.receive_own_messages:
+            msg.is_rx = False
+            msg.timestamp = self._timestamp_offset + time.perf_counter() # Better than nothing...
+            self.queue_read.put(msg)
         self._write(sendStr)
 
     def shutdown(self) -> None:
