@@ -9,7 +9,6 @@ from typing import Any, Optional, Tuple, List
 from queue import Queue, Empty
 import threading
 from serial.tools import list_ports
-import platform
 from can import BusABC, CanProtocol, Message, typechecking
 
 from ..exceptions import (
@@ -273,7 +272,7 @@ class slcanBus(BusABC):
             # Due to accessing `serialPortOrig.in_waiting` too often will reduce the performance.
             # We read the `serialPortOrig.in_waiting` only once here.
             in_waiting = self.serialPortOrig.in_waiting
-            for _ in range(in_waiting):
+            for _ in range(max(1, in_waiting)):
                 new_byte = self.serialPortOrig.read(size=1)
                 if new_byte:
                     self._buffer.extend(new_byte)
