@@ -28,6 +28,15 @@ except ModuleNotFoundError:
     }.get(_platform, not_support)
 
 
+class ZCanChlType:
+    CAN = 0
+    CANFD_ISO = 1
+    CANFD_NON_ISO = 2
+
+class ZCanChlMode:
+    Normal = 0
+    ListenOnly = 1
+
 class ZCanTxMode:
     NORMAL = 0  # 正常发送
     SINGLE = 1  # 单次发送
@@ -162,14 +171,15 @@ class ZCanBus(can.BusABC):
             cfg_list = []
             for idx, cfg in enumerate(configs):
                 bitrate = cfg.get("bitrate", None)
+                dbitrate = cfg.get("dbitrate", None)
                 assert bitrate is not None, "bitrate is required!"
                 _cfg = ZCanChlCfgPy(
                     dev_type=device_type,
-                    chl_type=cfg.get("chl_type", 0),
+                    chl_type=cfg.get("chl_type", ZCanChlType.CANFD_ISO if dbitrate else ZCanChlType.CAN),
                     chl_mode=cfg.get("chl_mode", 0),
                     bitrate=bitrate,
                     filter=cfg.get("filter"),
-                    dbitrate=cfg.get("dbitrate"),
+                    dbitrate=dbitrate,
                     resistance=bool(cfg.get("resistance", 1)),
                     acc_code=cfg.get("acc_code"),
                     acc_mask=cfg.get("acc_mask"),
@@ -195,7 +205,9 @@ class ZCanBus(can.BusABC):
         if hasattr(self, "device"):
             zlgcan_close(self.device)
 
-    def poll_received_messages(self, timeout):
+    def poll_received_messages(self, timeout: Optional[float]):
+        if timeout is not None:
+            timeout = int(1_000 * timeout)
         for channel in self.channels:
             raw_msgs: list[ZCanMessagePy] = zlgcan_recv(self.device, channel, timeout)
             # for raw_msg in raw_msgs:
@@ -226,18 +238,18 @@ class ZCanBus(can.BusABC):
         return None, False
 
 
-with ZCanBus(interface="zlgcan", device_type=ZCANDeviceType.ZCAN_USBCANFD_200U,
-             configs=[{'bitrate': 500000, 'resistance': 1}, {'bitrate': 1000000, 'resistance': 1}]) as bus:
-    # bus.send(can.Message(
-    #     arbitration_id=0x7DF,
-    #     is_extended_id=False,
-    #     channel=0,
-    #     data=[0x02, 0x10, 0x03, ],
-    #     dlc=3,
-    # ), tx_mode=ZCanTxMode.SELF_SR)
+if __name__ == '__main__':
+    with ZCanBus(interface="zlgcan", device_type=ZCANDeviceType.ZCAN_USBCANFD_200U,
+                 configs=[{'bitrate': 500000, 'dbitrate': 1_000_000, 'resistance': 1}]) as bus:
+        # bus.send(can.Message(
+        #     arbitration_id=0x7DF,
+        #     is_extended_id=False,
+        #     channel=0,
+        #     data=[0x02, 0x10, 0x03, ],
+        #     dlc=3,
+        # ), tx_mode=ZCanTxMode.SELF_SR)
 
-    start = time.monotonic()
-    while time.monotonic() - start < 5:
-        _msg = bus.recv()
-        print(_msg)
-
+        start = time.monotonic()
+        while time.monotonic() - start < 10:
+            _msg = bus.recv()
+            print(_msg)
