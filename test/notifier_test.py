@@ -52,14 +52,23 @@ class NotifierTest(unittest.TestCase):
     def test_registry(self):
         with can.Bus("test", interface="virtual", receive_own_messages=True) as bus:
             reader = can.BufferedReader()
-            with can.Notifier(bus, [reader], 0.1):
+            with can.Notifier(bus, [reader], 0.1) as notifier:
                 # creating a second notifier for the same bus must fail
                 self.assertRaises(ValueError, can.Notifier, bus, [reader], 0.1)
 
+                # find_instance must return the existing instance
+                self.assertIs(can.Notifier.find_instance(bus), notifier)
+
+            # Notifier is stopped, find instance must return None
+            self.assertIsNone(can.Notifier.find_instance(bus))
+
             # now the first notifier is stopped, a new notifier can be created without error:
-            with can.Notifier(bus, [reader], 0.1):
+            with can.Notifier(bus, [reader], 0.1) as notifier:
                 # the next notifier call should fail again since there is an active notifier already
                 self.assertRaises(ValueError, can.Notifier, bus, [reader], 0.1)
+
+                # find_instance must return the existing instance
+                self.assertIs(can.Notifier.find_instance(bus), notifier)
 
 
 class AsyncNotifierTest(unittest.TestCase):

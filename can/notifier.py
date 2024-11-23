@@ -50,12 +50,12 @@ class _NotifierRegistry:
     def register(self, bus: BusABC, notifier: "Notifier") -> None:
         """Register a bus and its associated notifier.
 
-        Ensures that a bus is not added to multiple active Notifier instances.
+        Ensures that a bus is not added to multiple active :class:`~can.Notifier` instances.
 
         :param bus:
             The CAN bus to register.
         :param notifier:
-            The Notifier instance associated with the bus.
+            The :class:`~can.Notifier` instance associated with the bus.
         :raises ValueError:
             If the bus is already assigned to an active Notifier.
         """
@@ -75,7 +75,7 @@ class _NotifierRegistry:
         :param bus:
             The CAN bus to unregister.
         :param notifier:
-            The Notifier instance associated with the bus.
+            The :class:`~can.Notifier` instance associated with the bus.
         """
         with self.lock:
             registered_pairs_to_remove: List[_BusNotifierPair] = []
@@ -84,6 +84,26 @@ class _NotifierRegistry:
                     registered_pairs_to_remove.append(pair)
             for pair in registered_pairs_to_remove:
                 self.pairs.remove(pair)
+
+    def find_instance(self, bus: BusABC) -> Optional["Notifier"]:
+        """Find the :class:`~can.Notifier` instance associated with a given CAN bus.
+
+        This method searches the registry for the :class:`~can.Notifier`
+        that is linked to the specified bus. If the bus is found, the
+        corresponding :class:`~can.Notifier` instance is returned. If the bus is not
+        found in the registry, `None` is returned.
+
+        :param bus:
+            The CAN bus for which to find the associated :class:`~can.Notifier` .
+        :return:
+            The :class:`~can.Notifier` instance associated with the given bus,
+            or `None` if no such association exists.
+        """
+        with self.lock:
+            for pair in self.pairs:
+                if bus is pair.bus:
+                    return pair.notifier
+        return None
 
 
 class Notifier(AbstractContextManager):
@@ -273,6 +293,23 @@ class Notifier(AbstractContextManager):
     def stopped(self) -> bool:
         """Return ``True``, if Notifier was properly shut down with :meth:`~can.Notifier.stop`."""
         return self._stopped
+
+    @classmethod
+    def find_instance(cls, bus: BusABC) -> Optional["Notifier"]:
+        """Find the :class:`~can.Notifier` instance associated with a given CAN bus.
+
+        This method searches the registry for the :class:`~can.Notifier`
+        that is linked to the specified bus. If the bus is found, the
+        corresponding :class:`~can.Notifier` instance is returned. If the bus is not
+        found in the registry, `None` is returned.
+
+        :param bus:
+            The CAN bus for which to find the associated :class:`~can.Notifier` .
+        :return:
+            The :class:`~can.Notifier` instance associated with the given bus,
+            or `None` if no such association exists.
+        """
+        return cls._registry.find_instance(bus)
 
     def __exit__(
         self,
