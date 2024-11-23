@@ -1,3 +1,48 @@
+Version 4.5.0
+=============
+
+Features
+--------
+
+* gs_usb command-line support (and documentation updates and stability fixes) by @BenGardiner in https://github.com/hardbyte/python-can/pull/1790
+* Faster and more general MF4 support by @cssedev in https://github.com/hardbyte/python-can/pull/1892
+* ASCWriter speed improvement by @pierreluctg in https://github.com/hardbyte/python-can/pull/1856
+* Faster Message string representation by @pierreluctg in https://github.com/hardbyte/python-can/pull/1858
+* Added Netronic's CANdo and CANdoISO adapters interface by @belliriccardo in https://github.com/hardbyte/python-can/pull/1887
+* Add autostart option to BusABC.send_periodic() to fix issue #1848 by @SWolfSchunk in https://github.com/hardbyte/python-can/pull/1853
+* Improve TestBusConfig by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1804
+
+
+Bug Fixes
+---------
+
+* Fix Kvaser timestamp by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1878
+* Set end_time in ThreadBasedCyclicSendTask.start() by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1871
+* Fix regex in _parse_additional_config() by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1868
+* Fix for #1849 (PCAN fails when PCAN_ERROR_ILLDATA is read via ReadFD) by @bures in https://github.com/hardbyte/python-can/pull/1850
+* Period must be >= 1ms for BCM using Win32 API by @pierreluctg in https://github.com/hardbyte/python-can/pull/1847
+* Fix ASCReader Crash on "Start of Measurement" Line by @RitheeshBaradwaj in https://github.com/hardbyte/python-can/pull/1811
+* Resolve AttributeError within NicanError by @vijaysubbiah20 in https://github.com/hardbyte/python-can/pull/1806
+
+
+Miscellaneous
+-------------
+
+* Fix CI by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1889
+* Update msgpack dependency by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1875
+* Add tox environment for doctest by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1870
+* Use typing_extensions.TypedDict on python < 3.12 for pydantic support by @NickCao in https://github.com/hardbyte/python-can/pull/1845
+* Replace PyPy3.8 with PyPy3.10 by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1838
+* Fix slcan tests by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1834
+* Test on Python 3.13 by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1833
+* Stop notifier in examples by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1814
+* Use setuptools_scm by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1810
+* Added extra info for Kvaser dongles by @FedericoSpada in https://github.com/hardbyte/python-can/pull/1797
+* Socketcand: show actual response as well as expected in error by @liamkinne in https://github.com/hardbyte/python-can/pull/1807
+* Refactor CLI filter parsing, add tests by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1805
+* Add zlgcan to docs by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1839
+
+
 Version 4.4.2
 =============
 
