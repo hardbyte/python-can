@@ -11,7 +11,7 @@ Features
 * Added Netronic's CANdo and CANdoISO adapters interface by @belliriccardo in https://github.com/hardbyte/python-can/pull/1887
 * Add autostart option to BusABC.send_periodic() to fix issue #1848 by @SWolfSchunk in https://github.com/hardbyte/python-can/pull/1853
 * Improve TestBusConfig by @zariiii9003 in https://github.com/hardbyte/python-can/pull/1804
-
+* Improve speed of TRCReader by @lebuni in https://github.com/hardbyte/python-can/pull/1893
 
 Bug Fixes
 ---------
