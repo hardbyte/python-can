@@ -18,6 +18,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Tuple,
     Type,
     Union,
 )
@@ -85,25 +86,25 @@ class _NotifierRegistry:
             for pair in registered_pairs_to_remove:
                 self.pairs.remove(pair)
 
-    def find_instance(self, bus: BusABC) -> Optional["Notifier"]:
-        """Find the :class:`~can.Notifier` instance associated with a given CAN bus.
+    def find_instances(self, bus: BusABC) -> Tuple["Notifier", ...]:
+        """Find the :class:`~can.Notifier` instances associated with a given CAN bus.
 
         This method searches the registry for the :class:`~can.Notifier`
         that is linked to the specified bus. If the bus is found, the
-        corresponding :class:`~can.Notifier` instance is returned. If the bus is not
-        found in the registry, `None` is returned.
+        corresponding :class:`~can.Notifier` instances are returned. If the bus is not
+        found in the registry, an empty tuple is returned.
 
         :param bus:
             The CAN bus for which to find the associated :class:`~can.Notifier` .
         :return:
-            The :class:`~can.Notifier` instance associated with the given bus,
-            or `None` if no such association exists.
+            A tuple of :class:`~can.Notifier` instances associated with the given bus.
         """
+        instance_list = []
         with self.lock:
             for pair in self.pairs:
                 if bus is pair.bus:
-                    return pair.notifier
-        return None
+                    instance_list.append(pair.notifier)
+        return tuple(instance_list)
 
 
 class Notifier(AbstractContextManager):
@@ -128,7 +129,7 @@ class Notifier(AbstractContextManager):
 
 
         :param bus:
-            A :ref:`bus` or a list of buses to listen to.
+            A :ref:`bus` or a list of buses to consume messages from.
         :param listeners:
             An iterable of :class:`~can.Listener` or callables that receive a :class:`~can.Message`
             and return nothing.
@@ -137,10 +138,10 @@ class Notifier(AbstractContextManager):
         :param loop:
             An :mod:`asyncio` event loop to schedule the ``listeners`` in.
         :raises ValueError:
-            If the *bus* is already assigned to an active :class:`~can.Notifier`.
+            If a passed in *bus* is already assigned to an active :class:`~can.Notifier`.
         """
         self.listeners: List[MessageRecipient] = list(listeners)
-        self.bus = bus
+        self._bus_list: List[BusABC] = []
         self.timeout = timeout
         self._loop = loop
 
@@ -151,9 +152,16 @@ class Notifier(AbstractContextManager):
         self._lock = threading.Lock()
 
         self._readers: List[Union[int, threading.Thread]] = []
-        self._bus_list = self.bus if isinstance(self.bus, list) else [self.bus]
-        for each_bus in self._bus_list:
+        _bus_list: List[BusABC] = bus if isinstance(bus, list) else [bus]
+        for each_bus in _bus_list:
             self.add_bus(each_bus)
+
+    @property
+    def bus(self) -> Union[BusABC, Tuple["BusABC", ...]]:
+        """Return the associated bus or a tuple of buses."""
+        if len(self._bus_list) == 1:
+            return self._bus_list[0]
+        return tuple(self._bus_list)
 
     def add_bus(self, bus: BusABC) -> None:
         """Add a bus for notification.
@@ -164,7 +172,10 @@ class Notifier(AbstractContextManager):
             If the *bus* is already assigned to an active :class:`~can.Notifier`.
         """
         # add bus to notifier registry
-        self._registry.register(bus, self)
+        Notifier._registry.register(bus, self)
+
+        # add bus to internal bus list
+        self._bus_list.append(bus)
 
         file_descriptor: int = -1
         try:
@@ -181,7 +192,7 @@ class Notifier(AbstractContextManager):
             reader_thread = threading.Thread(
                 target=self._rx_thread,
                 args=(bus,),
-                name=f'can.notifier for bus "{bus.channel_info}"',
+                name=f'{self.__class__.__qualname__} for bus "{bus.channel_info}"',
             )
             reader_thread.daemon = True
             reader_thread.start()
@@ -211,7 +222,7 @@ class Notifier(AbstractContextManager):
 
         # remove bus from registry
         for bus in self._bus_list:
-            self._registry.unregister(bus, self)
+            Notifier._registry.unregister(bus, self)
 
     def _rx_thread(self, bus: BusABC) -> None:
         # determine message handling callable early, not inside while loop
@@ -294,22 +305,21 @@ class Notifier(AbstractContextManager):
         """Return ``True``, if Notifier was properly shut down with :meth:`~can.Notifier.stop`."""
         return self._stopped
 
-    @classmethod
-    def find_instance(cls, bus: BusABC) -> Optional["Notifier"]:
-        """Find the :class:`~can.Notifier` instance associated with a given CAN bus.
+    @staticmethod
+    def find_instances(bus: BusABC) -> Tuple["Notifier", ...]:
+        """Find :class:`~can.Notifier` instances associated with a given CAN bus.
 
         This method searches the registry for the :class:`~can.Notifier`
         that is linked to the specified bus. If the bus is found, the
-        corresponding :class:`~can.Notifier` instance is returned. If the bus is not
-        found in the registry, `None` is returned.
+        corresponding :class:`~can.Notifier` instances are returned. If the bus is not
+        found in the registry, an empty tuple is returned.
 
         :param bus:
             The CAN bus for which to find the associated :class:`~can.Notifier` .
         :return:
-            The :class:`~can.Notifier` instance associated with the given bus,
-            or `None` if no such association exists.
+            A tuple of :class:`~can.Notifier` instances associated with the given bus.
         """
-        return cls._registry.find_instance(bus)
+        return Notifier._registry.find_instances(bus)
 
     def __exit__(
         self,

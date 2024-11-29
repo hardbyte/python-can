@@ -57,10 +57,10 @@ class NotifierTest(unittest.TestCase):
                 self.assertRaises(ValueError, can.Notifier, bus, [reader], 0.1)
 
                 # find_instance must return the existing instance
-                self.assertIs(can.Notifier.find_instance(bus), notifier)
+                self.assertEqual(can.Notifier.find_instances(bus), (notifier,))
 
-            # Notifier is stopped, find instance must return None
-            self.assertIsNone(can.Notifier.find_instance(bus))
+            # Notifier is stopped, find_instances() must return an empty tuple
+            self.assertEqual(can.Notifier.find_instances(bus), ())
 
             # now the first notifier is stopped, a new notifier can be created without error:
             with can.Notifier(bus, [reader], 0.1) as notifier:
@@ -68,7 +68,7 @@ class NotifierTest(unittest.TestCase):
                 self.assertRaises(ValueError, can.Notifier, bus, [reader], 0.1)
 
                 # find_instance must return the existing instance
-                self.assertIs(can.Notifier.find_instance(bus), notifier)
+                self.assertEqual(can.Notifier.find_instances(bus), (notifier,))
 
 
 class AsyncNotifierTest(unittest.TestCase):
