@@ -275,7 +275,7 @@ class BLFReader(BinaryIOMessageReader):
                     is_remote_frame=bool(flags & REMOTE_FLAG),
                     is_rx=not bool(flags & DIR),
                     dlc=dlc,
-                    data=can_data[:dlc],
+                    data=can_data,
                     channel=channel - 1,
                 )
             elif obj_type == CAN_ERROR_EXT:
@@ -290,7 +290,7 @@ class BLFReader(BinaryIOMessageReader):
                     is_extended_id=bool(can_id & CAN_MSG_EXT),
                     arbitration_id=can_id & 0x1FFFFFFF,
                     dlc=dlc,
-                    data=can_data[:dlc],
+                    data=can_data,
                     channel=channel - 1,
                 )
             elif obj_type == CAN_FD_MESSAGE:
