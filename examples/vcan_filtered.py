@@ -18,14 +18,11 @@ def main():
         # print all incoming messages, which includes the ones sent,
         # since we set receive_own_messages to True
         # assign to some variable so it does not garbage collected
-        notifier = can.Notifier(bus, [can.Printer()])  # pylint: disable=unused-variable
-
-        bus.send(can.Message(arbitration_id=1, is_extended_id=True))
-        bus.send(can.Message(arbitration_id=2, is_extended_id=True))
-        bus.send(can.Message(arbitration_id=1, is_extended_id=False))
-
-        time.sleep(1.0)
-        notifier.stop()
+        with can.Notifier(bus, [can.Printer()]):  # pylint: disable=unused-variable
+            bus.send(can.Message(arbitration_id=1, is_extended_id=True))
+            bus.send(can.Message(arbitration_id=2, is_extended_id=True))
+            bus.send(can.Message(arbitration_id=1, is_extended_id=False))
+            time.sleep(1.0)
 
 
 if __name__ == "__main__":
