@@ -64,7 +64,7 @@ class TestPCANBus(unittest.TestCase):
 
     def test_bus_creation_state_error(self) -> None:
         with self.assertRaises(ValueError):
-            can.Bus(interface="pcan", state=BusState.ERROR)
+            can.Bus(interface="pcan", state=BusState.STOPPED)
 
     @parameterized.expand([("f_clock", 80_000_000), ("f_clock_mhz", 80)])
     def test_bus_creation_fd(self, clock_param: str, clock_val: int) -> None:
