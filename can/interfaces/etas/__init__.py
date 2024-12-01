@@ -278,14 +278,14 @@ class EtasBus(can.BusABC):
         status = OCI_CANControllerStatus()
         OCI_GetCANControllerStatus(self.ctrl, ctypes.byref(status))
         if status.stateCode & OCI_CAN_STATE_ACTIVE:
-            return can.BusState.ACTIVE
+            return can.BusState.ERROR_ACTIVE
         elif status.stateCode & OCI_CAN_STATE_PASSIVE:
-            return can.BusState.PASSIVE
+            return can.BusState.ERROR_PASSIVE
 
     @state.setter
     def state(self, new_state: can.BusState) -> None:
         # disabled, OCI_AdaptCANConfiguration does not allow changing the bus mode
-        # if new_state == can.BusState.ACTIVE:
+        # if new_state == can.BusState.ERROR_ACTIVE:
         #     self.ctrlConf.busParticipationMode = OCI_BUSMODE_ACTIVE
         # else:
         #     self.ctrlConf.busParticipationMode = OCI_BUSMODE_PASSIVE

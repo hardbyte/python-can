@@ -367,8 +367,8 @@ class TestPCANBus(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("active", BusState.ACTIVE, PCAN_PARAMETER_OFF),
-            ("passive", BusState.PASSIVE, PCAN_PARAMETER_ON),
+            ("active", BusState.ERROR_ACTIVE, PCAN_PARAMETER_OFF),
+            ("passive", BusState.ERROR_PASSIVE, PCAN_PARAMETER_ON),
         ]
     )
     def test_state(self, name, bus_state: BusState, expected_parameter) -> None:
@@ -384,7 +384,7 @@ class TestPCANBus(unittest.TestCase):
             )
 
     def test_state_constructor(self):
-        for state in [BusState.ACTIVE, BusState.PASSIVE]:
+        for state in [BusState.ERROR_ACTIVE, BusState.ERROR_PASSIVE]:
             bus = can.Bus(interface="pcan", state=state)
             assert bus.state == state
 

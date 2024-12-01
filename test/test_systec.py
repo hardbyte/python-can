@@ -218,7 +218,7 @@ class SystecTest(unittest.TestCase):
     @staticmethod
     def test_bus_passive_state():
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(interface="systec", channel=0, state=can.BusState.PASSIVE)
+        bus = can.Bus(interface="systec", channel=0, state=can.BusState.ERROR_PASSIVE)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             0,
