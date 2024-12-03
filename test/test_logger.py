@@ -139,6 +139,63 @@ class TestLoggerScriptModule(unittest.TestCase):
         )
         assert results.can_filters == expected_can_filters
 
+    def test_parse_timing(self) -> None:
+        can20_args = self.baseargs + [
+            "--timing",
+            "f_clock=8_000_000",
+            "tseg1=5",
+            "tseg2=2",
+            "sjw=2",
+            "brp=2",
+            "nof_samples=1",
+            "--app-name=CANalyzer",
+        ]
+        results, additional_config = can.logger._parse_logger_args(can20_args[1:])
+        assert results.timing == can.BitTiming(
+            f_clock=8_000_000, brp=2, tseg1=5, tseg2=2, sjw=2, nof_samples=1
+        )
+        assert additional_config["app_name"] == "CANalyzer"
+
+        canfd_args = self.baseargs + [
+            "--timing",
+            "f_clock=80_000_000",
+            "nom_tseg1=119",
+            "nom_tseg2=40",
+            "nom_sjw=40",
+            "nom_brp=1",
+            "data_tseg1=29",
+            "data_tseg2=10",
+            "data_sjw=10",
+            "data_brp=1",
+            "--app-name=CANalyzer",
+        ]
+        results, additional_config = can.logger._parse_logger_args(canfd_args[1:])
+        assert results.timing == can.BitTimingFd(
+            f_clock=80_000_000,
+            nom_brp=1,
+            nom_tseg1=119,
+            nom_tseg2=40,
+            nom_sjw=40,
+            data_brp=1,
+            data_tseg1=29,
+            data_tseg2=10,
+            data_sjw=10,
+        )
+        assert additional_config["app_name"] == "CANalyzer"
+
+        # remove f_clock parameter, parsing should fail
+        incomplete_args = self.baseargs + [
+            "--timing",
+            "tseg1=5",
+            "tseg2=2",
+            "sjw=2",
+            "brp=2",
+            "nof_samples=1",
+            "--app-name=CANalyzer",
+        ]
+        with self.assertRaises(SystemExit):
+            can.logger._parse_logger_args(incomplete_args[1:])
+
     def test_parse_additional_config(self):
         unknown_args = [
             "--app-name=CANalyzer",
