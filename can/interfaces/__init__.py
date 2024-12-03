@@ -32,6 +32,7 @@ __all__ = [
     "usb2can",
     "vector",
     "virtual",
+    "zlgcan",
 ]
 
 # interface_name => (module, classname)
@@ -59,6 +60,7 @@ BACKENDS: Dict[str, Tuple[str, str]] = {
     "neousys": ("can.interfaces.neousys", "NeousysBus"),
     "etas": ("can.interfaces.etas", "EtasBus"),
     "socketcand": ("can.interfaces.socketcand", "SocketCanDaemonBus"),
+    "zlgcan": ("can.interfaces.zlgcan", "ZCanBus"),
 }
 
 
