@@ -371,8 +371,8 @@ class ASCWriter(TextIOMessageWriter):
         self.channel = channel
 
         # write start of file header
-        start_time = self._format_header_datetime(datetime.now())
-        self.file.write(f"date {start_time}\n")
+        self.start_time = self._format_header_datetime(datetime.now())
+        self.file.write(f"date {self.start_time}\n")
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
 
@@ -394,6 +394,14 @@ class ASCWriter(TextIOMessageWriter):
         # This is guaranteed to not be None since we raise ValueError in __init__
         if not self.file.closed:
             self.file.write("End TriggerBlock\n")
+            if self.started is not None:
+                formatted_date = self._format_header_datetime(
+                    datetime.fromtimestamp(self.started)
+                )
+                self.file.seek(0)
+                self.file.write(f"date {formatted_date}\n")
+            else:
+                logger.warning("No messages logged; 'started' timestamp is None.")
         super().stop()
 
     def log_event(self, message: str, timestamp: Optional[float] = None) -> None:
