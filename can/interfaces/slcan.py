@@ -6,7 +6,8 @@ import io
 import logging
 import time
 import warnings
-from typing import Any, Optional, Tuple, Union
+from queue import SimpleQueue
+from typing import Any, Optional, Tuple, Union, cast
 
 from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message, typechecking
 from can.exceptions import (
@@ -131,6 +132,7 @@ class slcanBus(BusABC):
                 timeout=timeout,
             )
 
+        self._queue: SimpleQueue[str] = SimpleQueue()
         self._buffer = bytearray()
         self._can_protocol = CanProtocol.CAN_20
 
@@ -196,7 +198,7 @@ class slcanBus(BusABC):
                 # We read the `serialPortOrig.in_waiting` only once here.
                 in_waiting = self.serialPortOrig.in_waiting
                 for _ in range(max(1, in_waiting)):
-                    new_byte = self.serialPortOrig.read(size=1)
+                    new_byte = self.serialPortOrig.read(1)
                     if new_byte:
                         self._buffer.extend(new_byte)
                     else:
@@ -234,7 +236,10 @@ class slcanBus(BusABC):
         extended = False
         data = None
 
-        string = self._read(timeout)
+        if self._queue.qsize():
+            string: Optional[str] = self._queue.get_nowait()
+        else:
+            string = self._read(timeout)
 
         if not string:
             pass
@@ -300,7 +305,7 @@ class slcanBus(BusABC):
 
     def fileno(self) -> int:
         try:
-            return self.serialPortOrig.fileno()
+            return cast(int, self.serialPortOrig.fileno())
         except io.UnsupportedOperation:
             raise NotImplementedError(
                 "fileno is not implemented using current CAN bus on this platform"
@@ -321,19 +326,21 @@ class slcanBus(BusABC):
             int hw_version is the hardware version or None on timeout
             int sw_version is the software version or None on timeout
         """
+        _timeout = serial.Timeout(timeout)
         cmd = "V"
         self._write(cmd)
 
-        string = self._read(timeout)
-
-        if not string:
-            pass
-        elif string[0] == cmd and len(string) == 6:
-            # convert ASCII coded version
-            hw_version = int(string[1:3])
-            sw_version = int(string[3:5])
-            return hw_version, sw_version
-
+        while True:
+            if string := self._read(_timeout.time_left()):
+                if string[0] == cmd:
+                    # convert ASCII coded version
+                    hw_version = int(string[1:3])
+                    sw_version = int(string[3:5])
+                    return hw_version, sw_version
+                else:
+                    self._queue.put_nowait(string)
+            if _timeout.expired():
+                break
         return None, None
 
     def get_serial_number(self, timeout: Optional[float]) -> Optional[str]:
@@ -345,15 +352,17 @@ class slcanBus(BusABC):
         :return:
             :obj:`None` on timeout or a :class:`str` object.
         """
+        _timeout = serial.Timeout(timeout)
         cmd = "N"
         self._write(cmd)
 
-        string = self._read(timeout)
-
-        if not string:
-            pass
-        elif string[0] == cmd and len(string) == 6:
-            serial_number = string[1:-1]
-            return serial_number
-
+        while True:
+            if string := self._read(_timeout.time_left()):
+                if string[0] == cmd:
+                    serial_number = string[1:-1]
+                    return serial_number
+                else:
+                    self._queue.put_nowait(string)
+            if _timeout.expired():
+                break
         return None
