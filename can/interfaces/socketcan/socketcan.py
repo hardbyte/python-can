@@ -42,6 +42,13 @@ except ImportError:
     log.error("socket.CMSG_SPACE not available on this platform")
 
 
+# Constants needed for precise handling of timestamps
+RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@ll")
+RECEIVED_ANCILLARY_BUFFER_SIZE = (
+    CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size) if CMSG_SPACE_available else 0
+)
+
+
 # Setup BCM struct
 def bcm_header_factory(
     fields: List[Tuple[str, Union[Type[ctypes.c_uint32], Type[ctypes.c_long]]]],
@@ -322,6 +329,7 @@ class CyclicSendTask(
         period: float,
         duration: Optional[float] = None,
         period_intra: Optional[float] = None,
+        autostart: bool = True,
     ) -> None:
         """Construct and :meth:`~start` a task.
 
@@ -343,10 +351,13 @@ class CyclicSendTask(
         super().__init__(messages, period, duration)
         self.bcm_socket = bcm_socket
         self.task_id = task_id
-        self._tx_setup(self.messages)
+        if autostart:
+            self._tx_setup(self.messages)
 
     def _tx_setup(
-        self, messages: Sequence[Message], raise_if_task_exists: bool = True
+        self,
+        messages: Sequence[Message],
+        raise_if_task_exists: bool = True,
     ) -> None:
         # Create a low level packed frame to pass to the kernel
         body = bytearray()
@@ -598,12 +609,6 @@ def capture_message(
     return msg
 
 
-# Constants needed for precise handling of timestamps
-if CMSG_SPACE_available:
-    RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@ll")
-    RECEIVED_ANCILLARY_BUFFER_SIZE = CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size)
-
-
 class SocketcanBus(BusABC):  # pylint: disable=abstract-method
     """A SocketCAN interface to CAN.
 
@@ -706,14 +711,18 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         #     so this is always supported by the kernel
         self.socket.setsockopt(socket.SOL_SOCKET, constants.SO_TIMESTAMPNS, 1)
 
-        bind_socket(self.socket, channel)
-        kwargs.update(
-            {
-                "receive_own_messages": receive_own_messages,
-                "fd": fd,
-                "local_loopback": local_loopback,
-            }
-        )
+        try:
+            bind_socket(self.socket, channel)
+            kwargs.update(
+                {
+                    "receive_own_messages": receive_own_messages,
+                    "fd": fd,
+                    "local_loopback": local_loopback,
+                }
+            )
+        except OSError as error:
+            log.error("Could not access SocketCAN device %s (%s)", channel, error)
+            raise
         super().__init__(
             channel=channel,
             can_filters=can_filters,
@@ -809,6 +818,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        autostart: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
         period_intra: Optional[float] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
@@ -820,13 +830,17 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         :class:`CyclicSendTask` within BCM provides flexibility to schedule
         CAN messages sending with the same CAN ID, but different CAN data.
 
-        :param messages:
+        :param msgs:
             The message(s) to be sent periodically.
         :param period:
             The rate in seconds at which to send the messages.
         :param duration:
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
+        :param autostart:
+            If True (the default) the sending task will immediately start after creation.
+            Otherwise, the task has to be started by calling the
+            tasks :meth:`~can.RestartableCyclicTaskABC.start` method on it.
 
         :raises ValueError:
             If task identifier passed to :class:`CyclicSendTask` can't be used
@@ -851,7 +865,9 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             msgs_channel = str(msgs[0].channel) if msgs[0].channel else None
             bcm_socket = self._get_bcm_socket(msgs_channel or self.channel)
             task_id = self._get_next_task_id()
-            task = CyclicSendTask(bcm_socket, task_id, msgs, period, duration, period_intra)
+            task = CyclicSendTask(
+              bcm_socket, task_id, msgs, period, duration, period_intra, autostart=autostart
+            )
             return task
 
         # fallback to thread based cyclic task
@@ -865,6 +881,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             msgs=msgs,
             period=period,
             duration=duration,
+            autostart=autostart,
             modifier_callback=modifier_callback,
         )
 

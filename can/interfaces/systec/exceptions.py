@@ -22,8 +22,7 @@ class UcanException(CanError, ABC):
 
     @property
     @abstractmethod
-    def _error_message_mapping(self) -> Dict[ReturnCode, str]:
-        ...
+    def _error_message_mapping(self) -> Dict[ReturnCode, str]: ...
 
 
 class UcanError(UcanException):

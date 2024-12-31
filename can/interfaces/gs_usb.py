@@ -17,7 +17,7 @@ class GsUsbBus(can.BusABC):
     def __init__(
         self,
         channel,
-        bitrate,
+        bitrate: int = 500_000,
         index=None,
         bus=None,
         address=None,
@@ -33,11 +33,16 @@ class GsUsbBus(can.BusABC):
         :param can_filters: not supported
         :param bitrate: CAN network bandwidth (bits/s)
         """
+        self._is_shutdown = False
         if (index is not None) and ((bus or address) is not None):
             raise CanInitializationError(
                 "index and bus/address cannot be used simultaneously"
             )
 
+        if index is None and address is None and bus is None:
+            index = channel
+
+        self._index = None
         if index is not None:
             devs = GsUsb.scan()
             if len(devs) <= index:
@@ -45,6 +50,7 @@ class GsUsbBus(can.BusABC):
                     f"Cannot find device {index}. Devices found: {len(devs)}"
                 )
             gs_usb = devs[index]
+            self._index = index
         else:
             gs_usb = GsUsb.find(bus=bus, address=address)
             if not gs_usb:
@@ -54,8 +60,21 @@ class GsUsbBus(can.BusABC):
         self.channel_info = channel
         self._can_protocol = can.CanProtocol.CAN_20
 
-        self.gs_usb.set_bitrate(bitrate)
+        bit_timing = can.BitTiming.from_sample_point(
+            f_clock=self.gs_usb.device_capability.fclk_can,
+            bitrate=bitrate,
+            sample_point=87.5,
+        )
+        props_seg = 1
+        self.gs_usb.set_timing(
+            prop_seg=props_seg,
+            phase_seg1=bit_timing.tseg1 - props_seg,
+            phase_seg2=bit_timing.tseg2,
+            sjw=bit_timing.sjw,
+            brp=bit_timing.brp,
+        )
         self.gs_usb.start()
+        self._bitrate = bitrate
 
         super().__init__(
             channel=channel,
@@ -90,7 +109,7 @@ class GsUsbBus(can.BusABC):
         frame = GsUsbFrame()
         frame.can_id = can_id
         frame.can_dlc = msg.dlc
-        frame.timestamp_us = int(msg.timestamp * 1000000)
+        frame.timestamp_us = 0  # timestamp frame field is only useful on receive
         frame.data = list(msg.data)
 
         try:
@@ -142,5 +161,21 @@ class GsUsbBus(can.BusABC):
         return msg, False
 
     def shutdown(self):
+        if self._is_shutdown:
+            return
+
         super().shutdown()
         self.gs_usb.stop()
+        if self._index is not None:
+            # Avoid errors on subsequent __init() by repeating the .scan() and .start() that would otherwise fail
+            # the next time the device is opened in __init__()
+            devs = GsUsb.scan()
+            if self._index < len(devs):
+                gs_usb = devs[self._index]
+                try:
+                    gs_usb.set_bitrate(self._bitrate)
+                    gs_usb.start()
+                    gs_usb.stop()
+                except usb.core.USBError:
+                    pass
+        self._is_shutdown = True

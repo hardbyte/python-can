@@ -48,8 +48,7 @@ The unit tests can be run with::
 
 The documentation can be built with::
 
-    pip install -r doc/doc-requirements.txt
-    python -m sphinx -an doc build
+    pipx run tox -e docs
 
 The linters can be run with::
 
@@ -111,19 +110,24 @@ Creating a new Release
 ----------------------
 
 - Release from the ``main`` branch (except for pre-releases).
-- Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
 - Check if any deprecations are pending.
 - Run all tests and examples against available hardware.
 - Update ``CONTRIBUTORS.txt`` with any new contributors.
 - For larger changes update ``doc/history.rst``.
 - Sanity check that documentation has stayed inline with code.
-- Create a temporary virtual environment. Run ``python setup.py install`` and ``tox``.
-- Create and upload the distribution: ``python setup.py sdist bdist_wheel``.
-- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``.
-- Upload with twine ``twine upload dist/python-can-X.Y.Z*``.
 - In a new virtual env check that the package can be installed with pip: ``pip install python-can==X.Y.Z``.
 - Create a new tag in the repository.
 - Check the release on
   `PyPi <https://pypi.org/project/python-can/#history>`__,
   `Read the Docs <https://readthedocs.org/projects/python-can/versions/>`__ and
   `GitHub <https://github.com/hardbyte/python-can/releases>`__.
+
+
+Manual release steps (deprecated)
+---------------------------------
+
+- Create a temporary virtual environment.
+- Create a new tag in the repository. Use `semantic versioning <http://semver.org>`__.
+- Build with  ``pipx run build``
+- Sign the packages with gpg ``gpg --detach-sign -a dist/python_can-X.Y.Z-py3-none-any.whl``.
+- Upload with twine ``twine upload dist/python-can-X.Y.Z*``.

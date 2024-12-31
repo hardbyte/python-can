@@ -89,7 +89,7 @@ class NicanError(CanError):
 
     def __init__(self, function, error_code: int, arguments) -> None:
         super().__init__(
-            message=f"{function} failed: {get_error_message(self.error_code)}",
+            message=f"{function} failed: {get_error_message(error_code)}",
             error_code=error_code,
         )
 

@@ -967,7 +967,7 @@ class PCANBasic:
             elif Parameter == PCAN_ATTACHED_CHANNELS:
                 res = self.GetValue(Channel, PCAN_ATTACHED_CHANNELS_COUNT)
                 if TPCANStatus(res[0]) != PCAN_ERROR_OK:
-                    return (TPCANStatus(res[0]),)
+                    return TPCANStatus(res[0]), ()
                 mybuffer = (TPCANChannelInformation * res[1])()
 
             elif (

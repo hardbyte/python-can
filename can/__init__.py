@@ -5,10 +5,11 @@ different hardware devices, and a suite of utilities for sending and receiving
 messages on a can bus.
 """
 
+import contextlib
 import logging
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Dict
 
-__version__ = "4.3.1"
 __all__ = [
     "ASCReader",
     "ASCWriter",
@@ -123,6 +124,9 @@ from .message import Message
 from .notifier import Notifier
 from .thread_safe_bus import ThreadSafeBus
 from .util import set_logging_level
+
+with contextlib.suppress(PackageNotFoundError):
+    __version__ = version("python-can")
 
 log = logging.getLogger("can")
 

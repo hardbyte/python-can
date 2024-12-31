@@ -23,22 +23,18 @@ jobs:
           "3.10",
           "3.11",
           "3.12",
-          "pypy-3.8",
+          "3.13",
           "pypy-3.9",
+          "pypy-3.10",
         ]
-        # uncomment when python 3.13.0 alpha is available
-        #include:
-        #  # Only test on a single configuration while there are just pre-releases
-        #  - os: ubuntu-latest
-        #    experimental: true
-        #    python-version: "3.13.0-alpha - 3.13.0"
       fail-fast: false
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        allow-prereleases: true
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -56,7 +52,7 @@ jobs:
         # See: https://foss.heptapod.net/pypy/pypy/-/issues/3809
         TEST_SOCKETCAN: "${{ matrix.os == 'ubuntu-latest' && ! startsWith(matrix.python-version, 'pypy' ) }}"
     - name: Coveralls Parallel
-      uses: coverallsapp/github-action@master
+      uses: coverallsapp/github-action@v2
       with:
         github-token: ${{ secrets.github_token }}
         flag-name: Unittests-${{ matrix.os }}-${{ matrix.python-version }}
@@ -68,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
+      uses: coverallsapp/github-action@v2
       with:
         github-token: ${{ secrets.github_token }}
         parallel-finished: true
@@ -76,9 +72,9 @@ jobs:
   static-code-analysis:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - name: Install dependencies
@@ -115,9 +111,9 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - name: Install dependencies
@@ -131,34 +127,28 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[canalystii,gs_usb,mf4]
-        pip install -r doc/doc-requirements.txt
+        pip install tox
     - name: Build documentation
       run: |
-        python -m sphinx -Wan --keep-going doc build
-    - name: Run doctest
-      run: |
-        python -m sphinx -b doctest -W --keep-going doc build
-    - uses: actions/upload-artifact@v3
-      with:
-        name: sphinx-out
-        path: ./build/
-        retention-days: 5
+        tox -e docs
 
   build:
+    name: Packaging
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # fetch tags for setuptools-scm
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Build wheel and sdist
@@ -166,24 +156,26 @@ jobs:
       - name: Check build artifacts
         run: pipx run twine check --strict dist/*
       - name: Save artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: python-can-dist
+          name: release
           path: ./dist
 
   upload_pypi:
     needs: [build]
+    name: Release to PyPi
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      attestations: write
 
     # upload to PyPI only on release
     if: github.event.release && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: python-can-dist
           path: dist
+          merge-multiple: true
 
-      - uses: pypa/gh-action-pypi-publish@v1.4.2
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

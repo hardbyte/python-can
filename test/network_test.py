@@ -6,16 +6,14 @@ import threading
 import unittest
 
 import can
+from test.config import IS_PYPY
 
 logging.getLogger(__file__).setLevel(logging.WARNING)
 
 
 # make a random bool:
 def rbool():
-    return bool(round(random.random()))
-
-
-channel = "vcan0"
+    return random.choice([False, True])
 
 
 class ControllerAreaNetworkTestCase(unittest.TestCase):
@@ -51,74 +49,51 @@ class ControllerAreaNetworkTestCase(unittest.TestCase):
         # Restore the defaults
         can.rc = self._can_rc
 
-    def producer(self, ready_event, msg_read):
-        self.client_bus = can.interface.Bus(channel=channel)
-        ready_event.wait()
-        for i in range(self.num_messages):
-            m = can.Message(
-                arbitration_id=self.ids[i],
-                is_remote_frame=self.remote_flags[i],
-                is_error_frame=self.error_flags[i],
-                is_extended_id=self.extended_flags[i],
-                data=self.data[i],
-            )
-            # logging.debug("writing message: {}".format(m))
-            if msg_read is not None:
-                # Don't send until the other thread is ready
-                msg_read.wait()
-                msg_read.clear()
-
-            self.client_bus.send(m)
+    def producer(self, channel: str):
+        with can.interface.Bus(channel=channel) as client_bus:
+            for i in range(self.num_messages):
+                m = can.Message(
+                    arbitration_id=self.ids[i],
+                    is_remote_frame=self.remote_flags[i],
+                    is_error_frame=self.error_flags[i],
+                    is_extended_id=self.extended_flags[i],
+                    data=self.data[i],
+                )
+                client_bus.send(m)
 
     def testProducer(self):
         """Verify that we can send arbitrary messages on the bus"""
         logging.debug("testing producer alone")
-        ready = threading.Event()
-        ready.set()
-        self.producer(ready, None)
-
+        self.producer(channel="testProducer")
         logging.debug("producer test complete")
 
     def testProducerConsumer(self):
         logging.debug("testing producer/consumer")
-        ready = threading.Event()
-        msg_read = threading.Event()
+        read_timeout = 2.0 if IS_PYPY else 0.5
+        channel = "testProducerConsumer"
 
-        self.server_bus = can.interface.Bus(channel=channel)
+        with can.interface.Bus(channel=channel, interface="virtual") as server_bus:
+            t = threading.Thread(target=self.producer, args=(channel,))
+            t.start()
 
-        t = threading.Thread(target=self.producer, args=(ready, msg_read))
-        t.start()
+            i = 0
+            while i < self.num_messages:
+                msg = server_bus.recv(timeout=read_timeout)
+                self.assertIsNotNone(msg, "Didn't receive a message")
 
-        # Ensure there are no messages on the bus
-        while True:
-            m = self.server_bus.recv(timeout=0.5)
-            if m is None:
-                print("No messages... lets go")
-                break
-            else:
-                self.fail("received messages before the test has started ...")
-        ready.set()
-        i = 0
-        while i < self.num_messages:
-            msg_read.set()
-            msg = self.server_bus.recv(timeout=0.5)
-            self.assertIsNotNone(msg, "Didn't receive a message")
-            # logging.debug("Received message {} with data: {}".format(i, msg.data))
+                self.assertEqual(msg.is_extended_id, self.extended_flags[i])
+                if not msg.is_remote_frame:
+                    self.assertEqual(msg.data, self.data[i])
+                self.assertEqual(msg.arbitration_id, self.ids[i])
 
-            self.assertEqual(msg.is_extended_id, self.extended_flags[i])
-            if not msg.is_remote_frame:
-                self.assertEqual(msg.data, self.data[i])
-            self.assertEqual(msg.arbitration_id, self.ids[i])
+                self.assertEqual(msg.is_error_frame, self.error_flags[i])
+                self.assertEqual(msg.is_remote_frame, self.remote_flags[i])
 
-            self.assertEqual(msg.is_error_frame, self.error_flags[i])
-            self.assertEqual(msg.is_remote_frame, self.remote_flags[i])
+                i += 1
+            t.join()
 
-            i += 1
-        t.join()
-
-        with contextlib.suppress(NotImplementedError):
-            self.server_bus.flush_tx_buffer()
-        self.server_bus.shutdown()
+            with contextlib.suppress(NotImplementedError):
+                server_bus.flush_tx_buffer()
 
 
 if __name__ == "__main__":

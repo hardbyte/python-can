@@ -7,6 +7,7 @@ Authors: Marvin Seiler, Gerrit Telkamp
 Copyright (C) 2021  DOMOLOGIC GmbH
 http://www.domologic.de
 """
+
 import logging
 import os
 import select
@@ -322,7 +323,7 @@ class SocketCanDaemonBus(can.BusABC):
         if self.__tcp_tune:
             self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
         if not ascii_msg == msg:
-            raise can.CanError(f"{msg} message expected!")
+            raise can.CanError(f"Expected '{msg}' got: '{ascii_msg}'")
 
     def send(self, msg, timeout=None):
         """Transmit a message to the CAN bus.

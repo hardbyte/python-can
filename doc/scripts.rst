@@ -1,5 +1,5 @@
-Scripts
-=======
+Command Line Tools
+==================
 
 The following modules are callable from ``python-can``.
 
@@ -12,12 +12,14 @@ Command line help, called with ``--help``:
 
 
 .. command-output:: python -m can.logger -h
+    :shell:
 
 
 can.player
 ----------
 
 .. command-output:: python -m can.player -h
+    :shell:
 
 
 can.viewer
@@ -52,9 +54,11 @@ By default the ``can.viewer`` uses the :doc:`/interfaces/socketcan` interface. A
 The full usage page can be seen below:
 
 .. command-output:: python -m can.viewer -h
+    :shell:
 
 
 can.logconvert
 --------------
 
 .. command-output:: python -m can.logconvert -h
+    :shell:

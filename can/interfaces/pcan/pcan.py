@@ -1,6 +1,7 @@
 """
 Enable basic CAN over a PCAN USB device.
 """
+
 import logging
 import platform
 import time
@@ -26,6 +27,7 @@ from .basic import (
     FEATURE_FD_CAPABLE,
     IS_LINUX,
     IS_WINDOWS,
+    PCAN_ALLOW_ECHO_FRAMES,
     PCAN_ALLOW_ERROR_FRAMES,
     PCAN_API_VERSION,
     PCAN_ATTACHED_CHANNELS,
@@ -41,12 +43,14 @@ from .basic import (
     PCAN_DICT_STATUS,
     PCAN_ERROR_BUSHEAVY,
     PCAN_ERROR_BUSLIGHT,
+    PCAN_ERROR_ILLDATA,
     PCAN_ERROR_OK,
     PCAN_ERROR_QRCVEMPTY,
     PCAN_FD_PARAMETER_LIST,
     PCAN_LANBUS1,
     PCAN_LISTEN_ONLY,
     PCAN_MESSAGE_BRS,
+    PCAN_MESSAGE_ECHO,
     PCAN_MESSAGE_ERRFRAME,
     PCAN_MESSAGE_ESI,
     PCAN_MESSAGE_EXTENDED,
@@ -120,6 +124,7 @@ class PcanBus(BusABC):
         state: BusState = BusState.ACTIVE,
         timing: Optional[Union[BitTiming, BitTimingFd]] = None,
         bitrate: int = 500000,
+        receive_own_messages: bool = False,
         **kwargs: Any,
     ):
         """A PCAN USB interface to CAN.
@@ -161,6 +166,9 @@ class PcanBus(BusABC):
             Bitrate of channel in bit/s.
             Default is 500 kbit/s.
             Ignored if using CanFD.
+
+        :param receive_own_messages:
+            Enable self-reception of sent messages.
 
         :param bool fd:
             Should the Bus be initialized in CAN-FD mode.
@@ -315,6 +323,14 @@ class PcanBus(BusABC):
                 log.debug(
                     "Ignoring error. PCAN_ALLOW_ERROR_FRAMES is still unsupported by OSX Library PCANUSB v0.11.2"
                 )
+
+        if receive_own_messages:
+            result = self.m_objPCANBasic.SetValue(
+                self.m_PcanHandle, PCAN_ALLOW_ECHO_FRAMES, PCAN_PARAMETER_ON
+            )
+
+            if result != PCAN_ERROR_OK:
+                raise PcanCanInitializationError(self._get_formatted_error(result))
 
         if kwargs.get("auto_reset", False):
             result = self.m_objPCANBasic.SetValue(
@@ -540,6 +556,12 @@ class PcanBus(BusABC):
             elif result & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
                 log.warning(self._get_formatted_error(result))
 
+            elif result == PCAN_ERROR_ILLDATA:
+                # When there is an invalid frame on CAN bus (in our case CAN FD), PCAN first reports result PCAN_ERROR_ILLDATA
+                # and then it sends the error frame. If the PCAN_ERROR_ILLDATA is not ignored, python-can throws an exception.
+                # So we ignore any PCAN_ERROR_ILLDATA results here.
+                pass
+
             else:
                 raise PcanCanOperationError(self._get_formatted_error(result))
 
@@ -548,6 +570,7 @@ class PcanBus(BusABC):
         is_extended_id = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_EXTENDED.value)
         is_remote_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_RTR.value)
         is_fd = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_FD.value)
+        is_rx = not bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ECHO.value)
         bitrate_switch = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_BRS.value)
         error_state_indicator = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ESI.value)
         is_error_frame = bool(pcan_msg.MSGTYPE & PCAN_MESSAGE_ERRFRAME.value)
@@ -575,6 +598,7 @@ class PcanBus(BusABC):
             dlc=dlc,
             data=pcan_msg.DATA[:dlc],
             is_fd=is_fd,
+            is_rx=is_rx,
             bitrate_switch=bitrate_switch,
             error_state_indicator=error_state_indicator,
         )

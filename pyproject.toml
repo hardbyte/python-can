@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 67.7"]
+requires = ["setuptools >= 67.7", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,8 +11,7 @@ dependencies = [
     "wrapt~=1.10",
     "packaging >= 23.1",
     "typing_extensions>=3.10.0.0",
-    "msgpack~=1.0.0; platform_system != 'Windows'",
-    "pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'",
+    "msgpack~=1.1.0; platform_system != 'Windows'",
 ]
 requires-python = ">=3.8"
 license = { text = "LGPL v3" }
@@ -35,8 +34,11 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: Software Development :: Embedded Systems :: Controller Area Network (CAN)",
     "Topic :: System :: Hardware :: Hardware Drivers",
     "Topic :: System :: Logging",
     "Topic :: System :: Monitoring",
@@ -58,11 +60,12 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 
 [project.optional-dependencies]
 lint = [
-    "pylint==3.0.*",
-    "ruff==0.1.13",
-    "black==23.12.*",
-    "mypy==1.8.*",
+    "pylint==3.2.*",
+    "ruff==0.7.0",
+    "black==24.10.*",
+    "mypy==1.12.*",
 ]
+pywin32 = ["pywin32>=305"]
 seeedstudio = ["pyserial>=3.0"]
 serial = ["pyserial~=3.0"]
 neovi = ["filelock", "python-ics>=2.12"]
@@ -75,6 +78,7 @@ pcan = ["uptime~=3.0.1"]
 remote = ["python-can-remote"]
 sontheim = ["python-can-sontheim>=0.1.2"]
 canine = ["python-can-canine>=0.2.2"]
+zlgcan = ["zlgcan-driver-py"]
 viewer = [
     "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
 ]
@@ -82,8 +86,6 @@ mf4 = ["asammdf>=6.0.0"]
 
 [tool.setuptools.dynamic]
 readme = { file = "README.rst" }
-version = { attr = "can.__version__" }
-
 [tool.setuptools.package-data]
 "*" = ["README.rst", "CONTRIBUTORS.txt", "LICENSE.txt", "CHANGELOG.md"]
 doc = ["*.*"]
@@ -92,6 +94,9 @@ can = ["py.typed"]
 
 [tool.setuptools.packages.find]
 include = ["can*"]
+
+[tool.setuptools_scm]
+# can be empty if no extra settings are needed, presence enables setuptools_scm
 
 [tool.mypy]
 warn_return_any = true
@@ -126,6 +131,9 @@ exclude = [
 ]
 
 [tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
 select = [
     "A",  # flake8-builtins
     "B",  # flake8-bugbear
@@ -147,9 +155,8 @@ ignore = [
     "B026",  # star-arg-unpacking-after-keyword-arg
     "PLR",  # pylint refactor
 ]
-line-length = 100
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "can/interfaces/*" = [
     "E501",  # Line too long
     "F403",  # undefined-local-with-import-star
@@ -161,11 +168,12 @@ line-length = 100
 "can/logger.py" = ["T20"]  # flake8-print
 "can/player.py" = ["T20"]  # flake8-print
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["can"]
 
 [tool.pylint]
 disable = [
+    "c-extension-no-member",
     "cyclic-import",
     "duplicate-code",
     "fixme",

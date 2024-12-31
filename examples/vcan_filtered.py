@@ -25,6 +25,7 @@ def main():
         bus.send(can.Message(arbitration_id=1, is_extended_id=False))
 
         time.sleep(1.0)
+        notifier.stop()
 
 
 if __name__ == "__main__":

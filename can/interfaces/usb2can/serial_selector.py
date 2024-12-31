@@ -9,7 +9,9 @@ log = logging.getLogger("can.usb2can")
 try:
     import win32com.client
 except ImportError:
-    log.warning("win32com.client module required for usb2can")
+    log.warning(
+        "win32com.client module required for usb2can. Install the 'pywin32' package."
+    )
     raise
 
 

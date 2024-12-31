@@ -130,12 +130,11 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         field_strings.append(flag_string)
 
         field_strings.append(f"DL: {self.dlc:2d}")
-        data_strings = []
+        data_strings = ""
         if self.data is not None:
-            for index in range(0, min(self.dlc, len(self.data))):
-                data_strings.append(f"{self.data[index]:02x}")
+            data_strings = self.data[: min(self.dlc, len(self.data))].hex(" ")
         if data_strings:  # if not empty
-            field_strings.append(" ".join(data_strings).ljust(24, " "))
+            field_strings.append(data_strings.ljust(24, " "))
         else:
             field_strings.append(" " * 24)
 

@@ -44,7 +44,8 @@ class CanProtocol(Enum):
     """The CAN protocol type supported by a :class:`can.BusABC` instance"""
 
     CAN_20 = auto()
-    CAN_FD = auto()
+    CAN_FD = auto()  # ISO Mode
+    CAN_FD_NON_ISO = auto()
     CAN_XL = auto()
 
 
@@ -65,7 +66,8 @@ class BusABC(metaclass=ABCMeta):
     #: Log level for received messages
     RECV_LOGGING_LEVEL = 9
 
-    _is_shutdown: bool = False
+    #: Assume that no cleanup is needed until something was initialized
+    _is_shutdown: bool = True
     _can_protocol: CanProtocol = CanProtocol.CAN_20
 
     @abstractmethod
@@ -97,6 +99,10 @@ class BusABC(metaclass=ABCMeta):
         """
         self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
+        # Flip the class default value when the constructor finishes.  That
+        # usually means the derived class constructor was also successful,
+        # since it calls this parent constructor last.
+        self._is_shutdown: bool = False
 
     def __str__(self) -> str:
         return self.channel_info
@@ -209,6 +215,7 @@ class BusABC(metaclass=ABCMeta):
         period: float,
         duration: Optional[float] = None,
         store_task: bool = True,
+        autostart: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
         period_intra: Optional[float] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
@@ -232,6 +239,10 @@ class BusABC(metaclass=ABCMeta):
         :param store_task:
             If True (the default) the task will be attached to this Bus instance.
             Disable to instead manage tasks manually.
+        :param autostart:
+            If True (the default) the sending task will immediately start after creation.
+            Otherwise, the task has to be started by calling the
+            tasks :meth:`~can.RestartableCyclicTaskABC.start` method on it.
         :param modifier_callback:
             Function which should be used to modify each message's data before
             sending. The callback modifies the :attr:`~can.Message.data` of the
@@ -271,7 +282,9 @@ class BusABC(metaclass=ABCMeta):
         # Create a backend specific task; will be patched to a _SelfRemovingCyclicTask later
         task = cast(
             _SelfRemovingCyclicTask,
-            self._send_periodic_internal(msgs, period, duration, modifier_callback, period_intra),
+            self._send_periodic_internal(
+              msgs, period, duration, autostart, modifier_callback, period_intra
+            ),
         )
         # we wrap the task's stop method to also remove it from the Bus's list of tasks
         periodic_tasks = self._periodic_tasks
@@ -298,6 +311,7 @@ class BusABC(metaclass=ABCMeta):
         msgs: Union[Sequence[Message], Message],
         period: float,
         duration: Optional[float] = None,
+        autostart: bool = True,
         modifier_callback: Optional[Callable[[Message], None]] = None,
         period_intra: Optional[float] = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
@@ -320,6 +334,11 @@ class BusABC(metaclass=ABCMeta):
             Period in seconds between each message when sending multiple messages
             in a sequence. If not provided, the period will be used for each
             message.
+        :param autostart:
+            If True (the default) the sending task will immediately start after creation.
+            Otherwise, the task has to be started by calling the
+            tasks :meth:`~can.RestartableCyclicTaskABC.start` method on it.
+
         :return:
             A started task instance. Note the task can be stopped (and
             depending on the backend modified) by calling the
@@ -336,6 +355,7 @@ class BusABC(metaclass=ABCMeta):
             messages=msgs,
             period=period,
             duration=duration,
+            autostart=autostart,
             modifier_callback=modifier_callback,
             period_intra=period_intra,
         )

@@ -143,11 +143,11 @@ class UcanBus(BusABC):
             self._ucan.init_hardware(device_number=device_number)
             self._ucan.init_can(self.channel, **self._params)
             hw_info_ex, _, _ = self._ucan.get_hardware_info()
-            self.channel_info = "{}, S/N {}, CH {}, BTR {}".format(
-                self._ucan.get_product_code_message(hw_info_ex.product_code),
-                hw_info_ex.serial,
-                self.channel,
-                self._ucan.get_baudrate_message(self.BITRATES[bitrate]),
+            self.channel_info = (
+                f"{self._ucan.get_product_code_message(hw_info_ex.product_code)}, "
+                f"S/N {hw_info_ex.serial}, "
+                f"CH {self.channel}, "
+                f"BTR {self._ucan.get_baudrate_message(self.BITRATES[bitrate])}"
             )
         except UcanException as exception:
             raise CanInitializationError() from exception
@@ -207,6 +207,7 @@ class UcanBus(BusABC):
                 | (MsgFrameFormat.MSG_FF_EXT if msg.is_extended_id else 0)
                 | (MsgFrameFormat.MSG_FF_RTR if msg.is_remote_frame else 0),
                 msg.data,
+                msg.dlc,
             )
             self._ucan.write_can_msg(self.channel, [message])
         except UcanException as exception:

@@ -15,6 +15,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterator,
     List,
     NamedTuple,
     Optional,
@@ -51,7 +52,7 @@ LOG = logging.getLogger(__name__)
 xldriver: Optional[ModuleType] = None
 try:
     from . import xldriver
-except Exception as exc:
+except FileNotFoundError as exc:
     LOG.warning("Could not import vxlapi: %s", exc)
 
 WaitForSingleObject: Optional[Callable[[int, int], int]]
@@ -103,6 +104,7 @@ class VectorBus(BusABC):
         sjw_dbr: int = 2,
         tseg1_dbr: int = 6,
         tseg2_dbr: int = 3,
+        listen_only: Optional[bool] = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -156,6 +158,8 @@ class VectorBus(BusABC):
             Bus timing value tseg1 (data)
         :param tseg2_dbr:
             Bus timing value tseg2 (data)
+        :param listen_only:
+            if the bus should be set to listen only mode.
 
         :raise ~can.exceptions.CanInterfaceNotImplementedError:
             If the current operating system is not supported or the driver could not be loaded.
@@ -204,8 +208,13 @@ class VectorBus(BusABC):
         self.index_to_channel: Dict[int, int] = {}
         self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
 
+        self._listen_only = listen_only
+
         for channel in self.channels:
-            if (_channel_index := kwargs.get("channel_index", None)) is not None:
+            if (
+                len(self.channels) == 1
+                and (_channel_index := kwargs.get("channel_index", None)) is not None
+            ):
                 # VectorBus._detect_available_configs() might return multiple
                 # devices with the same serial number, e.g. if a VN8900 is connected via both USB and Ethernet
                 # at the same time. If the VectorBus is instantiated with a config, that was returned from
@@ -228,7 +237,7 @@ class VectorBus(BusABC):
 
         permission_mask = xlclass.XLaccess()
         # Set mask to request channel init permission if needed
-        if bitrate or fd or timing:
+        if bitrate or fd or timing or self._listen_only:
             permission_mask.value = self.mask
 
         interface_version = (
@@ -250,42 +259,65 @@ class VectorBus(BusABC):
         self.permission_mask = permission_mask.value
 
         LOG.debug(
-            "Open Port: PortHandle: %d, PermissionMask: 0x%X",
+            "Open Port: PortHandle: %d, ChannelMask: 0x%X, PermissionMask: 0x%X",
             self.port_handle.value,
-            permission_mask.value,
+            self.mask,
+            self.permission_mask,
         )
 
+        assert_timing = (bitrate or timing) and not self.__testing
+
         # set CAN settings
-        for channel in self.channels:
-            if isinstance(timing, BitTiming):
-                timing = check_or_adjust_timing_clock(timing, [16_000_000, 8_000_000])
-                self._set_bit_timing(
-                    channel=channel,
-                    timing=timing,
+        if isinstance(timing, BitTiming):
+            timing = check_or_adjust_timing_clock(timing, [16_000_000, 8_000_000])
+            self._set_bit_timing(channel_mask=self.mask, timing=timing)
+            if assert_timing:
+                self._check_can_settings(
+                    channel_mask=self.mask,
+                    bitrate=timing.bitrate,
+                    sample_point=timing.sample_point,
                 )
-            elif isinstance(timing, BitTimingFd):
-                timing = check_or_adjust_timing_clock(timing, [80_000_000])
-                self._set_bit_timing_fd(
-                    channel=channel,
-                    timing=timing,
+        elif isinstance(timing, BitTimingFd):
+            timing = check_or_adjust_timing_clock(timing, [80_000_000])
+            self._set_bit_timing_fd(channel_mask=self.mask, timing=timing)
+            if assert_timing:
+                self._check_can_settings(
+                    channel_mask=self.mask,
+                    bitrate=timing.nom_bitrate,
+                    sample_point=timing.nom_sample_point,
+                    fd=True,
+                    data_bitrate=timing.data_bitrate,
+                    data_sample_point=timing.data_sample_point,
                 )
-            elif fd:
-                self._set_bit_timing_fd(
-                    channel=channel,
-                    timing=BitTimingFd.from_bitrate_and_segments(
-                        f_clock=80_000_000,
-                        nom_bitrate=bitrate or 500_000,
-                        nom_tseg1=tseg1_abr,
-                        nom_tseg2=tseg2_abr,
-                        nom_sjw=sjw_abr,
-                        data_bitrate=data_bitrate or bitrate or 500_000,
-                        data_tseg1=tseg1_dbr,
-                        data_tseg2=tseg2_dbr,
-                        data_sjw=sjw_dbr,
-                    ),
+        elif fd:
+            timing = BitTimingFd.from_bitrate_and_segments(
+                f_clock=80_000_000,
+                nom_bitrate=bitrate or 500_000,
+                nom_tseg1=tseg1_abr,
+                nom_tseg2=tseg2_abr,
+                nom_sjw=sjw_abr,
+                data_bitrate=data_bitrate or bitrate or 500_000,
+                data_tseg1=tseg1_dbr,
+                data_tseg2=tseg2_dbr,
+                data_sjw=sjw_dbr,
+            )
+            self._set_bit_timing_fd(channel_mask=self.mask, timing=timing)
+            if assert_timing:
+                self._check_can_settings(
+                    channel_mask=self.mask,
+                    bitrate=timing.nom_bitrate,
+                    sample_point=timing.nom_sample_point,
+                    fd=True,
+                    data_bitrate=timing.data_bitrate,
+                    data_sample_point=timing.data_sample_point,
                 )
-            elif bitrate:
-                self._set_bitrate(channel=channel, bitrate=bitrate)
+        elif bitrate:
+            self._set_bitrate(channel_mask=self.mask, bitrate=bitrate)
+            if assert_timing:
+                self._check_can_settings(channel_mask=self.mask, bitrate=bitrate)
+
+        if self._listen_only:
+            self._set_output_mode(channel_mask=self.mask, listen_only=True)
 
         # Enable/disable TX receipts
         tx_receipts = 1 if receive_own_messages else 0
@@ -296,14 +328,6 @@ class VectorBus(BusABC):
             self.xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
         else:
             LOG.info("Install pywin32 to avoid polling")
-
-        try:
-            self.xldriver.xlActivateChannel(
-                self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
-            )
-        except VectorOperationError as error:
-            self.shutdown()
-            raise VectorInitializationError.from_generic(error) from None
 
         # Calculate time offset for absolute timestamps
         offset = xlclass.XLuint64()
@@ -333,6 +357,15 @@ class VectorBus(BusABC):
             can_filters=can_filters,
             **kwargs,
         )
+
+        # activate channels after CAN filters were applied
+        try:
+            self.xldriver.xlActivateChannel(
+                self.port_handle, self.mask, xldefine.XL_BusTypes.XL_BUS_TYPE_CAN, 0
+            )
+        except VectorOperationError as error:
+            self.shutdown()
+            raise VectorInitializationError.from_generic(error) from None
 
     @property
     def fd(self) -> bool:
@@ -405,45 +438,63 @@ class VectorBus(BusABC):
     def _has_init_access(self, channel: int) -> bool:
         return bool(self.permission_mask & self.channel_masks[channel])
 
-    def _read_bus_params(self, channel: int) -> "VectorBusParams":
-        channel_mask = self.channel_masks[channel]
-
-        vcc_list = get_channel_configs()
+    def _read_bus_params(
+        self, channel_index: int, vcc_list: List["VectorChannelConfig"]
+    ) -> "VectorBusParams":
         for vcc in vcc_list:
-            if vcc.channel_mask == channel_mask:
+            if vcc.channel_index == channel_index:
                 bus_params = vcc.bus_params
                 if bus_params is None:
                     # for CAN channels, this should never be `None`
                     raise ValueError("Invalid bus parameters.")
                 return bus_params
 
+        channel = self.index_to_channel[channel_index]
         raise CanInitializationError(
             f"Channel configuration for channel {channel} not found."
         )
 
-    def _set_bitrate(self, channel: int, bitrate: int) -> None:
-        # set parameters if channel has init access
-        if self._has_init_access(channel):
+    def _set_output_mode(self, channel_mask: int, listen_only: bool) -> None:
+        # set parameters for channels with init access
+        channel_mask = channel_mask & self.permission_mask
+
+        if channel_mask:
+            if listen_only:
+                self.xldriver.xlCanSetChannelOutput(
+                    self.port_handle,
+                    channel_mask,
+                    xldefine.XL_OutputMode.XL_OUTPUT_MODE_SILENT,
+                )
+            else:
+                self.xldriver.xlCanSetChannelOutput(
+                    self.port_handle,
+                    channel_mask,
+                    xldefine.XL_OutputMode.XL_OUTPUT_MODE_NORMAL,
+                )
+
+            LOG.info("xlCanSetChannelOutput: listen_only=%u", listen_only)
+        else:
+            LOG.warning("No channels with init access to set listen only mode")
+
+    def _set_bitrate(self, channel_mask: int, bitrate: int) -> None:
+        # set parameters for channels with init access
+        channel_mask = channel_mask & self.permission_mask
+        if channel_mask:
             self.xldriver.xlCanSetChannelBitrate(
                 self.port_handle,
-                self.channel_masks[channel],
+                channel_mask,
                 bitrate,
             )
             LOG.info("xlCanSetChannelBitrate: baudr.=%u", bitrate)
 
-        if not self.__testing:
-            self._check_can_settings(
-                channel=channel,
-                bitrate=bitrate,
-            )
-
-    def _set_bit_timing(self, channel: int, timing: BitTiming) -> None:
-        # set parameters if channel has init access
-        if self._has_init_access(channel):
+    def _set_bit_timing(self, channel_mask: int, timing: BitTiming) -> None:
+        # set parameters for channels with init access
+        channel_mask = channel_mask & self.permission_mask
+        if channel_mask:
             if timing.f_clock == 8_000_000:
                 self.xldriver.xlCanSetChannelParamsC200(
                     self.port_handle,
-                    self.channel_masks[channel],
+                    channel_mask,
                     timing.btr0,
                     timing.btr1,
                 )
@@ -461,7 +512,7 @@ class VectorBus(BusABC):
                 chip_params.sam = timing.nof_samples
                 self.xldriver.xlCanSetChannelParams(
                     self.port_handle,
-                    self.channel_masks[channel],
+                    channel_mask,
                     chip_params,
                 )
                 LOG.info(
@@ -476,20 +527,14 @@ class VectorBus(BusABC):
                     f"timing.f_clock must be 8_000_000 or 16_000_000 (is {timing.f_clock})"
                 )
 
-        if not self.__testing:
-            self._check_can_settings(
-                channel=channel,
-                bitrate=timing.bitrate,
-                sample_point=timing.sample_point,
-            )
-
     def _set_bit_timing_fd(
         self,
-        channel: int,
+        channel_mask: int,
         timing: BitTimingFd,
     ) -> None:
-        # set parameters if channel has init access
-        if self._has_init_access(channel):
+        # set parameters for channels with init access
+        channel_mask = channel_mask & self.permission_mask
+        if channel_mask:
             canfd_conf = xlclass.XLcanFdConf()
             canfd_conf.arbitrationBitRate = timing.nom_bitrate
             canfd_conf.sjwAbr = timing.nom_sjw
@@ -500,7 +545,7 @@ class VectorBus(BusABC):
             canfd_conf.tseg1Dbr = timing.data_tseg1
             canfd_conf.tseg2Dbr = timing.data_tseg2
             self.xldriver.xlCanFdSetConfiguration(
-                self.port_handle, self.channel_masks[channel], canfd_conf
+                self.port_handle, channel_mask, canfd_conf
             )
             LOG.info(
                 "xlCanFdSetConfiguration.: ABaudr.=%u, DBaudr.=%u",
@@ -520,19 +565,9 @@ class VectorBus(BusABC):
                 canfd_conf.tseg2Dbr,
             )
 
-        if not self.__testing:
-            self._check_can_settings(
-                channel=channel,
-                bitrate=timing.nom_bitrate,
-                sample_point=timing.nom_sample_point,
-                fd=True,
-                data_bitrate=timing.data_bitrate,
-                data_sample_point=timing.data_sample_point,
-            )
-
     def _check_can_settings(
         self,
-        channel: int,
+        channel_mask: int,
         bitrate: int,
         sample_point: Optional[float] = None,
         fd: bool = False,
@@ -540,83 +575,90 @@ class VectorBus(BusABC):
         data_sample_point: Optional[float] = None,
     ) -> None:
         """Compare requested CAN settings to active settings in driver."""
-        bus_params = self._read_bus_params(channel)
-        # use canfd even if fd==False, bus_params.can and bus_params.canfd are a C union
-        bus_params_data = bus_params.canfd
-        settings_acceptable = True
+        vcc_list = get_channel_configs()
+        for channel_index in _iterate_channel_index(channel_mask):
+            bus_params = self._read_bus_params(
+                channel_index=channel_index, vcc_list=vcc_list
+            )
+            # use bus_params.canfd even if fd==False, bus_params.can and bus_params.canfd are a C union
+            bus_params_data = bus_params.canfd
+            settings_acceptable = True
 
-        # check bus type
-        settings_acceptable &= (
-            bus_params.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
-        )
+            # check bus type
+            settings_acceptable &= (
+                bus_params.bus_type is xldefine.XL_BusTypes.XL_BUS_TYPE_CAN
+            )
 
-        # check CAN operation mode
-        # skip the check if can_op_mode is 0
-        # as it happens for cancaseXL, VN7600 and sometimes on other hardware (VN1640)
-        if bus_params_data.can_op_mode:
-            if fd:
-                settings_acceptable &= bool(
+            # check CAN operation mode
+            # skip the check if can_op_mode is 0
+            # as it happens for cancaseXL, VN7600 and sometimes on other hardware (VN1640)
+            if bus_params_data.can_op_mode:
+                if fd:
+                    settings_acceptable &= bool(
+                        bus_params_data.can_op_mode
+                        & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
+                    )
+                else:
+                    settings_acceptable &= bool(
+                        bus_params_data.can_op_mode
+                        & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
+                    )
+
+            # check bitrates
+            if bitrate:
+                settings_acceptable &= (
+                    abs(bus_params_data.bitrate - bitrate) < bitrate / 256
+                )
+            if fd and data_bitrate:
+                settings_acceptable &= (
+                    abs(bus_params_data.data_bitrate - data_bitrate)
+                    < data_bitrate / 256
+                )
+
+            # check sample points
+            if sample_point:
+                nom_sample_point_act = (
+                    100
+                    * (1 + bus_params_data.tseg1_abr)
+                    / (1 + bus_params_data.tseg1_abr + bus_params_data.tseg2_abr)
+                )
+                settings_acceptable &= (
+                    abs(nom_sample_point_act - sample_point)
+                    < 2.0  # 2 percent tolerance
+                )
+            if fd and data_sample_point:
+                data_sample_point_act = (
+                    100
+                    * (1 + bus_params_data.tseg1_dbr)
+                    / (1 + bus_params_data.tseg1_dbr + bus_params_data.tseg2_dbr)
+                )
+                settings_acceptable &= (
+                    abs(data_sample_point_act - data_sample_point)
+                    < 2.0  # 2 percent tolerance
+                )
+
+            if not settings_acceptable:
+                # The error message depends on the currently active CAN settings.
+                # If the active operation mode is CAN FD, show the active CAN FD timings,
+                # otherwise show CAN 2.0 timings.
+                if bool(
                     bus_params_data.can_op_mode
                     & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
+                ):
+                    active_settings = bus_params.canfd._asdict()
+                    active_settings["can_op_mode"] = "CAN FD"
+                else:
+                    active_settings = bus_params.can._asdict()
+                    active_settings["can_op_mode"] = "CAN 2.0"
+                settings_string = ", ".join(
+                    [f"{key}: {val}" for key, val in active_settings.items()]
                 )
-            else:
-                settings_acceptable &= bool(
-                    bus_params_data.can_op_mode
-                    & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CAN20
+                channel = self.index_to_channel[channel_index]
+                raise CanInitializationError(
+                    f"The requested settings could not be set for channel {channel}. "
+                    f"Another application might have set incompatible settings. "
+                    f"These are the currently active settings: {settings_string}."
                 )
-
-        # check bitrates
-        if bitrate:
-            settings_acceptable &= (
-                abs(bus_params_data.bitrate - bitrate) < bitrate / 256
-            )
-        if fd and data_bitrate:
-            settings_acceptable &= (
-                abs(bus_params_data.data_bitrate - data_bitrate) < data_bitrate / 256
-            )
-
-        # check sample points
-        if sample_point:
-            nom_sample_point_act = (
-                100
-                * (1 + bus_params_data.tseg1_abr)
-                / (1 + bus_params_data.tseg1_abr + bus_params_data.tseg2_abr)
-            )
-            settings_acceptable &= (
-                abs(nom_sample_point_act - sample_point) < 2.0  # 2 percent tolerance
-            )
-        if fd and data_sample_point:
-            data_sample_point_act = (
-                100
-                * (1 + bus_params_data.tseg1_dbr)
-                / (1 + bus_params_data.tseg1_dbr + bus_params_data.tseg2_dbr)
-            )
-            settings_acceptable &= (
-                abs(data_sample_point_act - data_sample_point)
-                < 2.0  # 2 percent tolerance
-            )
-
-        if not settings_acceptable:
-            # The error message depends on the currently active CAN settings.
-            # If the active operation mode is CAN FD, show the active CAN FD timings,
-            # otherwise show CAN 2.0 timings.
-            if bool(
-                bus_params_data.can_op_mode
-                & xldefine.XL_CANFD_BusParams_CanOpMode.XL_BUS_PARAMS_CANOPMODE_CANFD
-            ):
-                active_settings = bus_params.canfd._asdict()
-                active_settings["can_op_mode"] = "CAN FD"
-            else:
-                active_settings = bus_params.can._asdict()
-                active_settings["can_op_mode"] = "CAN 2.0"
-            settings_string = ", ".join(
-                [f"{key}: {val}" for key, val in active_settings.items()]
-            )
-            raise CanInitializationError(
-                f"The requested settings could not be set for channel {channel}. "
-                f"Another application might have set incompatible settings. "
-                f"These are the currently active settings: {settings_string}."
-            )
 
     def _apply_filters(self, filters: Optional[CanFilters]) -> None:
         if filters:
@@ -632,9 +674,11 @@ class VectorBus(BusABC):
                             self.mask,
                             can_filter["can_id"],
                             can_filter["can_mask"],
-                            xldefine.XL_AcceptanceFilter.XL_CAN_EXT
-                            if can_filter.get("extended")
-                            else xldefine.XL_AcceptanceFilter.XL_CAN_STD,
+                            (
+                                xldefine.XL_AcceptanceFilter.XL_CAN_EXT
+                                if can_filter.get("extended")
+                                else xldefine.XL_AcceptanceFilter.XL_CAN_STD
+                            ),
                         )
                 except VectorOperationError as exception:
                     LOG.warning("Could not set filters: %s", exception)
@@ -1239,3 +1283,10 @@ def _hw_type(hw_type: int) -> Union[int, xldefine.XL_HardwareType]:
     except ValueError:
         LOG.warning(f'Unknown XL_HardwareType value "{hw_type}"')
         return hw_type
+
+
+def _iterate_channel_index(channel_mask: int) -> Iterator[int]:
+    """Iterate over channel indexes in channel mask."""
+    for channel_index, bit in enumerate(reversed(bin(channel_mask)[2:])):
+        if bit == "1":
+            yield channel_index

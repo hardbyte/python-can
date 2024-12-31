@@ -45,9 +45,11 @@ class TestSocketCanHelpers(unittest.TestCase):
 
         with mock.patch("subprocess.check_output") as check_output:
             check_output.return_value = ip_output
-            ifs = find_available_interfaces()
 
-            self.assertEqual(["vcan0", "mycustomCan123"], ifs)
+            with mock.patch("sys.platform", "linux"):
+                ifs = find_available_interfaces()
+
+        self.assertEqual(["vcan0", "mycustomCan123"], ifs)
 
     def test_find_available_interfaces_exception(self):
         with mock.patch("subprocess.check_output") as check_output:

@@ -51,17 +51,17 @@ class VCIDEVICEINFO(ctypes.Structure):
     ]
 
     def __str__(self):
-        return "Mfg: {}, Dev: {} HW: {}.{}.{}.{} Drv: {}.{}.{}.{}".format(
-            self.Manufacturer,
-            self.Description,
-            self.HardwareBranchVersion,
-            self.HardwareMajorVersion,
-            self.HardwareMinorVersion,
-            self.HardwareBuildVersion,
-            self.DriverReleaseVersion,
-            self.DriverMajorVersion,
-            self.DriverMinorVersion,
-            self.DriverBuildVersion,
+        return (
+            f"Mfg: {self.Manufacturer}, "
+            f"Dev: {self.Description} "
+            f"HW: {self.HardwareBranchVersion}"
+            f".{self.HardwareMajorVersion}"
+            f".{self.HardwareMinorVersion}"
+            f".{self.HardwareBuildVersion} "
+            f"Drv: {self.DriverReleaseVersion}"
+            f".{self.DriverMajorVersion}"
+            f".{self.DriverMinorVersion}"
+            f".{self.DriverBuildVersion}"
         )
 
 

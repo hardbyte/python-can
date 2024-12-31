@@ -5,11 +5,11 @@ Example .asc files:
     - https://bitbucket.org/tobylorenz/vector_asc/src/master/src/Vector/ASC/tests/unittests/data/
     - under `test/data/logfile.asc`
 """
+
 import logging
 import re
-import time
 from datetime import datetime
-from typing import Any, Dict, Final, Generator, List, Optional, TextIO, Union
+from typing import Any, Dict, Final, Generator, Optional, TextIO, Union
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -275,6 +275,11 @@ class ASCReader(TextIOMessageReader):
                 )
                 continue
 
+            # Handle the "Start of measurement" line
+            if re.match(r"^\d+\.\d+\s+Start of measurement", line):
+                # Skip this line as it's just an indicator
+                continue
+
             if not ASC_MESSAGE_REGEX.match(line):
                 # line might be a comment, chip status,
                 # J1939 message or some other unsupported event
@@ -340,8 +345,7 @@ class ASCWriter(TextIOMessageWriter):
             "{bit_timing_conf_ext_data:>8}",
         ]
     )
-    FORMAT_START_OF_FILE_DATE = "%a %b %d %I:%M:%S.%f %p %Y"
-    FORMAT_DATE = "%a %b %d %I:%M:%S.{} %p %Y"
+    FORMAT_DATE = "%a %b %d %H:%M:%S.{} %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"
 
     def __init__(
@@ -367,12 +371,8 @@ class ASCWriter(TextIOMessageWriter):
         self.channel = channel
 
         # write start of file header
-        now = datetime.now().strftime(self.FORMAT_START_OF_FILE_DATE)
-        # Note: CANoe requires that the microsecond field only have 3 digits
-        idx = now.index(".")  # Find the index in the string of the decimal
-        # Keep decimal and first three ms digits (4), remove remaining digits
-        now = now.replace(now[idx + 4 : now[idx:].index(" ") + idx], "")
-        self.file.write(f"date {now}\n")
+        start_time = self._format_header_datetime(datetime.now())
+        self.file.write(f"date {start_time}\n")
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
 
@@ -380,6 +380,15 @@ class ASCWriter(TextIOMessageWriter):
         self.header_written = False
         self.last_timestamp = 0.0
         self.started = 0.0
+
+    def _format_header_datetime(self, dt: datetime) -> str:
+        # Note: CANoe requires that the microsecond field only have 3 digits
+        # Since Python strftime only supports microsecond formatters, we must
+        # manually include the millisecond portion before passing the format
+        # to strftime
+        msec = dt.microsecond // 1000 % 1000
+        format_w_msec = self.FORMAT_DATE.format(msec)
+        return dt.strftime(format_w_msec)
 
     def stop(self) -> None:
         # This is guaranteed to not be None since we raise ValueError in __init__
@@ -400,12 +409,11 @@ class ASCWriter(TextIOMessageWriter):
 
         # this is the case for the very first message:
         if not self.header_written:
-            self.last_timestamp = timestamp or 0.0
-            self.started = self.last_timestamp
-            mlsec = repr(self.last_timestamp).split(".")[1][:3]
-            formatted_date = time.strftime(
-                self.FORMAT_DATE.format(mlsec), time.localtime(self.last_timestamp)
-            )
+            self.started = self.last_timestamp = timestamp or 0.0
+
+            start_time = datetime.fromtimestamp(self.last_timestamp)
+            formatted_date = self._format_header_datetime(start_time)
+
             self.file.write(f"Begin Triggerblock {formatted_date}\n")
             self.header_written = True
             self.log_event("Start of measurement")  # caution: this is a recursive call!
@@ -431,10 +439,10 @@ class ASCWriter(TextIOMessageWriter):
             return
         if msg.is_remote_frame:
             dtype = f"r {msg.dlc:x}"  # New after v8.5
-            data: List[str] = []
+            data: str = ""
         else:
             dtype = f"d {msg.dlc:x}"
-            data = [f"{byte:02X}" for byte in msg.data]
+            data = msg.data.hex(" ").upper()
         arb_id = f"{msg.arbitration_id:X}"
         if msg.is_extended_id:
             arb_id += "x"
@@ -454,7 +462,7 @@ class ASCWriter(TextIOMessageWriter):
                 esi=1 if msg.error_state_indicator else 0,
                 dlc=len2dlc(msg.dlc),
                 data_length=len(msg.data),
-                data=" ".join(data),
+                data=data,
                 message_duration=0,
                 message_length=0,
                 flags=flags,
@@ -470,6 +478,6 @@ class ASCWriter(TextIOMessageWriter):
                 id=arb_id,
                 dir="Rx" if msg.is_rx else "Tx",
                 dtype=dtype,
-                data=" ".join(data),
+                data=data,
             )
         self.log_event(serialized, msg.timestamp)

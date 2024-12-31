@@ -5,6 +5,7 @@ import warnings
 
 import pytest
 
+import can
 from can import BitTiming, BitTimingFd
 from can.exceptions import CanInitializationError
 from can.util import (
@@ -132,10 +133,7 @@ class DeprecatedArgsAliasTest(unittest.TestCase):
 
 
 class TestBusConfig(unittest.TestCase):
-    base_config = dict(interface="socketcan", bitrate=500_000)
-    port_alpha_config = dict(interface="socketcan", bitrate=500_000, port="fail123")
-    port_to_high_config = dict(interface="socketcan", bitrate=500_000, port="999999")
-    port_wrong_type_config = dict(interface="socketcan", bitrate=500_000, port=(1234,))
+    base_config = {"interface": "socketcan", "bitrate": 500_000}
 
     def test_timing_can_use_int(self):
         """
@@ -147,17 +145,69 @@ class TestBusConfig(unittest.TestCase):
             _create_bus_config({**self.base_config, **timing_conf})
         except TypeError as e:
             self.fail(e)
+
+    def test_port_datatype(self):
         self.assertRaises(
-            ValueError, _create_bus_config, {**self.port_alpha_config, **timing_conf}
+            ValueError, _create_bus_config, {**self.base_config, "port": "fail123"}
         )
         self.assertRaises(
-            ValueError, _create_bus_config, {**self.port_to_high_config, **timing_conf}
+            ValueError, _create_bus_config, {**self.base_config, "port": "999999"}
         )
         self.assertRaises(
-            TypeError,
-            _create_bus_config,
-            {**self.port_wrong_type_config, **timing_conf},
+            TypeError, _create_bus_config, {**self.base_config, "port": (1234,)}
         )
+
+        try:
+            _create_bus_config({**self.base_config, "port": "1234"})
+        except TypeError as e:
+            self.fail(e)
+
+    def test_bit_timing_cfg(self):
+        can_cfg = _create_bus_config(
+            {
+                **self.base_config,
+                "f_clock": "8000000",
+                "brp": "1",
+                "tseg1": "5",
+                "tseg2": "2",
+                "sjw": "1",
+                "nof_samples": "1",
+            }
+        )
+        timing = can_cfg["timing"]
+        assert isinstance(timing, can.BitTiming)
+        assert timing.f_clock == 8_000_000
+        assert timing.brp == 1
+        assert timing.tseg1 == 5
+        assert timing.tseg2 == 2
+        assert timing.sjw == 1
+
+    def test_bit_timing_fd_cfg(self):
+        canfd_cfg = _create_bus_config(
+            {
+                **self.base_config,
+                "f_clock": "80000000",
+                "nom_brp": "1",
+                "nom_tseg1": "119",
+                "nom_tseg2": "40",
+                "nom_sjw": "40",
+                "data_brp": "1",
+                "data_tseg1": "29",
+                "data_tseg2": "10",
+                "data_sjw": "10",
+            }
+        )
+        timing = canfd_cfg["timing"]
+        assert isinstance(timing, can.BitTimingFd)
+        assert timing.f_clock == 80_000_000
+        assert timing.nom_brp == 1
+        assert timing.nom_tseg1 == 119
+        assert timing.nom_tseg2 == 40
+        assert timing.nom_sjw == 40
+        assert timing.data_brp == 1
+        assert timing.data_tseg1 == 29
+        assert timing.data_tseg2 == 10
+        assert timing.data_sjw == 10
 
 
 class TestChannel2Int(unittest.TestCase):

@@ -284,6 +284,7 @@ to ensure usage of SocketCAN Linux API. The most important differences are:
     :members:
     :inherited-members:
 
+
 .. External references
 
 .. _Linux kernel docs: https://www.kernel.org/doc/Documentation/networking/can.txt

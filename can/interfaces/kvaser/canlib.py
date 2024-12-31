@@ -64,7 +64,6 @@ def __get_canlib_function(func_name, argtypes=None, restype=None, errcheck=None)
 
 
 class CANLIBError(CanError):
-
     """
     Try to display errors that occur within the wrapped C library nicely.
     """
@@ -429,6 +428,10 @@ class KvaserBus(BusABC):
             computer, set this to True or set single_handle to True.
         :param bool fd:
             If CAN-FD frames should be supported.
+        :param bool fd_non_iso:
+            Open the channel in Non-ISO (Bosch) FD mode. Only applies for FD buses.
+            This changes the handling of the stuff-bit counter and the CRC. Defaults
+            to False (ISO mode)
         :param bool exclusive:
             Don't allow sharing of this CANlib channel.
         :param bool override_exclusive:
@@ -454,6 +457,7 @@ class KvaserBus(BusABC):
         accept_virtual = kwargs.get("accept_virtual", True)
         fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
         data_bitrate = kwargs.get("data_bitrate", None)
+        fd_non_iso = kwargs.get("fd_non_iso", False)
 
         try:
             channel = int(channel)
@@ -462,7 +466,11 @@ class KvaserBus(BusABC):
 
         self.channel = channel
         self.single_handle = single_handle
-        self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
+        self._can_protocol = CanProtocol.CAN_20
+        if fd_non_iso:
+            self._can_protocol = CanProtocol.CAN_FD_NON_ISO
+        elif fd:
+            self._can_protocol = CanProtocol.CAN_FD
 
         log.debug("Initialising bus instance")
         num_channels = ctypes.c_int(0)
@@ -471,6 +479,7 @@ class KvaserBus(BusABC):
         log.info("Found %d available channels", num_channels)
         for idx in range(num_channels):
             channel_info = get_channel_info(idx)
+            channel_info = f'{channel_info["device_name"]}, S/N {channel_info["serial"]} (#{channel_info["dongle_channel"]})'
             log.info("%d: %s", idx, channel_info)
             if idx == channel:
                 self.channel_info = channel_info
@@ -483,7 +492,10 @@ class KvaserBus(BusABC):
         if accept_virtual:
             flags |= canstat.canOPEN_ACCEPT_VIRTUAL
         if fd:
-            flags |= canstat.canOPEN_CAN_FD
+            if fd_non_iso:
+                flags |= canstat.canOPEN_CAN_FD_NONISO
+            else:
+                flags |= canstat.canOPEN_CAN_FD
 
         log.debug("Creating read handle to bus channel: %s", channel)
         self._read_handle = canOpenChannel(channel, flags)
@@ -553,7 +565,6 @@ class KvaserBus(BusABC):
             else:
                 flags_ = flags
             self._write_handle = canOpenChannel(channel, flags_)
-            canBusOn(self._read_handle)
 
         can_driver_mode = (
             canstat.canDRIVER_SILENT
@@ -561,25 +572,6 @@ class KvaserBus(BusABC):
             else canstat.canDRIVER_NORMAL
         )
         canSetBusOutputControl(self._write_handle, can_driver_mode)
-        log.debug("Going bus on TX handle")
-        canBusOn(self._write_handle)
-
-        timer = ctypes.c_uint(0)
-        try:
-            if time.get_clock_info("time").resolution > 1e-5:
-                ts, perfcounter = time_perfcounter_correlation()
-                kvReadTimer(self._read_handle, ctypes.byref(timer))
-                current_perfcounter = time.perf_counter()
-                now = ts + (current_perfcounter - perfcounter)
-                self._timestamp_offset = now - (timer.value * TIMESTAMP_FACTOR)
-            else:
-                kvReadTimer(self._read_handle, ctypes.byref(timer))
-                self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
-
-        except Exception as exc:
-            # timer is usually close to 0
-            log.info(str(exc))
-            self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
 
         self._is_filtered = False
         super().__init__(
@@ -587,6 +579,33 @@ class KvaserBus(BusABC):
             can_filters=can_filters,
             **kwargs,
         )
+
+        # activate channel after CAN filters were applied
+        log.debug("Go on bus")
+        if not self.single_handle:
+            canBusOn(self._read_handle)
+        canBusOn(self._write_handle)
+
+        # timestamp must be set after bus is online, otherwise kvReadTimer may return erroneous values
+        self._timestamp_offset = self._update_timestamp_offset()
+
+    def _update_timestamp_offset(self) -> float:
+        timer = ctypes.c_uint(0)
+        try:
+            if time.get_clock_info("time").resolution > 1e-5:
+                ts, perfcounter = time_perfcounter_correlation()
+                kvReadTimer(self._read_handle, ctypes.byref(timer))
+                current_perfcounter = time.perf_counter()
+                now = ts + (current_perfcounter - perfcounter)
+                return now - (timer.value * TIMESTAMP_FACTOR)
+            else:
+                kvReadTimer(self._read_handle, ctypes.byref(timer))
+                return time.time() - (timer.value * TIMESTAMP_FACTOR)
+
+        except Exception as exc:
+            # timer is usually close to 0
+            log.info(str(exc))
+            return time.time() - (timer.value * TIMESTAMP_FACTOR)
 
     def _apply_filters(self, filters):
         if filters and len(filters) == 1:
@@ -611,7 +630,7 @@ class KvaserBus(BusABC):
                     for extended in (0, 1):
                         canSetAcceptanceFilter(handle, 0, 0, extended)
             except (NotImplementedError, CANLIBError) as e:
-                log.error("An error occured while disabling filtering: %s", e)
+                log.error("An error occurred while disabling filtering: %s", e)
 
     def flush_tx_buffer(self):
         """Wipeout the transmit buffer on the Kvaser."""
@@ -752,16 +771,19 @@ class KvaserBus(BusABC):
 
     @staticmethod
     def _detect_available_configs():
-        num_channels = ctypes.c_int(0)
+        config_list = []
+
         try:
+            num_channels = ctypes.c_int(0)
             canGetNumberOfChannels(ctypes.byref(num_channels))
+
+            for channel in range(0, int(num_channels.value)):
+                info = get_channel_info(channel)
+
+                config_list.append({"interface": "kvaser", "channel": channel, **info})
         except (CANLIBError, NameError):
             pass
-
-        return [
-            {"interface": "kvaser", "channel": channel}
-            for channel in range(num_channels.value)
-        ]
+        return config_list
 
 
 def get_channel_info(channel):
@@ -788,8 +810,11 @@ def get_channel_info(channel):
         ctypes.sizeof(number),
     )
 
-    name_decoded = name.value.decode("ascii", errors="replace")
-    return f"{name_decoded}, S/N {serial.value} (#{number.value + 1})"
+    return {
+        "device_name": name.value.decode("ascii", errors="replace"),
+        "serial": serial.value,
+        "dongle_channel": number.value + 1,
+    }
 
 
 init_kvaser_library()
