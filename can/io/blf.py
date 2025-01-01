@@ -103,7 +103,7 @@ def timestamp_to_systemtime(timestamp: float) -> TSystemTime:
     if timestamp is None or timestamp < 631152000:
         # Probably not a Unix timestamp
         return 0, 0, 0, 0, 0, 0, 0, 0
-    t = datetime.datetime.fromtimestamp(round(timestamp, 3))
+    t = datetime.datetime.fromtimestamp(round(timestamp, 3), tz=datetime.timezone.utc)
     return (
         t.year,
         t.month,
@@ -126,6 +126,7 @@ def systemtime_to_timestamp(systemtime: TSystemTime) -> float:
             systemtime[5],
             systemtime[6],
             systemtime[7] * 1000,
+            tzinfo=datetime.timezone.utc,
         )
         return t.timestamp()
     except ValueError:

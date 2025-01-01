@@ -791,7 +791,7 @@ class TestBlfFileFormat(ReaderWriterTest):
 
     def test_issue_1905(self):
         expected = can.Message(
-            timestamp=1735650583.491113,
+            timestamp=1735654183.491113,
             channel=6,
             arbitration_id=0x6A9,
             is_extended_id=False,
