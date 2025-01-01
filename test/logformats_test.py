@@ -789,6 +789,30 @@ class TestBlfFileFormat(ReaderWriterTest):
             places=3,
         )
 
+    def test_issue_1905(self):
+        expected = can.Message(
+            timestamp=1735650583.491113,
+            channel=6,
+            arbitration_id=0x6A9,
+            is_extended_id=False,
+            is_fd=True,
+            bitrate_switch=True,
+            error_state_indicator=False,
+            dlc=64,
+            data=bytearray(
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            ),
+        )
+        msgs = self._read_log_file("issue_1905.blf")
+        self.assertMessageEqual(expected, msgs[0])
+
 
 class TestCanutilsFileFormat(ReaderWriterTest):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
