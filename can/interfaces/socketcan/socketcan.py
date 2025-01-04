@@ -702,6 +702,14 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
                 )
             except OSError as error:
                 log.error("Could not enable error frames (%s)", error)
+        else:
+            # disable error frames
+            try:
+                self.socket.setsockopt(
+                    constants.SOL_CAN_RAW, constants.CAN_RAW_ERR_FILTER, 0x0
+                )
+            except OSError as error:
+                log.error("Could not disable error frames (%s)", error)
 
         # enable nanosecond resolution timestamping
         # we can always do this since
