@@ -554,7 +554,7 @@ class KvaserBus(BusABC):
             1,
         )
 
-        # enable canMSG_LOCAL_TXACK in messages from write handle
+        # enable canMSG_LOCAL_TXACK flag in received messages
 
         canIoCtlInit(
             self._read_handle,
