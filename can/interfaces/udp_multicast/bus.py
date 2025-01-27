@@ -3,8 +3,8 @@ import logging
 import select
 import socket
 import struct
+import time
 import warnings
-from datetime import datetime
 from typing import List, Optional, Tuple, Union
 
 import can
@@ -406,12 +406,12 @@ class GeneralPurposeUdpMulticastBus:
                         self.received_timestamp_struct, result_buffer
                     )
                 else:
-                    # fallback to datetime
-                    now = datetime.now()
+                    # fallback to time.time_ns
+                    now = time.time()
 
                     # Extract seconds and microseconds
-                    seconds = now.second
-                    microseconds = now.microsecond
+                    seconds = int(now)
+                    microseconds = int((now - seconds) * 1000000)
 
                 if microseconds >= 1e6:
                     raise can.CanOperationError(
