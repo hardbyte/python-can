@@ -4,7 +4,6 @@ import select
 import socket
 import struct
 import warnings
-import sys
 from datetime import datetime
 from typing import List, Optional, Tuple, Union
 
