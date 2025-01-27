@@ -11,7 +11,7 @@ dependencies = [
     "wrapt~=1.10",
     "packaging >= 23.1",
     "typing_extensions>=3.10.0.0",
-    "msgpack~=1.1.0; platform_system != 'Windows'",
+    "msgpack~=1.1.0",
 ]
 requires-python = ">=3.8"
 license = { text = "LGPL v3" }
