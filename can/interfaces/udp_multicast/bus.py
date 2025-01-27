@@ -14,12 +14,12 @@ from can.typechecking import AutoDetectedConfig
 
 from .utils import check_msgpack_installed, pack_message, unpack_message
 
-ioctl_not_supported = False
+ioctl_supported = True
 
 try:
     from fcntl import ioctl
 except ModuleNotFoundError:  # Missing on Windows
-    ioctl_not_supported = True
+    ioctl_supported = False
     pass
 
 
@@ -397,7 +397,7 @@ class GeneralPurposeUdpMulticastBus:
                     self.max_buffer
                 )
 
-                if not ioctl_not_supported:
+                if ioctl_supported:
                     result_buffer = ioctl(
                         self._socket.fileno(),
                         SIOCGSTAMP,
