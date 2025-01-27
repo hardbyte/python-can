@@ -277,8 +277,10 @@ class GeneralPurposeUdpMulticastBus:
                 sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
             except OSError as error:
                 if (
-                    error.errno == errno.ENOPROTOOPT or error.errno == errno.EINVAL
-                ):  # It is unavailable on macOS (ENOPROTOOPT) or windows(EINVAL)
+                    error.errno == errno.ENOPROTOOPT
+                    or error.errno == errno.EINVAL
+                    or error.errno == errno.WSAEINVAL
+                ):  # It is unavailable on macOS (ENOPROTOOPT) or windows(EINVAL/WSAEINVAL)
                     self.timestamp_nanosecond = False
                 else:
                     raise error
