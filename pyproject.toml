@@ -13,7 +13,7 @@ dependencies = [
     "typing_extensions>=3.10.0.0",
     "msgpack~=1.1.0; platform_system != 'Windows'",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "LGPL v3" }
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -82,7 +82,7 @@ zlgcan = ["zlgcan-driver-py"]
 viewer = [
     "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
 ]
-mf4 = ["asammdf>=6.0.0"]
+mf4 = ["asammdf>=8.0.0"]
 
 [tool.setuptools.dynamic]
 readme = { file = "README.rst" }
