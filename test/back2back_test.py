@@ -303,9 +303,8 @@ class BasicTestSocketCan(Back2BackTestCase):
 
 # this doesn't even work on Travis CI for macOS; for example, see
 # https://travis-ci.org/github/hardbyte/python-can/jobs/745389871
-@unittest.skipUnless(
-    (IS_UNIX and not (IS_CI and IS_OSX)) or IS_WINDOWS,
-    "only supported on Unix and Windows systems (but not on macOS at Travis CI and GitHub Actions)",
+@unittest.skipIf(IS_CI and IS_OSX,
+    "not supported for macOS CI",
 )
 class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
     INTERFACE_1 = "udp_multicast"
@@ -320,9 +319,8 @@ class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
 
 # this doesn't even work for loopback multicast addresses on Travis CI; for example, see
 # https://travis-ci.org/github/hardbyte/python-can/builds/745065503
-@unittest.skipUnless(
-    (IS_UNIX and not (IS_TRAVIS or (IS_CI and IS_OSX))) or IS_WINDOWS,
-    "only supported on Unix and Windows systems (but not on Travis CI; and not on macOS at GitHub Actions)",
+@unittest.skipIf(IS_CI and IS_OSX,
+    "not supported for macOS CI",
 )
 class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
     HOST_LOCAL_MCAST_GROUP_IPv6 = "ff11:7079:7468:6f6e:6465:6d6f:6d63:6173"
