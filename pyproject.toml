@@ -122,7 +122,6 @@ exclude = [
     "^can/interfaces/neousys",
     "^can/interfaces/pcan",
     "^can/interfaces/serial",
-    "^can/interfaces/slcan",
     "^can/interfaces/socketcan",
     "^can/interfaces/systec",
     "^can/interfaces/udp_multicast",
