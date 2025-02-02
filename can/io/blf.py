@@ -103,7 +103,7 @@ def timestamp_to_systemtime(timestamp: float) -> TSystemTime:
     if timestamp is None or timestamp < 631152000:
         # Probably not a Unix timestamp
         return 0, 0, 0, 0, 0, 0, 0, 0
-    t = datetime.datetime.fromtimestamp(round(timestamp, 3))
+    t = datetime.datetime.fromtimestamp(round(timestamp, 3), tz=datetime.timezone.utc)
     return (
         t.year,
         t.month,
@@ -126,6 +126,7 @@ def systemtime_to_timestamp(systemtime: TSystemTime) -> float:
             systemtime[5],
             systemtime[6],
             systemtime[7] * 1000,
+            tzinfo=datetime.timezone.utc,
         )
         return t.timestamp()
     except ValueError:
@@ -239,7 +240,7 @@ class BLFReader(BinaryIOMessageReader):
                 raise BLFParseError("Could not find next object") from None
             header = unpack_obj_header_base(data, pos)
             # print(header)
-            signature, _, header_version, obj_size, obj_type = header
+            signature, header_size, header_version, obj_size, obj_type = header
             if signature != b"LOBJ":
                 raise BLFParseError()
 
@@ -334,10 +335,20 @@ class BLFReader(BinaryIOMessageReader):
                     _,
                     _,
                     direction,
-                    _,
+                    ext_data_offset,
                     _,
                 ) = unpack_can_fd_64_msg(data, pos)
-                pos += can_fd_64_msg_size
+
+                # :issue:`1905`: `valid_bytes` can be higher than the actually available data.
+                # Add zero-byte padding to mimic behavior of CANoe and binlog.dll.
+                data_field_length = min(
+                    valid_bytes,
+                    (ext_data_offset or obj_size) - header_size - can_fd_64_msg_size,
+                )
+                msg_data_offset = pos + can_fd_64_msg_size
+                msg_data = data[msg_data_offset : msg_data_offset + data_field_length]
+                msg_data = msg_data.ljust(valid_bytes, b"\x00")
+
                 yield Message(
                     timestamp=timestamp,
                     arbitration_id=can_id & 0x1FFFFFFF,
@@ -348,7 +359,7 @@ class BLFReader(BinaryIOMessageReader):
                     bitrate_switch=bool(fd_flags & 0x2000),
                     error_state_indicator=bool(fd_flags & 0x4000),
                     dlc=dlc2len(dlc),
-                    data=data[pos : pos + valid_bytes],
+                    data=msg_data,
                     channel=channel - 1,
                 )
 
