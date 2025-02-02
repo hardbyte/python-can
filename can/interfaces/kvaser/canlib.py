@@ -554,6 +554,15 @@ class KvaserBus(BusABC):
             1,
         )
 
+        # enable canMSG_LOCAL_TXACK flag in received messages
+
+        canIoCtlInit(
+            self._read_handle,
+            canstat.canIOCTL_SET_LOCAL_TXACK,
+            ctypes.byref(ctypes.c_byte(local_echo)),
+            1,
+        )
+
         if self.single_handle:
             log.debug("We don't require separate handles to the bus")
             self._write_handle = self._read_handle
@@ -671,6 +680,7 @@ class KvaserBus(BusABC):
             is_remote_frame = bool(flags & canstat.canMSG_RTR)
             is_error_frame = bool(flags & canstat.canMSG_ERROR_FRAME)
             is_fd = bool(flags & canstat.canFDMSG_FDF)
+            is_rx = not bool(flags & canstat.canMSG_LOCAL_TXACK)
             bitrate_switch = bool(flags & canstat.canFDMSG_BRS)
             error_state_indicator = bool(flags & canstat.canFDMSG_ESI)
             msg_timestamp = timestamp.value * TIMESTAMP_FACTOR
@@ -682,6 +692,7 @@ class KvaserBus(BusABC):
                 is_error_frame=is_error_frame,
                 is_remote_frame=is_remote_frame,
                 is_fd=is_fd,
+                is_rx=is_rx,
                 bitrate_switch=bitrate_switch,
                 error_state_indicator=error_state_indicator,
                 channel=self.channel,
