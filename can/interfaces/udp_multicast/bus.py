@@ -34,6 +34,9 @@ IP_ADDRESS_INFO = Union[IPv4_ADDRESS_INFO, IPv6_ADDRESS_INFO]
 SO_TIMESTAMPNS = 35
 SIOCGSTAMP = 0x8906
 
+# Additional constants for the interaction with the Winsock API
+WSAEINVAL = 10022
+
 
 class UdpMulticastBus(BusABC):
     """A virtual interface for CAN communications between multiple processes using UDP over Multicast IP.
@@ -279,7 +282,7 @@ class GeneralPurposeUdpMulticastBus:
                 if (
                     error.errno == errno.ENOPROTOOPT
                     or error.errno == errno.EINVAL
-                    or error.errno == errno.WSAEINVAL
+                    or error.errno == WSAEINVAL
                 ):  # It is unavailable on macOS (ENOPROTOOPT) or windows(EINVAL/WSAEINVAL)
                     self.timestamp_nanosecond = False
                 else:
