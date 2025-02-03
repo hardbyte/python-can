@@ -65,7 +65,7 @@ lint = [
     "black==24.10.*",
     "mypy==1.12.*",
 ]
-pywin32 = ["pywin32>=305"]
+pywin32 = ["pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'"]
 seeedstudio = ["pyserial>=3.0"]
 serial = ["pyserial~=3.0"]
 neovi = ["filelock", "python-ics>=2.12"]
