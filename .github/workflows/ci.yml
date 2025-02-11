@@ -131,18 +131,14 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[canalystii,gs_usb,mf4]
-        pip install -r doc/doc-requirements.txt
+        pip install tox
     - name: Build documentation
       run: |
-        python -m sphinx -Wan --keep-going doc build
-    - name: Run doctest
-      run: |
-        python -m sphinx -b doctest -W --keep-going doc build
+        tox -e docs
 
   build:
     name: Packaging

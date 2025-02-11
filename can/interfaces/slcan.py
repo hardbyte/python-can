@@ -5,16 +5,18 @@ Interface for slcan compatible interfaces (win32/linux).
 import io
 import logging
 import time
-from typing import Any, Optional, Tuple
+import warnings
+from queue import SimpleQueue
+from typing import Any, Optional, Tuple, Union, cast
 
-from can import BusABC, CanProtocol, Message, typechecking
-
-from ..exceptions import (
+from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message, typechecking
+from can.exceptions import (
     CanInitializationError,
     CanInterfaceNotImplementedError,
     CanOperationError,
     error_check,
 )
+from can.util import check_or_adjust_timing_clock, deprecated_args_alias
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +56,17 @@ class slcanBus(BusABC):
 
     LINE_TERMINATOR = b"\r"
 
+    @deprecated_args_alias(
+        deprecation_start="4.5.0",
+        deprecation_end="5.0.0",
+        ttyBaudrate="tty_baudrate",
+    )
     def __init__(
         self,
         channel: typechecking.ChannelStr,
-        ttyBaudrate: int = 115200,
+        tty_baudrate: int = 115200,
         bitrate: Optional[int] = None,
-        btr: Optional[str] = None,
+        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
         listen_only: bool = False,
@@ -70,12 +77,16 @@ class slcanBus(BusABC):
         :param str channel:
             port of underlying serial or usb device (e.g. ``/dev/ttyUSB0``, ``COM8``, ...)
             Must not be empty. Can also end with ``@115200`` (or similarly) to specify the baudrate.
-        :param int ttyBaudrate:
+        :param int tty_baudrate:
             baudrate of underlying serial or usb device (Ignored if set via the ``channel`` parameter)
         :param bitrate:
             Bitrate in bit/s
-        :param btr:
-            BTR register value to set custom can speed
+        :param timing:
+            Optional :class:`~can.BitTiming` instance to use for custom bit timing setting.
+            If this argument is set then it overrides the bitrate and btr arguments. The
+            `f_clock` value of the timing instance must be set to 8_000_000 (8MHz)
+            for standard CAN.
+            CAN FD and the :class:`~can.BitTimingFd` class are not supported.
         :param poll_interval:
             Poll interval in seconds when reading messages
         :param sleep_after_open:
@@ -97,41 +108,54 @@ class slcanBus(BusABC):
         if serial is None:
             raise CanInterfaceNotImplementedError("The serial module is not installed")
 
+        btr: Optional[str] = kwargs.get("btr", None)
+        if btr is not None:
+            warnings.warn(
+                "The 'btr' argument is deprecated since python-can v4.5.0 "
+                "and scheduled for removal in v5.0.0. "
+                "Use the 'timing' argument instead.",
+                DeprecationWarning,
+                stacklevel=1,
+            )
+
         if not channel:  # if None or empty
             raise ValueError("Must specify a serial port.")
         if "@" in channel:
             (channel, baudrate) = channel.split("@")
-            ttyBaudrate = int(baudrate)
+            tty_baudrate = int(baudrate)
 
         with error_check(exception_type=CanInitializationError):
             self.serialPortOrig = serial.serial_for_url(
                 channel,
-                baudrate=ttyBaudrate,
+                baudrate=tty_baudrate,
                 rtscts=rtscts,
                 timeout=timeout,
             )
 
+        self._queue: SimpleQueue[str] = SimpleQueue()
         self._buffer = bytearray()
         self._can_protocol = CanProtocol.CAN_20
 
         time.sleep(sleep_after_open)
 
         with error_check(exception_type=CanInitializationError):
-            if bitrate is not None and btr is not None:
-                raise ValueError("Bitrate and btr mutually exclusive.")
-            if bitrate is not None:
-                self.set_bitrate(bitrate)
-            if btr is not None:
-                self.set_bitrate_reg(btr)
+            if isinstance(timing, BitTiming):
+                timing = check_or_adjust_timing_clock(timing, valid_clocks=[8_000_000])
+                self.set_bitrate_reg(f"{timing.btr0:02X}{timing.btr1:02X}")
+            elif isinstance(timing, BitTimingFd):
+                raise NotImplementedError(
+                    f"CAN FD is not supported by {self.__class__.__name__}."
+                )
+            else:
+                if bitrate is not None and btr is not None:
+                    raise ValueError("Bitrate and btr mutually exclusive.")
+                if bitrate is not None:
+                    self.set_bitrate(bitrate)
+                if btr is not None:
+                    self.set_bitrate_reg(btr)
             self.open()
 
-        super().__init__(
-            channel,
-            ttyBaudrate=115200,
-            bitrate=None,
-            rtscts=False,
-            **kwargs,
-        )
+        super().__init__(channel, **kwargs)
 
     def set_bitrate(self, bitrate: int) -> None:
         """
@@ -153,7 +177,8 @@ class slcanBus(BusABC):
     def set_bitrate_reg(self, btr: str) -> None:
         """
         :param btr:
-            BTR register value to set custom can speed
+            BTR register value to set custom can speed as a string `xxyy` where
+            xx is the BTR0 value in hex and yy is the BTR1 value in hex.
         """
         self.close()
         self._write("s" + btr)
@@ -173,7 +198,7 @@ class slcanBus(BusABC):
                 # We read the `serialPortOrig.in_waiting` only once here.
                 in_waiting = self.serialPortOrig.in_waiting
                 for _ in range(max(1, in_waiting)):
-                    new_byte = self.serialPortOrig.read(size=1)
+                    new_byte = self.serialPortOrig.read(1)
                     if new_byte:
                         self._buffer.extend(new_byte)
                     else:
@@ -211,7 +236,10 @@ class slcanBus(BusABC):
         extended = False
         data = None
 
-        string = self._read(timeout)
+        if self._queue.qsize():
+            string: Optional[str] = self._queue.get_nowait()
+        else:
+            string = self._read(timeout)
 
         if not string:
             pass
@@ -277,7 +305,7 @@ class slcanBus(BusABC):
 
     def fileno(self) -> int:
         try:
-            return self.serialPortOrig.fileno()
+            return cast(int, self.serialPortOrig.fileno())
         except io.UnsupportedOperation:
             raise NotImplementedError(
                 "fileno is not implemented using current CAN bus on this platform"
@@ -298,19 +326,21 @@ class slcanBus(BusABC):
             int hw_version is the hardware version or None on timeout
             int sw_version is the software version or None on timeout
         """
+        _timeout = serial.Timeout(timeout)
         cmd = "V"
         self._write(cmd)
 
-        string = self._read(timeout)
-
-        if not string:
-            pass
-        elif string[0] == cmd and len(string) == 6:
-            # convert ASCII coded version
-            hw_version = int(string[1:3])
-            sw_version = int(string[3:5])
-            return hw_version, sw_version
-
+        while True:
+            if string := self._read(_timeout.time_left()):
+                if string[0] == cmd:
+                    # convert ASCII coded version
+                    hw_version = int(string[1:3])
+                    sw_version = int(string[3:5])
+                    return hw_version, sw_version
+                else:
+                    self._queue.put_nowait(string)
+            if _timeout.expired():
+                break
         return None, None
 
     def get_serial_number(self, timeout: Optional[float]) -> Optional[str]:
@@ -322,15 +352,17 @@ class slcanBus(BusABC):
         :return:
             :obj:`None` on timeout or a :class:`str` object.
         """
+        _timeout = serial.Timeout(timeout)
         cmd = "N"
         self._write(cmd)
 
-        string = self._read(timeout)
-
-        if not string:
-            pass
-        elif string[0] == cmd and len(string) == 6:
-            serial_number = string[1:-1]
-            return serial_number
-
+        while True:
+            if string := self._read(_timeout.time_left()):
+                if string[0] == cmd:
+                    serial_number = string[1:-1]
+                    return serial_number
+                else:
+                    self._queue.put_nowait(string)
+            if _timeout.expired():
+                break
         return None

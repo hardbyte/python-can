@@ -48,8 +48,7 @@ The unit tests can be run with::
 
 The documentation can be built with::
 
-    pip install -r doc/doc-requirements.txt
-    python -m sphinx -an doc build
+    pipx run tox -e docs
 
 The linters can be run with::
 
@@ -111,7 +110,6 @@ Creating a new Release
 ----------------------
 
 - Release from the ``main`` branch (except for pre-releases).
-- Update the library version in ``__init__.py`` using `semantic versioning <http://semver.org>`__.
 - Check if any deprecations are pending.
 - Run all tests and examples against available hardware.
 - Update ``CONTRIBUTORS.txt`` with any new contributors.

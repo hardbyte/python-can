@@ -554,6 +554,15 @@ class KvaserBus(BusABC):
             1,
         )
 
+        # enable canMSG_LOCAL_TXACK flag in received messages
+
+        canIoCtlInit(
+            self._read_handle,
+            canstat.canIOCTL_SET_LOCAL_TXACK,
+            ctypes.byref(ctypes.c_byte(local_echo)),
+            1,
+        )
+
         if self.single_handle:
             log.debug("We don't require separate handles to the bus")
             self._write_handle = self._read_handle
@@ -573,23 +582,6 @@ class KvaserBus(BusABC):
         )
         canSetBusOutputControl(self._write_handle, can_driver_mode)
 
-        timer = ctypes.c_uint(0)
-        try:
-            if time.get_clock_info("time").resolution > 1e-5:
-                ts, perfcounter = time_perfcounter_correlation()
-                kvReadTimer(self._read_handle, ctypes.byref(timer))
-                current_perfcounter = time.perf_counter()
-                now = ts + (current_perfcounter - perfcounter)
-                self._timestamp_offset = now - (timer.value * TIMESTAMP_FACTOR)
-            else:
-                kvReadTimer(self._read_handle, ctypes.byref(timer))
-                self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
-
-        except Exception as exc:
-            # timer is usually close to 0
-            log.info(str(exc))
-            self._timestamp_offset = time.time() - (timer.value * TIMESTAMP_FACTOR)
-
         self._is_filtered = False
         super().__init__(
             channel=channel,
@@ -602,6 +594,27 @@ class KvaserBus(BusABC):
         if not self.single_handle:
             canBusOn(self._read_handle)
         canBusOn(self._write_handle)
+
+        # timestamp must be set after bus is online, otherwise kvReadTimer may return erroneous values
+        self._timestamp_offset = self._update_timestamp_offset()
+
+    def _update_timestamp_offset(self) -> float:
+        timer = ctypes.c_uint(0)
+        try:
+            if time.get_clock_info("time").resolution > 1e-5:
+                ts, perfcounter = time_perfcounter_correlation()
+                kvReadTimer(self._read_handle, ctypes.byref(timer))
+                current_perfcounter = time.perf_counter()
+                now = ts + (current_perfcounter - perfcounter)
+                return now - (timer.value * TIMESTAMP_FACTOR)
+            else:
+                kvReadTimer(self._read_handle, ctypes.byref(timer))
+                return time.time() - (timer.value * TIMESTAMP_FACTOR)
+
+        except Exception as exc:
+            # timer is usually close to 0
+            log.info(str(exc))
+            return time.time() - (timer.value * TIMESTAMP_FACTOR)
 
     def _apply_filters(self, filters):
         if filters and len(filters) == 1:
@@ -667,6 +680,7 @@ class KvaserBus(BusABC):
             is_remote_frame = bool(flags & canstat.canMSG_RTR)
             is_error_frame = bool(flags & canstat.canMSG_ERROR_FRAME)
             is_fd = bool(flags & canstat.canFDMSG_FDF)
+            is_rx = not bool(flags & canstat.canMSG_LOCAL_TXACK)
             bitrate_switch = bool(flags & canstat.canFDMSG_BRS)
             error_state_indicator = bool(flags & canstat.canFDMSG_ESI)
             msg_timestamp = timestamp.value * TIMESTAMP_FACTOR
@@ -678,6 +692,7 @@ class KvaserBus(BusABC):
                 is_error_frame=is_error_frame,
                 is_remote_frame=is_remote_frame,
                 is_fd=is_fd,
+                is_rx=is_rx,
                 bitrate_switch=bitrate_switch,
                 error_state_indicator=error_state_indicator,
                 channel=self.channel,

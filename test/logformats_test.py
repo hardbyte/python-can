@@ -651,6 +651,33 @@ class TestAscFileFormat(ReaderWriterTest):
 
         self.assertEqual(expected_file.read_text(), actual_file.read_text())
 
+    def test_write(self):
+        now = datetime(
+            year=2017, month=9, day=30, hour=15, minute=6, second=13, microsecond=191456
+        )
+
+        # We temporarily set the locale to C to ensure test reproducibility
+        with override_locale(category=locale.LC_TIME, locale_str="C"):
+            # We mock datetime.now during ASCWriter __init__ for reproducibility
+            # Unfortunately, now() is a readonly attribute, so we mock datetime
+            with patch("can.io.asc.datetime") as mock_datetime:
+                mock_datetime.now.return_value = now
+                writer = can.ASCWriter(self.test_file_name)
+
+            msg = can.Message(
+                timestamp=now.timestamp(),
+                arbitration_id=0x123,
+                data=range(64),
+            )
+
+            with writer:
+                writer.on_message_received(msg)
+
+        actual_file = Path(self.test_file_name)
+        expected_file = self._get_logfile_location("single_frame.asc")
+
+        self.assertEqual(expected_file.read_text(), actual_file.read_text())
+
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
@@ -761,6 +788,30 @@ class TestBlfFileFormat(ReaderWriterTest):
             blf.systemtime_to_timestamp(blf.timestamp_to_systemtime(1636485425.999908)),
             places=3,
         )
+
+    def test_issue_1905(self):
+        expected = can.Message(
+            timestamp=1735654183.491113,
+            channel=6,
+            arbitration_id=0x6A9,
+            is_extended_id=False,
+            is_fd=True,
+            bitrate_switch=True,
+            error_state_indicator=False,
+            dlc=64,
+            data=bytearray(
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00"
+            ),
+        )
+        msgs = self._read_log_file("issue_1905.blf")
+        self.assertMessageEqual(expected, msgs[0])
 
 
 class TestCanutilsFileFormat(ReaderWriterTest):

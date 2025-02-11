@@ -11,7 +11,7 @@ dependencies = [
     "wrapt~=1.10",
     "packaging >= 23.1",
     "typing_extensions>=3.10.0.0",
-    "msgpack~=1.0.0; platform_system != 'Windows'",
+    "msgpack~=1.1.0; platform_system != 'Windows'",
 ]
 requires-python = ">=3.8"
 license = { text = "LGPL v3" }
@@ -61,11 +61,11 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 [project.optional-dependencies]
 lint = [
     "pylint==3.2.*",
-    "ruff==0.6.0",
-    "black==24.8.*",
-    "mypy==1.11.*",
+    "ruff==0.7.0",
+    "black==24.10.*",
+    "mypy==1.12.*",
 ]
-pywin32 = ["pywin32>=305"]
+pywin32 = ["pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'"]
 seeedstudio = ["pyserial>=3.0"]
 serial = ["pyserial~=3.0"]
 neovi = ["filelock", "python-ics>=2.12"]
@@ -122,7 +122,6 @@ exclude = [
     "^can/interfaces/neousys",
     "^can/interfaces/pcan",
     "^can/interfaces/serial",
-    "^can/interfaces/slcan",
     "^can/interfaces/socketcan",
     "^can/interfaces/systec",
     "^can/interfaces/udp_multicast",
