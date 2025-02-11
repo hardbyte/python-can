@@ -320,23 +320,29 @@ def build_bcm_update_header(can_id: int, msg_flags: int, nframes: int = 1) -> by
     )
 
 
+def is_frame_fd(frame: bytes):
+    # According to the SocketCAN implementation the frame length 
+    # should indicate if the message is FD or not (not the flag value)
+    return len(frame) == constants.CANFD_MTU
+
+
 def dissect_can_frame(frame: bytes) -> Tuple[int, int, int, bytes]:
     can_id, data_len, flags, len8_dlc = CAN_FRAME_HEADER_STRUCT.unpack_from(frame)
-    if len(frame) != constants.CANFD_MTU:
-        # Flags not valid in non-FD frames
-        flags = 0
 
     if data_len not in can.util.CAN_FD_DLC:
         data_len = min(i for i in can.util.CAN_FD_DLC if i >= data_len)
+    
+    can_dlc = data_len
 
-    # Allow deprecated can frames with old struct
-    if (
-        data_len == constants.CAN_MAX_DLEN
-        and constants.CAN_MAX_DLEN < len8_dlc <= constants.CAN_MAX_RAW_DLC
-    ):
-        can_dlc = len8_dlc
-    else:
-        can_dlc = data_len
+    if not is_frame_fd(frame):
+        # Flags not valid in non-FD frames
+        flags = 0
+
+        if (
+            data_len == constants.CAN_MAX_DLEN
+            and constants.CAN_MAX_DLEN < len8_dlc <= constants.CAN_MAX_RAW_DLC
+        ):
+            can_dlc = len8_dlc
 
     return can_id, can_dlc, flags, frame[8 : 8 + data_len]
 
