@@ -303,7 +303,8 @@ class BasicTestSocketCan(Back2BackTestCase):
 
 # this doesn't even work on Travis CI for macOS; for example, see
 # https://travis-ci.org/github/hardbyte/python-can/jobs/745389871
-@unittest.skipIf(IS_CI and IS_OSX,
+@unittest.skipIf(
+    IS_CI and IS_OSX,
     "not supported for macOS CI",
 )
 class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
@@ -319,7 +320,8 @@ class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
 
 # this doesn't even work for loopback multicast addresses on Travis CI; for example, see
 # https://travis-ci.org/github/hardbyte/python-can/builds/745065503
-@unittest.skipIf(IS_CI and IS_OSX,
+@unittest.skipIf(
+    IS_CI and IS_OSX,
     "not supported for macOS CI",
 )
 class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
