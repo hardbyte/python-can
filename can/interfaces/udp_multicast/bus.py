@@ -3,6 +3,7 @@ import logging
 import select
 import socket
 import struct
+import time
 import warnings
 from typing import List, Optional, Tuple, Union
 
@@ -12,9 +13,12 @@ from can.typechecking import AutoDetectedConfig
 
 from .utils import check_msgpack_installed, pack_message, unpack_message
 
+ioctl_supported = True
+
 try:
     from fcntl import ioctl
 except ModuleNotFoundError:  # Missing on Windows
+    ioctl_supported = False
     pass
 
 
@@ -29,6 +33,9 @@ IP_ADDRESS_INFO = Union[IPv4_ADDRESS_INFO, IPv6_ADDRESS_INFO]
 # Additional constants for the interaction with Unix kernels
 SO_TIMESTAMPNS = 35
 SIOCGSTAMP = 0x8906
+
+# Additional constants for the interaction with the Winsock API
+WSAEINVAL = 10022
 
 
 class UdpMulticastBus(BusABC):
@@ -272,7 +279,11 @@ class GeneralPurposeUdpMulticastBus:
             try:
                 sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
             except OSError as error:
-                if error.errno == errno.ENOPROTOOPT:  # It is unavailable on macOS
+                if (
+                    error.errno == errno.ENOPROTOOPT
+                    or error.errno == errno.EINVAL
+                    or error.errno == WSAEINVAL
+                ):  # It is unavailable on macOS (ENOPROTOOPT) or windows(EINVAL/WSAEINVAL)
                     self.timestamp_nanosecond = False
                 else:
                     raise error
@@ -353,18 +364,18 @@ class GeneralPurposeUdpMulticastBus:
             ) from exc
 
         if ready_receive_sockets:  # not empty
-            # fetch data & source address
-            (
-                raw_message_data,
-                ancillary_data,
-                _,  # flags
-                sender_address,
-            ) = self._socket.recvmsg(
-                self.max_buffer, self.received_ancillary_buffer_size
-            )
-
             # fetch timestamp; this is configured in _create_socket()
             if self.timestamp_nanosecond:
+                # fetch data, timestamp & source address
+                (
+                    raw_message_data,
+                    ancillary_data,
+                    _,  # flags
+                    sender_address,
+                ) = self._socket.recvmsg(
+                    self.max_buffer, self.received_ancillary_buffer_size
+                )
+
                 # Very similar to timestamp handling in can/interfaces/socketcan/socketcan.py -> capture_message()
                 if len(ancillary_data) != 1:
                     raise can.CanOperationError(
@@ -385,14 +396,28 @@ class GeneralPurposeUdpMulticastBus:
                     )
                 timestamp = seconds + nanoseconds * 1.0e-9
             else:
-                result_buffer = ioctl(
-                    self._socket.fileno(),
-                    SIOCGSTAMP,
-                    bytes(self.received_timestamp_struct_size),
+                # fetch data & source address
+                (raw_message_data, sender_address) = self._socket.recvfrom(
+                    self.max_buffer
                 )
-                seconds, microseconds = struct.unpack(
-                    self.received_timestamp_struct, result_buffer
-                )
+
+                if ioctl_supported:
+                    result_buffer = ioctl(
+                        self._socket.fileno(),
+                        SIOCGSTAMP,
+                        bytes(self.received_timestamp_struct_size),
+                    )
+                    seconds, microseconds = struct.unpack(
+                        self.received_timestamp_struct, result_buffer
+                    )
+                else:
+                    # fallback to time.time_ns
+                    now = time.time()
+
+                    # Extract seconds and microseconds
+                    seconds = int(now)
+                    microseconds = int((now - seconds) * 1000000)
+
                 if microseconds >= 1e6:
                     raise can.CanOperationError(
                         f"Timestamp microseconds field was out of range: {microseconds} not less than 1e6"

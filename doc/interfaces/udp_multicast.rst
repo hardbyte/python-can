@@ -53,6 +53,9 @@ from ``bus_1`` to ``bus_2``:
             # give the notifier enough time to get triggered by the second bus
             time.sleep(2.0)
 
+            # clean-up
+            notifier.stop()
+
 
 Bus Class Documentation
 -----------------------
