@@ -530,7 +530,7 @@ class BLFWriter(FileIOMessageWriter):
         if timestamp is None:
             timestamp = self.stop_timestamp or time.time()
         if self.start_timestamp is None:
-            self.start_timestamp = timestamp
+            self.start_timestamp = int(timestamp * 1000) / 1000
         self.stop_timestamp = timestamp
         timestamp = int((timestamp - self.start_timestamp) * 1e9)
         header_size = OBJ_HEADER_BASE_STRUCT.size + OBJ_HEADER_V1_STRUCT.size
