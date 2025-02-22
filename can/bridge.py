@@ -20,6 +20,10 @@ import can
 LOG = logging.getLogger(__name__)
 
 
+class UserError(Exception):
+    pass
+
+
 def get_config_list(it, separator, conf):
     while True:
         el = next(it)
@@ -34,9 +38,11 @@ def split_configurations(arg_list, separator='--'):
     conf_a = []
     conf_b = []
 
+    found_sep = False
     it = iter(arg_list)
     try:
         get_config_list(it, separator, conf_a)
+        found_sep = True
         get_config_list(it, separator, conf_b)
 
         # When we reached this point we found two separators so we have
@@ -47,9 +53,11 @@ def split_configurations(arg_list, separator='--'):
 
         # When we reached this point we found three separators so this is
         # an error.
-        raise Exception("To many configurations")
+        raise UserError("To many configurations")
     except StopIteration:
         LOG.debug("All configurations were split")
+        if not found_sep:
+            raise UserError("Missing separator")
 
     return general, conf_a, conf_b
 
@@ -78,7 +86,13 @@ def main() -> None:
         raise SystemExit(errno.EINVAL)
 
     args = sys.argv[1:]
-    general, conf_a, conf_b = split_configurations(args)
+    try:
+        general, conf_a, conf_b = split_configurations(args)
+    except UserError as exc:
+        print("Error while processing arguments:")
+        print(exc)
+        print("")
+        raise SystemExit(errno.EINVAL)
 
     LOG.debug("General configuration: %s", general)
     LOG.debug("Bus A configuration: %s", conf_a)
