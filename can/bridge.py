@@ -89,9 +89,8 @@ def main() -> None:
     try:
         general, conf_a, conf_b = split_configurations(args)
     except UserError as exc:
-        print("Error while processing arguments:")
-        print(exc)
-        print("")
+        print(f"Error while processing arguments: {exc}",
+              file=sys.stderr)
         raise SystemExit(errno.EINVAL)
 
     LOG.debug("General configuration: %s", general)
