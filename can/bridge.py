@@ -8,10 +8,13 @@ bus will be sent to the other bus and vice versa.
 import argparse
 import errno
 import sys
+import time
 import logging
 from datetime import datetime
 
 from .logger import _create_base_argument_parser, _create_bus, _parse_additional_config
+
+import can
 
 
 LOG = logging.getLogger(__name__)
@@ -90,7 +93,13 @@ def main() -> None:
 
     with _create_bus(a_results, **a_additional_config) as bus_a:
         with _create_bus(b_results, **b_additional_config) as bus_b:
+            reader_a = can.RedirectReader(bus_b)
+            reader_b = can.RedirectReader(bus_a)
+            notifier_a = can.Notifier(bus_a, [reader_a])
+            notifier_b = can.Notifier(bus_b, [reader_b])
             print(f"CAN Bridge (Started on {datetime.now()})")
+            while True:
+                time.sleep(1)
 
     print(f"CAN Bridge (Stopped on {datetime.now()})")
 
