@@ -80,6 +80,9 @@ def main() -> None:
     args = sys.argv[1:]
     general, conf_a, conf_b = split_configurations(args)
 
+    LOG.debug("General configuration: %s", general)
+    LOG.debug("Bus A configuration: %s", conf_a)
+    LOG.debug("Bus B configuration: %s", conf_b)
     g_results = general_parser.parse_args(general)
     verbosity = g_results.verbosity
 
@@ -91,6 +94,11 @@ def main() -> None:
     b_additional_config = _parse_additional_config([*b_results.extra_args, *b_unknown_args])
     b_results.__dict__['verbosity'] = verbosity
 
+    LOG.debug("General configuration results: %s", g_results)
+    LOG.debug("Bus A configuration results: %s", a_results)
+    LOG.debug("Bus A additional configuration results: %s", a_additional_config)
+    LOG.debug("Bus B configuration results: %s", b_results)
+    LOG.debug("Bus B additional configuration results: %s", b_additional_config)
     with _create_bus(a_results, **a_additional_config) as bus_a:
         with _create_bus(b_results, **b_additional_config) as bus_b:
             reader_a = can.RedirectReader(bus_b)
