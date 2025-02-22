@@ -51,6 +51,7 @@ can_logconvert = "can.logconvert:main"
 can_logger = "can.logger:main"
 can_player = "can.player:main"
 can_viewer = "can.viewer:main"
+can_bridge = "can.bridge:main"
 
 [project.urls]
 homepage = "https://github.com/hardbyte/python-can"
