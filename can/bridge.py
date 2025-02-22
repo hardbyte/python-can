@@ -98,8 +98,11 @@ def main() -> None:
             notifier_a = can.Notifier(bus_a, [reader_a])
             notifier_b = can.Notifier(bus_b, [reader_b])
             print(f"CAN Bridge (Started on {datetime.now()})")
-            while True:
-                time.sleep(1)
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
 
     print(f"CAN Bridge (Stopped on {datetime.now()})")
 
