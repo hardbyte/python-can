@@ -17,6 +17,23 @@ from .logger import _create_base_argument_parser, _create_bus, _parse_additional
 import can
 
 
+USAGE = """
+usage: can_bridge [{general config} --] {can A config} -- {can B config}
+
+Bridge two CAN busses.
+
+Both can busses will be connected so that messages from bus A will be sent on bus B and messages on bus B will be sent to bus A. The busses are separated by a `--`
+
+positional arguments:
+  {general config}      The configuration for this program excluding the config for each bus. Can be omitted
+  {can A config}        The configuration for the first bus
+  {can B config}        The configuration for the second bus
+
+Example usage:
+    can_bridge -i socketcan -c can0 -- -i socketcan can1
+    can_bridge -vvv -- -i socketcan -c can0 -- -i socketcan can1
+"""
+
 LOG = logging.getLogger(__name__)
 
 
@@ -82,7 +99,7 @@ def main() -> None:
 
     # print help message when no arguments were given
     if len(sys.argv) < 2:
-        bus_parser.print_help(sys.stderr)
+        print(USAGE, file=sys.stderr)
         raise SystemExit(errno.EINVAL)
 
     args = sys.argv[1:]
