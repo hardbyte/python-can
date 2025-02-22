@@ -32,6 +32,8 @@ positional arguments:
 Example usage:
     can_bridge -i socketcan -c can0 -- -i socketcan can1
     can_bridge -vvv -- -i socketcan -c can0 -- -i socketcan can1
+
+Type `can_bridge help_bus` for information about single bus configuration.
 """
 
 LOG = logging.getLogger(__name__)
@@ -106,8 +108,11 @@ def main() -> None:
     try:
         general, conf_a, conf_b = split_configurations(args)
     except UserError as exc:
-        print(f"Error while processing arguments: {exc}",
-              file=sys.stderr)
+        if len(args) == 1 and args[0] == 'help_bus':
+            bus_parser.print_help(sys.stderr)
+        else:
+            print(f"Error while processing arguments: {exc}",
+                  file=sys.stderr)
         raise SystemExit(errno.EINVAL)
 
     LOG.debug("General configuration: %s", general)
