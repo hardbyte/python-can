@@ -278,10 +278,12 @@ class TRCWriter(TextIOMessageWriter):
     file: TextIO
     first_timestamp: Optional[float]
 
-    FORMAT_MESSAGE = (
-        "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
-    )
-    FORMAT_MESSAGE_V1_0 = "{msgnr:>6}) {time:7.0f} {id:>8} {dlc:<1} {data}"
+    MESSAGE_FORMAT_MAP: Mapping[TRCFileVersion, str] = {
+        TRCFileVersion.V1_0: "{msgnr:>6}) {time:7.0f} {id:>8} {dlc:<1} {data}",
+        TRCFileVersion.V2_1: (
+            "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
+        ),
+    }
 
     def __init__(
         self,
@@ -309,7 +311,7 @@ class TRCWriter(TextIOMessageWriter):
         self.msgnr = 0
         self.first_timestamp = None
         self.file_version = TRCFileVersion.V2_1
-        self._msg_fmt_string = self.FORMAT_MESSAGE_V1_0
+        self._msg_fmt_string = self.MESSAGE_FORMAT_MAP[self.file_version]
         self._format_message = self._format_message_init
 
     def _write_header_v1_0(self, start_time: datetime) -> None:
@@ -381,13 +383,12 @@ class TRCWriter(TextIOMessageWriter):
     def _format_message_init(self, msg, channel):
         if self.file_version == TRCFileVersion.V1_0:
             self._format_message = self._format_message_by_format
-            self._msg_fmt_string = self.FORMAT_MESSAGE_V1_0
         elif self.file_version == TRCFileVersion.V2_1:
             self._format_message = self._format_message_by_format
-            self._msg_fmt_string = self.FORMAT_MESSAGE
         else:
             raise NotImplementedError("File format is not supported")
 
+        self._msg_fmt_string = self.MESSAGE_FORMAT_MAP[self.file_version]
         return self._format_message_by_format(msg, channel)
 
     def write_header(self, timestamp: float) -> None:
