@@ -23,7 +23,7 @@ class TestBridgeScriptModule(unittest.TestCase):
         self.mock_virtual_bus.__enter__ = Mock(return_value=self.mock_virtual_bus)
 
         # Patch time sleep object
-        patcher_sleep = mock.patch("can.io.player.time.sleep", spec=True)
+        patcher_sleep = mock.patch("can.bridge.time.sleep", spec=True)
         self.MockSleep = patcher_sleep.start()
         self.addCleanup(patcher_sleep.stop)
 
