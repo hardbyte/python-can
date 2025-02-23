@@ -76,7 +76,7 @@ def split_configurations(arg_list, separator="--"):
     except StopIteration:
         LOG.debug("All configurations were split")
         if not found_sep:
-            raise UserError("Missing separator")
+            raise UserError("Missing separator") from None
 
     return general, conf_a, conf_b
 
@@ -112,7 +112,7 @@ def main() -> None:
             bus_parser.print_help(sys.stderr)
         else:
             print(f"Error while processing arguments: {exc}", file=sys.stderr)
-        raise SystemExit(errno.EINVAL)
+        raise SystemExit(errno.EINVAL) from exc
 
     LOG.debug("General configuration: %s", general)
     LOG.debug("Bus A configuration: %s", conf_a)
