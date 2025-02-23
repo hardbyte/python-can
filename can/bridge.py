@@ -141,8 +141,8 @@ def main() -> None:
         with _create_bus(b_results, **b_additional_config) as bus_b:
             reader_a = can.RedirectReader(bus_b)
             reader_b = can.RedirectReader(bus_a)
-            notifier_a = can.Notifier(bus_a, [reader_a])
-            notifier_b = can.Notifier(bus_b, [reader_b])
+            can.Notifier(bus_a, [reader_a])
+            can.Notifier(bus_b, [reader_b])
             print(f"CAN Bridge (Started on {datetime.now()})")
             try:
                 while True:
