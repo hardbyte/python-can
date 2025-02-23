@@ -112,7 +112,7 @@ def main() -> None:
         if len(args) >= 1:
             if args[0] == "-h" or args[0] == "help":
                 print(USAGE)
-                raise SystemExit()
+                raise SystemExit() from None
             elif args[0] == "help_bus":
                 bus_parser.print_help(sys.stderr)
         else:
