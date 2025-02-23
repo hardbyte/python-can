@@ -52,7 +52,7 @@ def get_config_list(it, separator, conf):
             conf.append(el)
 
 
-def split_configurations(arg_list, separator='--'):
+def split_configurations(arg_list, separator="--"):
     general = []
     conf_a = []
     conf_b = []
@@ -97,7 +97,7 @@ def main() -> None:
     _create_base_argument_parser(bus_parser)
 
     parser = argparse.ArgumentParser(description="Bridge two CAN busses.")
-    parser.add_argument('configs', nargs=argparse.REMAINDER)
+    parser.add_argument("configs", nargs=argparse.REMAINDER)
 
     # print help message when no arguments were given
     if len(sys.argv) < 2:
@@ -108,11 +108,10 @@ def main() -> None:
     try:
         general, conf_a, conf_b = split_configurations(args)
     except UserError as exc:
-        if len(args) == 1 and args[0] == 'help_bus':
+        if len(args) == 1 and args[0] == "help_bus":
             bus_parser.print_help(sys.stderr)
         else:
-            print(f"Error while processing arguments: {exc}",
-                  file=sys.stderr)
+            print(f"Error while processing arguments: {exc}", file=sys.stderr)
         raise SystemExit(errno.EINVAL)
 
     LOG.debug("General configuration: %s", general)
@@ -122,12 +121,16 @@ def main() -> None:
     verbosity = g_results.verbosity
 
     a_results, a_unknown_args = bus_parser.parse_known_args(conf_a)
-    a_additional_config = _parse_additional_config([*a_results.extra_args, *a_unknown_args])
-    a_results.__dict__['verbosity'] = verbosity
+    a_additional_config = _parse_additional_config(
+        [*a_results.extra_args, *a_unknown_args]
+    )
+    a_results.__dict__["verbosity"] = verbosity
 
     b_results, b_unknown_args = bus_parser.parse_known_args(conf_b)
-    b_additional_config = _parse_additional_config([*b_results.extra_args, *b_unknown_args])
-    b_results.__dict__['verbosity'] = verbosity
+    b_additional_config = _parse_additional_config(
+        [*b_results.extra_args, *b_unknown_args]
+    )
+    b_results.__dict__["verbosity"] = verbosity
 
     LOG.debug("General configuration results: %s", g_results)
     LOG.debug("Bus A configuration results: %s", a_results)
