@@ -389,7 +389,7 @@ class TRCWriter(TextIOMessageWriter):
 
         serialized = self._msg_fmt_string.format(
             msgnr=self.msgnr,
-            time=(msg.timestamp - self.first_timestamp) * 1000,
+            time=(msg.timestamp - (self.first_timestamp or 0.0)) * 1000,
             channel=channel,
             id=arb_id,
             dir="Rx" if msg.is_rx else "Tx",
