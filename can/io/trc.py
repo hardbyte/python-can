@@ -289,6 +289,7 @@ class TRCWriter(TextIOMessageWriter):
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
+        file_version: Union[int, TRCFileVersion] = TRCFileVersion.V2_1,
         **kwargs: Any,
     ) -> None:
         """
@@ -310,7 +311,7 @@ class TRCWriter(TextIOMessageWriter):
         self.header_written = False
         self.msgnr = 0
         self.first_timestamp = None
-        self._setup_file_version(TRCFileVersion.V2_1)
+        self._setup_file_version(file_version)
 
     def _setup_file_version(self, file_version: Union[int, TRCFileVersion]):
         try:
