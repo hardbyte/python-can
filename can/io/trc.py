@@ -378,7 +378,7 @@ class TRCWriter(TextIOMessageWriter):
         ]
         self.file.writelines(line + "\n" for line in lines)
 
-    def _format_message(self, msg, channel):
+    def _format_message(self, msg: Message, channel: int) -> str:
         if msg.is_extended_id:
             arb_id = f"{msg.arbitration_id:07X}"
         else:
