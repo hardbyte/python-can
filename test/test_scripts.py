@@ -98,6 +98,20 @@ class TestPlayerScript(CanScriptTest):
         return module
 
 
+class TestBridgeScript(CanScriptTest):
+    def _commands(self):
+        commands = [
+            "python -m can.bridge --help",
+            "can_bridge --help",
+        ]
+        return commands
+
+    def _import(self):
+        import can.bridge as module
+
+        return module
+
+
 class TestLogconvertScript(CanScriptTest):
     def _commands(self):
         commands = [
