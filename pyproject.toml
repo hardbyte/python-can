@@ -187,6 +187,7 @@ ignore = [
 "can/cli.py" = ["T20"]  # flake8-print
 "can/logger.py" = ["T20"]  # flake8-print
 "can/player.py" = ["T20"]  # flake8-print
+"can/bridge.py" = ["T20"]  # flake8-print
 "can/viewer.py" = ["T20"]  # flake8-print
 "examples/*" = ["T20"]  # flake8-print
 
