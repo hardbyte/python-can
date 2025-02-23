@@ -312,7 +312,6 @@ class TRCWriter(TextIOMessageWriter):
         self.first_timestamp = None
         self.file_version = TRCFileVersion.V2_1
         self._msg_fmt_string = self.MESSAGE_FORMAT_MAP[self.file_version]
-        self._format_message = self._format_message_init
 
     def _write_header_v1_0(self, start_time: datetime) -> None:
         lines = [
@@ -361,7 +360,7 @@ class TRCWriter(TextIOMessageWriter):
         ]
         self.file.writelines(line + "\n" for line in lines)
 
-    def _format_message_by_format(self, msg, channel):
+    def _format_message(self, msg, channel):
         if msg.is_extended_id:
             arb_id = f"{msg.arbitration_id:07X}"
         else:
@@ -379,17 +378,6 @@ class TRCWriter(TextIOMessageWriter):
             data=" ".join(data),
         )
         return serialized
-
-    def _format_message_init(self, msg, channel):
-        if self.file_version == TRCFileVersion.V1_0:
-            self._format_message = self._format_message_by_format
-        elif self.file_version == TRCFileVersion.V2_1:
-            self._format_message = self._format_message_by_format
-        else:
-            raise NotImplementedError("File format is not supported")
-
-        self._msg_fmt_string = self.MESSAGE_FORMAT_MAP[self.file_version]
-        return self._format_message_by_format(msg, channel)
 
     def write_header(self, timestamp: float) -> None:
         # write start of file header
