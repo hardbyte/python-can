@@ -11,7 +11,17 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, Generator, Optional, TextIO, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Mapping,
+    Optional,
+    TextIO,
+    Tuple,
+    Union,
+)
 
 from ..message import Message
 from ..typechecking import StringPathLike
