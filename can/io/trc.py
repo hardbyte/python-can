@@ -310,8 +310,15 @@ class TRCWriter(TextIOMessageWriter):
         self.header_written = False
         self.msgnr = 0
         self.first_timestamp = None
-        self.file_version = TRCFileVersion.V2_1
-        self._msg_fmt_string = self.MESSAGE_FORMAT_MAP[self.file_version]
+        self._setup_file_version(TRCFileVersion.V2_1)
+
+    def _setup_file_version(self, file_version: Union[int, TRCFileVersion]):
+        try:
+            self.file_version = TRCFileVersion(file_version)
+            self._msg_fmt_string = self.MESSAGE_FORMAT_MAP[self.file_version]
+        except (KeyError, ValueError) as exc:
+            err_msg = f"File version is not supported: {file_version}"
+            raise NotImplementedError(err_msg) from exc
 
     def _write_header_v1_0(self, start_time: datetime) -> None:
         lines = [
