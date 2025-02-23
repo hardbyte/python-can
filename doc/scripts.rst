@@ -60,7 +60,7 @@ The full usage page can be seen below:
 can.bridge
 ----------
 
-A small application that can be used to connect two can busses:
+A small application that can be used to connect two can buses:
 
 .. command-output:: python -m can.bridge -h
     :shell:

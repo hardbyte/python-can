@@ -1,7 +1,7 @@
 """
-Creates a bridge between two CAN busses.
+Creates a bridge between two CAN buses.
 
-This will connect to two CAN busses. Messages received on one
+This will connect to two CAN buses. Messages received on one
 bus will be sent to the other bus and vice versa.
 """
 
@@ -19,10 +19,10 @@ from .logger import _create_base_argument_parser, _create_bus, _parse_additional
 USAGE = """
 usage: can_bridge [{general config} --] {can A config} -- {can B config}
 
-Bridge two CAN busses.
+Bridge two CAN buses.
 
-Both can busses will be connected so that messages from bus A will be sent on
-bus B and messages on bus B will be sent to bus A. The busses are separated by a `--`
+Both can buses will be connected so that messages from bus A will be sent on
+bus B and messages on bus B will be sent to bus A. The buses are separated by a `--`
 
 positional arguments:
   {general config}      The configuration for this program excluding
@@ -93,11 +93,11 @@ def main() -> None:
         default=2,
     )
 
-    bus_parser = argparse.ArgumentParser(description="Bridge two CAN busses.")
+    bus_parser = argparse.ArgumentParser(description="Bridge two CAN buses.")
 
     _create_base_argument_parser(bus_parser)
 
-    parser = argparse.ArgumentParser(description="Bridge two CAN busses.")
+    parser = argparse.ArgumentParser(description="Bridge two CAN buses.")
     parser.add_argument("configs", nargs=argparse.REMAINDER)
 
     # print help message when no arguments were given
