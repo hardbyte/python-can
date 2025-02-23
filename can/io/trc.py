@@ -11,7 +11,17 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, Generator, Optional, TextIO, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Mapping,
+    Optional,
+    TextIO,
+    Tuple,
+    Union,
+)
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -278,15 +288,18 @@ class TRCWriter(TextIOMessageWriter):
     file: TextIO
     first_timestamp: Optional[float]
 
-    FORMAT_MESSAGE = (
-        "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
-    )
-    FORMAT_MESSAGE_V1_0 = "{msgnr:>6}) {time:7.0f} {id:>8} {dlc:<1} {data}"
+    MESSAGE_FORMAT_MAP: Mapping[TRCFileVersion, str] = {
+        TRCFileVersion.V1_0: "{msgnr:>6}) {time:7.0f} {id:>8} {dlc:<1} {data}",
+        TRCFileVersion.V2_1: (
+            "{msgnr:>7} {time:13.3f} DT {channel:>2} {id:>8} {dir:>2} -  {dlc:<4} {data}"
+        ),
+    }
 
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
         channel: int = 1,
+        file_version: Union[int, TRCFileVersion] = TRCFileVersion.V2_1,
         **kwargs: Any,
     ) -> None:
         """
@@ -295,6 +308,7 @@ class TRCWriter(TextIOMessageWriter):
                      write mode, not binary write mode.
         :param channel: a default channel to use when the message does not
                         have a channel set
+        :param file_version: the trc file format version. Version 2.1 by default
         """
         super().__init__(file, mode="w")
         self.channel = channel
@@ -308,9 +322,15 @@ class TRCWriter(TextIOMessageWriter):
         self.header_written = False
         self.msgnr = 0
         self.first_timestamp = None
-        self.file_version = TRCFileVersion.V2_1
-        self._msg_fmt_string = self.FORMAT_MESSAGE_V1_0
-        self._format_message = self._format_message_init
+        self._setup_file_version(file_version)
+
+    def _setup_file_version(self, file_version: Union[int, TRCFileVersion]) -> None:
+        try:
+            self.file_version = TRCFileVersion(file_version)
+            self._msg_fmt_string = self.MESSAGE_FORMAT_MAP[self.file_version]
+        except (KeyError, ValueError) as exc:
+            err_msg = f"File version is not supported: {file_version}"
+            raise NotImplementedError(err_msg) from exc
 
     def _write_header_v1_0(self, start_time: datetime) -> None:
         lines = [
@@ -359,7 +379,7 @@ class TRCWriter(TextIOMessageWriter):
         ]
         self.file.writelines(line + "\n" for line in lines)
 
-    def _format_message_by_format(self, msg, channel):
+    def _format_message(self, msg: Message, channel: int) -> str:
         if msg.is_extended_id:
             arb_id = f"{msg.arbitration_id:07X}"
         else:
@@ -369,7 +389,7 @@ class TRCWriter(TextIOMessageWriter):
 
         serialized = self._msg_fmt_string.format(
             msgnr=self.msgnr,
-            time=(msg.timestamp - self.first_timestamp) * 1000,
+            time=(msg.timestamp - (self.first_timestamp or 0.0)) * 1000,
             channel=channel,
             id=arb_id,
             dir="Rx" if msg.is_rx else "Tx",
@@ -377,18 +397,6 @@ class TRCWriter(TextIOMessageWriter):
             data=" ".join(data),
         )
         return serialized
-
-    def _format_message_init(self, msg, channel):
-        if self.file_version == TRCFileVersion.V1_0:
-            self._format_message = self._format_message_by_format
-            self._msg_fmt_string = self.FORMAT_MESSAGE_V1_0
-        elif self.file_version == TRCFileVersion.V2_1:
-            self._format_message = self._format_message_by_format
-            self._msg_fmt_string = self.FORMAT_MESSAGE
-        else:
-            raise NotImplementedError("File format is not supported")
-
-        return self._format_message_by_format(msg, channel)
 
     def write_header(self, timestamp: float) -> None:
         # write start of file header
