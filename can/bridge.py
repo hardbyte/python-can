@@ -7,15 +7,14 @@ bus will be sent to the other bus and vice versa.
 
 import argparse
 import errno
+import logging
 import sys
 import time
-import logging
 from datetime import datetime
-
-from .logger import _create_base_argument_parser, _create_bus, _parse_additional_config
 
 import can
 
+from .logger import _create_base_argument_parser, _create_bus, _parse_additional_config
 
 USAGE = """
 usage: can_bridge [{general config} --] {can A config} -- {can B config}
