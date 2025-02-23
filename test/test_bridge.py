@@ -38,7 +38,16 @@ class TestBridgeScriptModule(unittest.TestCase):
 
     def test_bridge_no_config(self):
         self.MockSleep.side_effect = KeyboardInterrupt
-        sys.argv = [sys.argv[0], *self.busargs, "--", *self.busargs]
+        sys.argv = [
+            sys.argv[0],
+            *self.busargs,
+            "-c",
+            "can_a",
+            "--",
+            *self.busargs,
+            "-c",
+            "can_b",
+        ]
         can.bridge.main()
 
         self.assert_successfull_cleanup()
