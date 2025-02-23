@@ -20,7 +20,7 @@ class TestBridgeScriptModule(unittest.TestCase):
         self.MockVirtualBus = patcher_virtual_bus.start()
         self.addCleanup(patcher_virtual_bus.stop)
         self.mock_virtual_bus = self.MockVirtualBus.return_value
-        self.mock_virtual_bus.shutdown = Mock()
+        self.mock_virtual_bus.__enter__ = Mock(return_value=self.mock_virtual_bus)
 
         # Patch time sleep object
         patcher_sleep = mock.patch("can.io.player.time.sleep", spec=True)
@@ -35,6 +35,7 @@ class TestBridgeScriptModule(unittest.TestCase):
 
     def assert_successfull_cleanup(self):
         self.MockVirtualBus.assert_called()
+        self.assertEqual(2, len(self.mock_virtual_bus.__exit__.mock_calls))
 
     def test_bridge_no_config(self):
         self.MockSleep.side_effect = KeyboardInterrupt
