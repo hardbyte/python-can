@@ -324,7 +324,7 @@ class TRCWriter(TextIOMessageWriter):
         self.first_timestamp = None
         self._setup_file_version(file_version)
 
-    def _setup_file_version(self, file_version: Union[int, TRCFileVersion]):
+    def _setup_file_version(self, file_version: Union[int, TRCFileVersion]) -> None:
         try:
             self.file_version = TRCFileVersion(file_version)
             self._msg_fmt_string = self.MESSAGE_FORMAT_MAP[self.file_version]
