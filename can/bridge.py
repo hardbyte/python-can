@@ -11,6 +11,9 @@ import logging
 import sys
 import time
 from datetime import datetime
+from typing import (
+    Iterator,
+)
 
 import can
 
@@ -44,7 +47,7 @@ class UserError(Exception):
     pass
 
 
-def get_config_list(it, separator, conf):
+def get_config_list(it: Iterator[str], separator: str, conf) -> None:
     while True:
         el = next(it)
         if el == separator:
@@ -53,7 +56,9 @@ def get_config_list(it, separator, conf):
         conf.append(el)
 
 
-def split_configurations(arg_list, separator="--"):
+def split_configurations(
+    arg_list: list[str], separator: str = "--"
+) -> (list, list, list):
     general = []
     conf_a = []
     conf_b = []
