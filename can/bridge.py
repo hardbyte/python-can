@@ -109,8 +109,12 @@ def main() -> None:
     try:
         general, conf_a, conf_b = split_configurations(args)
     except UserError as exc:
-        if len(args) == 1 and args[0] == "help_bus":
-            bus_parser.print_help(sys.stderr)
+        if len(args) >= 1:
+            if args[0] == "-h" or args[0] == "help":
+                print(USAGE)
+                raise SystemExit()
+            elif args[0] == "help_bus":
+                bus_parser.print_help(sys.stderr)
         else:
             print(f"Error while processing arguments: {exc}", file=sys.stderr)
         raise SystemExit(errno.EINVAL) from exc
