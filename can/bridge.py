@@ -49,8 +49,8 @@ def get_config_list(it, separator, conf):
         el = next(it)
         if el == separator:
             break
-        else:
-            conf.append(el)
+
+        conf.append(el)
 
 
 def split_configurations(arg_list, separator="--"):
