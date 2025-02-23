@@ -308,6 +308,7 @@ class TRCWriter(TextIOMessageWriter):
                      write mode, not binary write mode.
         :param channel: a default channel to use when the message does not
                         have a channel set
+        :param file_version: the trc file format version. Version 2.1 by default
         """
         super().__init__(file, mode="w")
         self.channel = channel
