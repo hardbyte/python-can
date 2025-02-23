@@ -22,10 +22,12 @@ usage: can_bridge [{general config} --] {can A config} -- {can B config}
 
 Bridge two CAN busses.
 
-Both can busses will be connected so that messages from bus A will be sent on bus B and messages on bus B will be sent to bus A. The busses are separated by a `--`
+Both can busses will be connected so that messages from bus A will be sent on
+bus B and messages on bus B will be sent to bus A. The busses are separated by a `--`
 
 positional arguments:
-  {general config}      The configuration for this program excluding the config for each bus. Can be omitted
+  {general config}      The configuration for this program excluding
+                        the config for each bus. Can be omitted
   {can A config}        The configuration for the first bus
   {can B config}        The configuration for the second bus
 
