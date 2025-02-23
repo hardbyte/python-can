@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import (
     Iterator,
     List,
+    Tuple,
 )
 
 import can
@@ -59,10 +60,10 @@ def get_config_list(it: Iterator[str], separator: str, conf: list) -> None:
 
 def split_configurations(
     arg_list: List[str], separator: str = "--"
-) -> (list, list, list):
+) -> Tuple[list, list, list]:
     general = []
-    conf_a = []
-    conf_b = []
+    conf_a: List[str] = []
+    conf_b: List[str] = []
 
     found_sep = False
     it = iter(arg_list)
