@@ -184,7 +184,7 @@ The following class can be used to read messages from TRC file:
     :members:
 
 
-The following enum can be used during creation of a TRC file with :ref:`TRCWriter` to select a specific file version:
+The following enum can be used during creation of a TRC file with `TRCWriter` to select a specific file version:
 
 .. autoclass:: can.TRCFileVersion
     :show-inheritance:
