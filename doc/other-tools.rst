@@ -47,7 +47,7 @@ CAN Frame Parsing tools etc. (implemented in Python)
 
 #. CAN Message / Database scripting
     * The `cantools`_ package provides multiple methods for interacting with can message database
-      files, and using these files to monitor live busses with a command line monitor tool.
+      files, and using these files to monitor live buses with a command line monitor tool.
 #. CAN Message / Log Decoding
     * The `canmatrix`_ module provides methods for converting between multiple popular message
       frame definition file formats (e.g. .DBC files, .KCD files, .ARXML files etc.).
