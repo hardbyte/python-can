@@ -1058,8 +1058,7 @@ class TestTrcFileFormatV1_0(TestTrcFileFormatBase):
 
     @staticmethod
     def Writer(filename):
-        writer = can.TRCWriter(filename)
-        writer.file_version = can.TRCFileVersion.V1_0
+        writer = can.TRCWriter(filename, file_version=can.TRCFileVersion.V1_0)
         return writer
 
     def _setup_instance(self):
