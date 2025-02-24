@@ -1,6 +1,6 @@
 """
 There are several specific :class:`Exception` classes to allow user
-code to react to specific scenarios related to CAN busses::
+code to react to specific scenarios related to CAN buses::
 
     Exception (Python standard library)
      +-- ...
