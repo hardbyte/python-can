@@ -51,7 +51,7 @@ class TestBridgeScriptModule(unittest.TestCase):
         ]
         can.bridge.main()
 
-        #self.assert_successfull_cleanup()
+        self.assert_successfull_cleanup()
 
 
 if __name__ == "__main__":
