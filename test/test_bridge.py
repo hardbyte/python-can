@@ -33,7 +33,7 @@ class TestBridgeScriptModule(unittest.TestCase):
 
         self.busargs = ["-i", "virtual"]
 
-    def assert_successfull_cleanup(self):
+    def assertSuccessfullCleanup(self):
         self.MockVirtualBus.assert_called()
         self.assertEqual(2, len(self.mock_virtual_bus.__exit__.mock_calls))
 
@@ -51,7 +51,7 @@ class TestBridgeScriptModule(unittest.TestCase):
         ]
         can.bridge.main()
 
-        self.assert_successfull_cleanup()
+        self.assertSuccessfullCleanup()
 
 
 if __name__ == "__main__":
