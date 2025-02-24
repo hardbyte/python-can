@@ -49,7 +49,7 @@ class TestBridgeScriptModule(unittest.TestCase):
             "-c",
             "can_b",
         ]
-        #can.bridge.main()
+        can.bridge.main()
 
         #self.assert_successfull_cleanup()
 
