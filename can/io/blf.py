@@ -530,6 +530,9 @@ class BLFWriter(FileIOMessageWriter):
         if timestamp is None:
             timestamp = self.stop_timestamp or time.time()
         if self.start_timestamp is None:
+            # Save start timestamp using the same precision as the BLF format
+            # Truncating to milliseconds to avoid rounding errors when calculating
+            # the timestamp difference
             self.start_timestamp = int(timestamp * 1000) / 1000
         self.stop_timestamp = timestamp
         timestamp = int((timestamp - self.start_timestamp) * 1e9)
