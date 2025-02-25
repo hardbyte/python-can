@@ -160,7 +160,7 @@ TEST_MESSAGES_REMOTE_FRAMES = sort_messages(
 
 TEST_MESSAGES_ERROR_FRAMES = sort_messages(
     [
-        Message(is_error_frame=True),
+        Message(is_error_frame=True, timestamp=TEST_TIME),
         Message(is_error_frame=True, timestamp=TEST_TIME + 0.170),
         Message(is_error_frame=True, timestamp=TEST_TIME + 17.157),
     ]
