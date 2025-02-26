@@ -17,6 +17,7 @@ import logging
 import struct
 import time
 import zlib
+from decimal import Decimal
 from typing import Any, BinaryIO, Generator, List, Optional, Tuple, Union, cast
 
 from ..message import Message
@@ -264,8 +265,8 @@ class BLFReader(BinaryIOMessageReader):
                 continue
 
             # Calculate absolute timestamp in seconds
-            factor = 1e-5 if flags == 1 else 1e-9
-            timestamp = timestamp * factor + start_timestamp
+            factor = Decimal("1e-5") if flags == 1 else Decimal("1e-9")
+            timestamp = float(Decimal(timestamp) * factor) + start_timestamp
 
             if obj_type in (CAN_MESSAGE, CAN_MESSAGE2):
                 channel, flags, dlc, can_id, can_data = unpack_can_msg(data, pos)
