@@ -694,7 +694,6 @@ class TestBlfFileFormat(ReaderWriterTest):
             check_fd=True,
             check_comments=False,
             test_append=True,
-            allowed_timestamp_delta=1.0e-6,
             preserves_channel=False,
             adds_default_channel=0,
         )
