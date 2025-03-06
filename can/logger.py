@@ -281,9 +281,9 @@ def main() -> None:
     bus = _create_bus(results, **additional_config)
 
     if results.active:
-        bus.state = BusState.ACTIVE
+        bus.state = BusState.ERROR_ACTIVE
     elif results.passive:
-        bus.state = BusState.PASSIVE
+        bus.state = BusState.ERROR_PASSIVE
 
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
