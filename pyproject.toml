@@ -63,7 +63,7 @@ lint = [
     "pylint==3.2.*",
     "ruff==0.10.0",
     "black==25.1.*",
-    "mypy==1.12.*",
+    "mypy==1.15.*",
 ]
 pywin32 = ["pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'"]
 seeedstudio = ["pyserial>=3.0"]

@@ -396,7 +396,7 @@ def _rename_kwargs(
     func_name: str,
     start: str,
     end: Optional[str],
-    kwargs: P1.kwargs,
+    kwargs: Dict[str, Any],
     aliases: Dict[str, Optional[str]],
 ) -> None:
     """Helper function for `deprecated_args_alias`"""
