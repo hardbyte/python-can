@@ -1,5 +1,4 @@
-"""Types for mypy type-checking
-"""
+"""Types for mypy type-checking"""
 
 import gzip
 import struct

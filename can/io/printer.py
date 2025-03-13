@@ -44,7 +44,7 @@ class Printer(MessageWriter):
 
     def on_message_received(self, msg: Message) -> None:
         if self.write_to_file:
-            cast(TextIO, self.file).write(str(msg) + "\n")
+            cast("TextIO", self.file).write(str(msg) + "\n")
         else:
             print(msg)  # noqa: T201
 

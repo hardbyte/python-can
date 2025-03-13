@@ -32,19 +32,19 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
     """
 
     __slots__ = (
-        "timestamp",
-        "arbitration_id",
-        "is_extended_id",
-        "is_remote_frame",
-        "is_error_frame",
-        "channel",
-        "dlc",
-        "data",
-        "is_fd",
-        "is_rx",
-        "bitrate_switch",
-        "error_state_indicator",
         "__weakref__",  # support weak references to messages
+        "arbitration_id",
+        "bitrate_switch",
+        "channel",
+        "data",
+        "dlc",
+        "error_state_indicator",
+        "is_error_frame",
+        "is_extended_id",
+        "is_fd",
+        "is_remote_frame",
+        "is_rx",
+        "timestamp",
     )
 
     def __init__(  # pylint: disable=too-many-locals, too-many-arguments

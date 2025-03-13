@@ -1,6 +1,3 @@
-"""
-"""
-
 __all__ = [
     "SeeedBus",
     "seeedstudio",

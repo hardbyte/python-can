@@ -50,7 +50,7 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
         """
         if file is None or (hasattr(file, "read") and hasattr(file, "write")):
             # file is None or some file-like object
-            self.file = cast(Optional[typechecking.FileLike], file)
+            self.file = cast("Optional[typechecking.FileLike]", file)
         else:
             encoding: Optional[str] = (
                 None
@@ -60,8 +60,10 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
             # pylint: disable=consider-using-with
             # file is some path-like object
             self.file = cast(
-                typechecking.FileLike,
-                open(cast(typechecking.StringPathLike, file), mode, encoding=encoding),
+                "typechecking.FileLike",
+                open(
+                    cast("typechecking.StringPathLike", file), mode, encoding=encoding
+                ),
             )
 
         # for multiple inheritance

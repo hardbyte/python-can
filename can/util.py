@@ -178,7 +178,7 @@ def load_config(
 
     # Use the given dict for default values
     config_sources = cast(
-        Iterable[Union[Dict[str, Any], Callable[[Any], Dict[str, Any]]]],
+        "Iterable[Union[Dict[str, Any], Callable[[Any], Dict[str, Any]]]]",
         [
             given_config,
             can.rc,
@@ -251,7 +251,7 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
     if "fd" in config:
         config["fd"] = config["fd"] not in (0, False)
 
-    return cast(typechecking.BusConfig, config)
+    return cast("typechecking.BusConfig", config)
 
 
 def _dict2timing(data: Dict[str, Any]) -> Union[BitTiming, BitTimingFd, None]:

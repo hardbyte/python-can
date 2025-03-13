@@ -276,7 +276,7 @@ class BusABC(metaclass=ABCMeta):
 
         # Create a backend specific task; will be patched to a _SelfRemovingCyclicTask later
         task = cast(
-            _SelfRemovingCyclicTask,
+            "_SelfRemovingCyclicTask",
             self._send_periodic_internal(
                 msgs, period, duration, autostart, modifier_callback
             ),
@@ -452,7 +452,7 @@ class BusABC(metaclass=ABCMeta):
         for _filter in self._filters:
             # check if this filter even applies to the message
             if "extended" in _filter:
-                _filter = cast(can.typechecking.CanFilterExtended, _filter)
+                _filter = cast("can.typechecking.CanFilterExtended", _filter)
                 if _filter["extended"] != msg.is_extended_id:
                     continue
 

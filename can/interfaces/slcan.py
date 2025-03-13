@@ -305,7 +305,7 @@ class slcanBus(BusABC):
 
     def fileno(self) -> int:
         try:
-            return cast(int, self.serialPortOrig.fileno())
+            return cast("int", self.serialPortOrig.fileno())
         except io.UnsupportedOperation:
             raise NotImplementedError(
                 "fileno is not implemented using current CAN bus on this platform"

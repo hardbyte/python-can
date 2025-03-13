@@ -268,7 +268,7 @@ class BaseRotatingLogger(MessageWriter, ABC):
             if isinstance(logger, FileIOMessageWriter):
                 return logger
             elif isinstance(logger, Printer) and logger.file is not None:
-                return cast(FileIOMessageWriter, logger)
+                return cast("FileIOMessageWriter", logger)
 
         raise ValueError(
             f'The log format of "{pathlib.Path(filename).name}" '

@@ -35,11 +35,11 @@ from . import constants, structures
 from .exceptions import *
 
 __all__ = [
-    "VCITimeout",
-    "VCIError",
+    "IXXATBus",
     "VCIBusOffError",
     "VCIDeviceNotFoundError",
-    "IXXATBus",
+    "VCIError",
+    "VCITimeout",
     "vciFormatError",
 ]
 
@@ -890,7 +890,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC)
         self._count = int(duration / period) if duration else 0
 
         self._msg = structures.CANCYCLICTXMSG()
-        self._msg.wCycleTime = int(round(period * resolution))
+        self._msg.wCycleTime = round(period * resolution)
         self._msg.dwMsgId = self.messages[0].arbitration_id
         self._msg.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
         self._msg.uMsgInfo.Bits.ext = 1 if self.messages[0].is_extended_id else 0
