@@ -14,7 +14,8 @@ import functools
 import logging
 import sys
 import warnings
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 from can import (
     BusABC,
@@ -64,7 +65,7 @@ else:
 
 
 def __vciFormatErrorExtended(
-    library_instance: CLibrary, function: Callable, vret: int, args: Tuple
+    library_instance: CLibrary, function: Callable, vret: int, args: tuple
 ):
     """Format a VCI error and attach failed function, decoded HRESULT and arguments
     :param CLibrary library_instance:
@@ -961,7 +962,7 @@ def get_ixxat_hwids():
     return hwids
 
 
-def _detect_available_configs() -> List[AutoDetectedConfig]:
+def _detect_available_configs() -> list[AutoDetectedConfig]:
     config_list = []  # list in wich to store the resulting bus kwargs
 
     # used to detect HWID

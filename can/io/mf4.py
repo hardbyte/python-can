@@ -8,11 +8,12 @@ the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
 import abc
 import heapq
 import logging
+from collections.abc import Generator, Iterator
 from datetime import datetime
 from hashlib import md5
 from io import BufferedIOBase, BytesIO
 from pathlib import Path
-from typing import Any, BinaryIO, Dict, Generator, Iterator, List, Optional, Union, cast
+from typing import Any, BinaryIO, Optional, Union, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -339,7 +340,7 @@ class MF4Reader(BinaryIOMessageReader):
                 for i in range(len(data)):
                     data_length = int(data["CAN_DataFrame.DataLength"][i])
 
-                    kv: Dict[str, Any] = {
+                    kv: dict[str, Any] = {
                         "timestamp": float(data.timestamps[i]) + self._start_timestamp,
                         "arbitration_id": int(data["CAN_DataFrame.ID"][i]) & 0x1FFFFFFF,
                         "data": data["CAN_DataFrame.DataBytes"][i][
@@ -377,7 +378,7 @@ class MF4Reader(BinaryIOMessageReader):
                 names = data.samples[0].dtype.names
 
                 for i in range(len(data)):
-                    kv: Dict[str, Any] = {
+                    kv: dict[str, Any] = {
                         "timestamp": float(data.timestamps[i]) + self._start_timestamp,
                         "is_error_frame": True,
                     }
@@ -428,7 +429,7 @@ class MF4Reader(BinaryIOMessageReader):
                 names = data.samples[0].dtype.names
 
                 for i in range(len(data)):
-                    kv: Dict[str, Any] = {
+                    kv: dict[str, Any] = {
                         "timestamp": float(data.timestamps[i]) + self._start_timestamp,
                         "arbitration_id": int(data["CAN_RemoteFrame.ID"][i])
                         & 0x1FFFFFFF,
@@ -474,7 +475,7 @@ class MF4Reader(BinaryIOMessageReader):
     def __iter__(self) -> Iterator[Message]:
         # To handle messages split over multiple channel groups, create a single iterator per
         # channel group and merge these iterators into a single iterator using heapq.
-        iterators: List[FrameIterator] = []
+        iterators: list[FrameIterator] = []
         for group_index, group in enumerate(self._mdf.groups):
             channel_group: ChannelGroup = group.channel_group
 

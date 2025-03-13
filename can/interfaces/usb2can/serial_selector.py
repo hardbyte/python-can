@@ -1,7 +1,6 @@
 """ """
 
 import logging
-from typing import List
 
 log = logging.getLogger("can.usb2can")
 
@@ -43,7 +42,7 @@ def WMIDateStringToDate(dtmDate) -> str:
     return strDateTime
 
 
-def find_serial_devices(serial_matcher: str = "") -> List[str]:
+def find_serial_devices(serial_matcher: str = "") -> list[str]:
     """
     Finds a list of USB devices where the serial number (partially) matches the given string.
 

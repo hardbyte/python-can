@@ -5,7 +5,8 @@ It is is compatible with "candump -L" from the canutils program
 """
 
 import logging
-from typing import Any, Generator, TextIO, Union
+from collections.abc import Generator
+from typing import Any, TextIO, Union
 
 from can.message import Message
 
