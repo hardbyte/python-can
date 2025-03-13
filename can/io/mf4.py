@@ -185,8 +185,8 @@ class MF4Writer(BinaryIOMessageWriter):
         """Return an estimate of the current file size in bytes."""
         # TODO: find solution without accessing private attributes of asammdf
         return cast(
-            "int", self._mdf._tempfile.tell()
-        )  # pylint: disable=protected-access
+            "int", self._mdf._tempfile.tell()  # pylint: disable=protected-access
+        )
 
     def stop(self) -> None:
         self._mdf.save(self.file, compression=self._compression_level)

@@ -9,11 +9,16 @@ import argparse
 import errno
 import sys
 from datetime import datetime
-from typing import Iterable, cast
+from typing import TYPE_CHECKING, cast
 
-from can import LogReader, Message, MessageSync
+from can import LogReader, MessageSync
 
 from .logger import _create_base_argument_parser, _create_bus, _parse_additional_config
+
+if TYPE_CHECKING:
+    from typing import Iterable
+
+    from can import Message
 
 
 def main() -> None:
