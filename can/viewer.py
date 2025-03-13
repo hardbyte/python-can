@@ -166,9 +166,8 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
             # These messages do not contain a data package
             return []
 
-        for key in cmd_to_struct:
+        for key, value in cmd_to_struct.items():
             if cmd == key if isinstance(key, int) else cmd in key:
-                value = cmd_to_struct[key]
                 if isinstance(value, tuple):
                     # The struct is given as the fist argument
                     struct_t: struct.Struct = value[0]

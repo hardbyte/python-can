@@ -124,7 +124,7 @@ class MF4Writer(BinaryIOMessageWriter):
 
         super().__init__(file, mode="w+b")
         now = datetime.now()
-        self._mdf = cast(MDF4, MDF(version="4.10"))
+        self._mdf = cast("MDF4", MDF(version="4.10"))
         self._mdf.header.start_time = now
         self.last_timestamp = self._start_time = now.timestamp()
 
@@ -184,7 +184,9 @@ class MF4Writer(BinaryIOMessageWriter):
     def file_size(self) -> int:
         """Return an estimate of the current file size in bytes."""
         # TODO: find solution without accessing private attributes of asammdf
-        return cast(int, self._mdf._tempfile.tell())  # pylint: disable=protected-access
+        return cast(
+            "int", self._mdf._tempfile.tell()  # pylint: disable=protected-access
+        )
 
     def stop(self) -> None:
         self._mdf.save(self.file, compression=self._compression_level)
@@ -463,9 +465,9 @@ class MF4Reader(BinaryIOMessageReader):
 
         self._mdf: MDF4
         if isinstance(file, BufferedIOBase):
-            self._mdf = cast(MDF4, MDF(BytesIO(file.read())))
+            self._mdf = cast("MDF4", MDF(BytesIO(file.read())))
         else:
-            self._mdf = cast(MDF4, MDF(file))
+            self._mdf = cast("MDF4", MDF(file))
 
         self._start_timestamp = self._mdf.header.start_time.timestamp()
 

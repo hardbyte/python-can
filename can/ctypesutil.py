@@ -9,7 +9,7 @@ from typing import Any, Callable, Optional, Tuple, Union
 
 log = logging.getLogger("can.ctypesutil")
 
-__all__ = ["CLibrary", "HANDLE", "PHANDLE", "HRESULT"]
+__all__ = ["HANDLE", "HRESULT", "PHANDLE", "CLibrary"]
 
 if sys.platform == "win32":
     _LibBase = ctypes.WinDLL

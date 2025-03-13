@@ -165,7 +165,7 @@ class CanutilsLogWriter(TextIOMessageWriter):
             timestamp = msg.timestamp
 
         channel = msg.channel if msg.channel is not None else self.channel
-        if isinstance(channel, int) or isinstance(channel, str) and channel.isdigit():
+        if isinstance(channel, int) or (isinstance(channel, str) and channel.isdigit()):
             channel = f"can{channel}"
 
         framestr = f"({timestamp:f}) {channel}"

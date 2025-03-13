@@ -52,7 +52,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
             f"'{interface}': {e}"
         ) from None
 
-    return cast(Type[BusABC], bus_class)
+    return cast("Type[BusABC]", bus_class)
 
 
 @util.deprecated_args_alias(
@@ -138,7 +138,7 @@ def Bus(  # noqa: N802
 
 
 def detect_available_configs(
-    interfaces: Union[None, str, Iterable[str]] = None
+    interfaces: Union[None, str, Iterable[str]] = None,
 ) -> List[AutoDetectedConfig]:
     """Detect all configurations/channels that the interfaces could
     currently connect with.

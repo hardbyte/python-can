@@ -201,13 +201,13 @@ class CANBTP(ctypes.Structure):
     ]
 
     def __str__(self):
-        return "dwMode=%d, dwBPS=%d, wTS1=%d,  wTS2=%d, wSJW=%d, wTDO=%d" % (
-            self.dwMode,
-            self.dwBPS,
-            self.wTS1,
-            self.wTS2,
-            self.wSJW,
-            self.wTDO,
+        return (
+            f"dwMode={self.dwMode:d}, "
+            f"dwBPS={self.dwBPS:d}, "
+            f"wTS1={self.wTS1:d}, "
+            f"wTS2={self.wTS2:d}, "
+            f"wSJW={self.wSJW:d}, "
+            f"wTDO={self.wTDO:d}"
         )
 
 

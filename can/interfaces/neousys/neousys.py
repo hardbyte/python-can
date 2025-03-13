@@ -1,4 +1,4 @@
-""" Neousys CAN bus driver """
+"""Neousys CAN bus driver"""
 
 #
 # This kind of interface can be found for example on Neousys POC-551VTC

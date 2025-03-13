@@ -220,7 +220,7 @@ class VectorBus(BusABC):
                 # at the same time. If the VectorBus is instantiated with a config, that was returned from
                 # VectorBus._detect_available_configs(), then use the contained global channel_index
                 # to avoid any ambiguities.
-                channel_index = cast(int, _channel_index)
+                channel_index = cast("int", _channel_index)
             else:
                 channel_index = self._find_global_channel_idx(
                     channel=channel,
@@ -410,7 +410,7 @@ class VectorBus(BusABC):
                 app_name, channel
             )
             idx = cast(
-                int, self.xldriver.xlGetChannelIndex(hw_type, hw_index, hw_channel)
+                "int", self.xldriver.xlGetChannelIndex(hw_type, hw_index, hw_channel)
             )
             if idx < 0:
                 # Undocumented behavior! See issue #353.

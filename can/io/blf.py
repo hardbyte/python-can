@@ -162,8 +162,12 @@ class BLFReader(BinaryIOMessageReader):
         self.file_size = header[10]
         self.uncompressed_size = header[11]
         self.object_count = header[12]
-        self.start_timestamp = systemtime_to_timestamp(cast(TSystemTime, header[14:22]))
-        self.stop_timestamp = systemtime_to_timestamp(cast(TSystemTime, header[22:30]))
+        self.start_timestamp = systemtime_to_timestamp(
+            cast("TSystemTime", header[14:22])
+        )
+        self.stop_timestamp = systemtime_to_timestamp(
+            cast("TSystemTime", header[22:30])
+        )
         # Read rest of header
         self.file.read(header[1] - FILE_HEADER_STRUCT.size)
         self._tail = b""
@@ -429,10 +433,10 @@ class BLFWriter(FileIOMessageWriter):
             self.uncompressed_size = header[11]
             self.object_count = header[12]
             self.start_timestamp: Optional[float] = systemtime_to_timestamp(
-                cast(TSystemTime, header[14:22])
+                cast("TSystemTime", header[14:22])
             )
             self.stop_timestamp: Optional[float] = systemtime_to_timestamp(
-                cast(TSystemTime, header[22:30])
+                cast("TSystemTime", header[22:30])
             )
             # Jump to the end of the file
             self.file.seek(0, 2)
