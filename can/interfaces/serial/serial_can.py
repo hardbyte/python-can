@@ -10,7 +10,7 @@ See the interface documentation for the format being used.
 import io
 import logging
 import struct
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 from can import (
     BusABC,
@@ -38,7 +38,7 @@ try:
     from serial.tools.list_ports import comports as list_comports
 except ImportError:
     # If unavailable on some platform, just return nothing
-    def list_comports() -> List[Any]:
+    def list_comports() -> list[Any]:
         return []
 
 
@@ -160,7 +160,7 @@ class SerialBus(BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         """
         Read a message from the serial device.
 
@@ -229,7 +229,7 @@ class SerialBus(BusABC):
             raise CanOperationError("Cannot fetch fileno") from exception
 
     @staticmethod
-    def _detect_available_configs() -> List[AutoDetectedConfig]:
+    def _detect_available_configs() -> list[AutoDetectedConfig]:
         return [
             {"interface": "serial", "channel": port.device} for port in list_comports()
         ]

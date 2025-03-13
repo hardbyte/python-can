@@ -7,14 +7,10 @@ in the recorded order and time intervals.
 import gzip
 import pathlib
 import time
+from collections.abc import Generator, Iterable
 from typing import (
     Any,
-    Dict,
     Final,
-    Generator,
-    Iterable,
-    Tuple,
-    Type,
     Union,
 )
 
@@ -32,7 +28,7 @@ from .trc import TRCReader
 
 #: A map of file suffixes to their corresponding
 #: :class:`can.io.generic.MessageReader` class
-MESSAGE_READERS: Final[Dict[str, Type[MessageReader]]] = {
+MESSAGE_READERS: Final[dict[str, type[MessageReader]]] = {
     ".asc": ASCReader,
     ".blf": BLFReader,
     ".csv": CSVReader,
@@ -54,7 +50,7 @@ def _update_reader_plugins() -> None:
             MESSAGE_READERS[entry_point.key] = reader_class
 
 
-def _get_logger_for_suffix(suffix: str) -> Type[MessageReader]:
+def _get_logger_for_suffix(suffix: str) -> type[MessageReader]:
     """Find MessageReader class for given suffix."""
     try:
         return MESSAGE_READERS[suffix]
@@ -64,7 +60,7 @@ def _get_logger_for_suffix(suffix: str) -> Type[MessageReader]:
 
 def _decompress(
     filename: StringPathLike,
-) -> Tuple[Type[MessageReader], Union[str, FileLike]]:
+) -> tuple[type[MessageReader], Union[str, FileLike]]:
     """
     Return the suffix and io object of the decompressed file.
     """

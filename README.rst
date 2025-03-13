@@ -3,7 +3,7 @@ python-can
 
 |pypi| |conda| |python_implementation| |downloads| |downloads_monthly|
 
-|docs| |github-actions| |coverage| |mergify| |formatter|
+|docs| |github-actions| |coverage| |formatter|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/python-can.svg
    :target: https://pypi.python.org/pypi/python-can/
@@ -41,10 +41,6 @@ python-can
    :target: https://coveralls.io/github/hardbyte/python-can?branch=develop
    :alt: Test coverage reports on Coveralls.io
 
-.. |mergify| image:: https://img.shields.io/endpoint.svg?url=https://api.mergify.com/v1/badges/hardbyte/python-can&style=flat
-   :target: https://mergify.io
-   :alt: Mergify Status
-
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
 to allow microcontrollers and devices to communicate with each other. It
 has priority based bus arbitration and reliable deterministic
@@ -64,6 +60,7 @@ Library Version                 Python
   3.x                           2.7+, 3.5+
   4.0+                          3.7+
   4.3+                          3.8+
+  4.6+                          3.9+
 ==============================  ===========
 
 

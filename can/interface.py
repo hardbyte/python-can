@@ -6,7 +6,8 @@ CyclicSendTasks.
 
 import importlib
 import logging
-from typing import Any, Iterable, List, Optional, Type, Union, cast
+from collections.abc import Iterable
+from typing import Any, Optional, Union, cast
 
 from . import util
 from .bus import BusABC
@@ -18,7 +19,7 @@ log = logging.getLogger("can.interface")
 log_autodetect = log.getChild("detect_available_configs")
 
 
-def _get_class_for_interface(interface: str) -> Type[BusABC]:
+def _get_class_for_interface(interface: str) -> type[BusABC]:
     """
     Returns the main bus class for the given interface.
 
@@ -52,7 +53,7 @@ def _get_class_for_interface(interface: str) -> Type[BusABC]:
             f"'{interface}': {e}"
         ) from None
 
-    return cast("Type[BusABC]", bus_class)
+    return cast("type[BusABC]", bus_class)
 
 
 @util.deprecated_args_alias(
@@ -139,7 +140,7 @@ def Bus(  # noqa: N802
 
 def detect_available_configs(
     interfaces: Union[None, str, Iterable[str]] = None,
-) -> List[AutoDetectedConfig]:
+) -> list[AutoDetectedConfig]:
     """Detect all configurations/channels that the interfaces could
     currently connect with.
 

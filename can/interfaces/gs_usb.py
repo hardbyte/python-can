@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 
 import usb
 from gs_usb.constants import CAN_EFF_FLAG, CAN_ERR_FLAG, CAN_MAX_DLC, CAN_RTR_FLAG
@@ -119,7 +119,7 @@ class GsUsbBus(can.BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[can.Message], bool]:
+    ) -> tuple[Optional[can.Message], bool]:
         """
         Read a message from the bus and tell whether it was filtered.
         This methods may be called by :meth:`~can.BusABC.recv`

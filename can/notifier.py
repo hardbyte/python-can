@@ -7,7 +7,8 @@ import functools
 import logging
 import threading
 import time
-from typing import Any, Awaitable, Callable, Iterable, List, Optional, Union
+from collections.abc import Awaitable, Iterable
+from typing import Any, Callable, Optional, Union
 
 from can.bus import BusABC
 from can.listener import Listener
@@ -21,7 +22,7 @@ MessageRecipient = Union[Listener, Callable[[Message], Union[Awaitable[None], No
 class Notifier:
     def __init__(
         self,
-        bus: Union[BusABC, List[BusABC]],
+        bus: Union[BusABC, list[BusABC]],
         listeners: Iterable[MessageRecipient],
         timeout: float = 1.0,
         loop: Optional[asyncio.AbstractEventLoop] = None,
@@ -43,7 +44,7 @@ class Notifier:
         :param timeout: An optional maximum number of seconds to wait for any :class:`~can.Message`.
         :param loop: An :mod:`asyncio` event loop to schedule the ``listeners`` in.
         """
-        self.listeners: List[MessageRecipient] = list(listeners)
+        self.listeners: list[MessageRecipient] = list(listeners)
         self.bus = bus
         self.timeout = timeout
         self._loop = loop
@@ -54,7 +55,7 @@ class Notifier:
         self._running = True
         self._lock = threading.Lock()
 
-        self._readers: List[Union[int, threading.Thread]] = []
+        self._readers: list[Union[int, threading.Thread]] = []
         buses = self.bus if isinstance(self.bus, list) else [self.bus]
         for each_bus in buses:
             self.add_bus(each_bus)

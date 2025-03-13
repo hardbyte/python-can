@@ -6,18 +6,14 @@ import contextlib
 import logging
 import threading
 from abc import ABC, ABCMeta, abstractmethod
+from collections.abc import Iterator, Sequence
 from enum import Enum, auto
 from time import time
 from types import TracebackType
 from typing import (
     Any,
     Callable,
-    Iterator,
-    List,
     Optional,
-    Sequence,
-    Tuple,
-    Type,
     Union,
     cast,
 )
@@ -97,7 +93,7 @@ class BusABC(metaclass=ABCMeta):
         :raises ~can.exceptions.CanInitializationError:
             If the bus cannot be initialized
         """
-        self._periodic_tasks: List[_SelfRemovingCyclicTask] = []
+        self._periodic_tasks: list[_SelfRemovingCyclicTask] = []
         self.set_filters(can_filters)
         # Flip the class default value when the constructor finishes.  That
         # usually means the derived class constructor was also successful,
@@ -147,7 +143,7 @@ class BusABC(metaclass=ABCMeta):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         """
         Read a message from the bus and tell whether it was filtered.
         This methods may be called by :meth:`~can.BusABC.recv`
@@ -491,7 +487,7 @@ class BusABC(metaclass=ABCMeta):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
@@ -529,7 +525,7 @@ class BusABC(metaclass=ABCMeta):
         return self._can_protocol
 
     @staticmethod
-    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
+    def _detect_available_configs() -> list[can.typechecking.AutoDetectedConfig]:
         """Detect all configurations/channels that this interface could
         currently connect with.
 

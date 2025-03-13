@@ -9,9 +9,10 @@ Version 1.1 will be implemented as it is most commonly used
 
 import logging
 import os
+from collections.abc import Generator
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, Generator, Optional, TextIO, Tuple, Union
+from typing import Any, Callable, Optional, TextIO, Union
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -56,13 +57,13 @@ class TRCReader(TextIOMessageReader):
         super().__init__(file, mode="r")
         self.file_version = TRCFileVersion.UNKNOWN
         self._start_time: float = 0
-        self.columns: Dict[str, int] = {}
+        self.columns: dict[str, int] = {}
         self._num_columns = -1
 
         if not self.file:
             raise ValueError("The given file cannot be None")
 
-        self._parse_cols: Callable[[Tuple[str, ...]], Optional[Message]] = (
+        self._parse_cols: Callable[[tuple[str, ...]], Optional[Message]] = (
             lambda x: None
         )
 
@@ -140,7 +141,7 @@ class TRCReader(TextIOMessageReader):
 
         return line
 
-    def _parse_msg_v1_0(self, cols: Tuple[str, ...]) -> Optional[Message]:
+    def _parse_msg_v1_0(self, cols: tuple[str, ...]) -> Optional[Message]:
         arbit_id = cols[2]
         if arbit_id == "FFFFFFFF":
             logger.info("TRCReader: Dropping bus info line")
@@ -155,7 +156,7 @@ class TRCReader(TextIOMessageReader):
         msg.data = bytearray([int(cols[i + 4], 16) for i in range(msg.dlc)])
         return msg
 
-    def _parse_msg_v1_1(self, cols: Tuple[str, ...]) -> Optional[Message]:
+    def _parse_msg_v1_1(self, cols: tuple[str, ...]) -> Optional[Message]:
         arbit_id = cols[3]
 
         msg = Message()
@@ -168,7 +169,7 @@ class TRCReader(TextIOMessageReader):
         msg.is_rx = cols[2] == "Rx"
         return msg
 
-    def _parse_msg_v1_3(self, cols: Tuple[str, ...]) -> Optional[Message]:
+    def _parse_msg_v1_3(self, cols: tuple[str, ...]) -> Optional[Message]:
         arbit_id = cols[4]
 
         msg = Message()
@@ -181,7 +182,7 @@ class TRCReader(TextIOMessageReader):
         msg.is_rx = cols[3] == "Rx"
         return msg
 
-    def _parse_msg_v2_x(self, cols: Tuple[str, ...]) -> Optional[Message]:
+    def _parse_msg_v2_x(self, cols: tuple[str, ...]) -> Optional[Message]:
         type_ = cols[self.columns["T"]]
         bus = self.columns.get("B", None)
 
@@ -208,7 +209,7 @@ class TRCReader(TextIOMessageReader):
 
         return msg
 
-    def _parse_cols_v1_1(self, cols: Tuple[str, ...]) -> Optional[Message]:
+    def _parse_cols_v1_1(self, cols: tuple[str, ...]) -> Optional[Message]:
         dtype = cols[2]
         if dtype in ("Tx", "Rx"):
             return self._parse_msg_v1_1(cols)
@@ -216,7 +217,7 @@ class TRCReader(TextIOMessageReader):
             logger.info("TRCReader: Unsupported type '%s'", dtype)
             return None
 
-    def _parse_cols_v1_3(self, cols: Tuple[str, ...]) -> Optional[Message]:
+    def _parse_cols_v1_3(self, cols: tuple[str, ...]) -> Optional[Message]:
         dtype = cols[3]
         if dtype in ("Tx", "Rx"):
             return self._parse_msg_v1_3(cols)
@@ -224,7 +225,7 @@ class TRCReader(TextIOMessageReader):
             logger.info("TRCReader: Unsupported type '%s'", dtype)
             return None
 
-    def _parse_cols_v2_x(self, cols: Tuple[str, ...]) -> Optional[Message]:
+    def _parse_cols_v2_x(self, cols: tuple[str, ...]) -> Optional[Message]:
         dtype = cols[self.columns["T"]]
         if dtype in {"DT", "FD", "FB", "FE", "BI"}:
             return self._parse_msg_v2_x(cols)
