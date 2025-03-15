@@ -59,10 +59,7 @@ class BaseIOHandler(AbstractContextManager):
             # pylint: disable=consider-using-with
             # file is some path-like object
             self.file = cast(
-                "typechecking.FileLike",
-                open(
-                    cast("typechecking.StringPathLike", file), mode, encoding=encoding
-                ),
+                "typechecking.FileLike", open(file, mode, encoding=encoding)
             )
 
         # for multiple inheritance
