@@ -18,8 +18,8 @@ Expects two serial ports (/dev/ttyS10 and /dev/ttyS11) connected to each other:
         com0com: http://com0com.sourceforge.net/
 """
 
-import time
 import threading
+import time
 
 import can
 
