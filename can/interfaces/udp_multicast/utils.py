@@ -2,7 +2,7 @@
 Defines common functions.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from can import CanInterfaceNotImplementedError, Message
 from can.typechecking import ReadableBytesLike
@@ -44,7 +44,7 @@ def pack_message(message: Message) -> bytes:
 
 def unpack_message(
     data: ReadableBytesLike,
-    replace: Optional[Dict[str, Any]] = None,
+    replace: Optional[dict[str, Any]] = None,
     check: bool = False,
 ) -> Message:
     """Unpack a can.Message from a msgpack byte blob.

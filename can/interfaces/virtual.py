@@ -12,7 +12,7 @@ import time
 from copy import deepcopy
 from random import randint
 from threading import RLock
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 from can import CanOperationError
 from can.bus import BusABC, CanProtocol
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # Channels are lists of queues, one for each connection
 if TYPE_CHECKING:
     # https://mypy.readthedocs.io/en/stable/runtime_troubles.html#using-classes-that-are-generic-in-stubs-but-not-at-runtime
-    channels: Dict[Optional[Any], List[queue.Queue[Message]]] = {}
+    channels: dict[Optional[Any], list[queue.Queue[Message]]] = {}
 else:
     channels = {}
 channels_lock = RLock()
@@ -125,7 +125,7 @@ class VirtualBus(BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         self._check_if_open()
         try:
             msg = self.queue.get(block=True, timeout=timeout)
@@ -168,7 +168,7 @@ class VirtualBus(BusABC):
                     del channels[self.channel_id]
 
     @staticmethod
-    def _detect_available_configs() -> List[AutoDetectedConfig]:
+    def _detect_available_configs() -> list[AutoDetectedConfig]:
         """
         Returns all currently used channels as well as
         one other currently unused channel.

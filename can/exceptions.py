@@ -15,14 +15,9 @@ For example, validating typical arguments and parameters might result in a
 :class:`ValueError`. This should always be documented for the function at hand.
 """
 
-import sys
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Optional, Type
-
-if sys.version_info >= (3, 9):
-    from collections.abc import Generator
-else:
-    from typing import Generator
+from typing import Optional
 
 
 class CanError(Exception):
@@ -114,7 +109,7 @@ class CanTimeoutError(CanError, TimeoutError):
 @contextmanager
 def error_check(
     error_message: Optional[str] = None,
-    exception_type: Type[CanError] = CanOperationError,
+    exception_type: type[CanError] = CanOperationError,
 ) -> Generator[None, None, None]:
     """Catches any exceptions and turns them into the new type while preserving the stack trace."""
     try:

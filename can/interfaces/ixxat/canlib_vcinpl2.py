@@ -15,7 +15,8 @@ import logging
 import sys
 import time
 import warnings
-from typing import Callable, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 from can import (
     BusABC,
@@ -62,7 +63,7 @@ else:
 
 
 def __vciFormatErrorExtended(
-    library_instance: CLibrary, function: Callable, vret: int, args: Tuple
+    library_instance: CLibrary, function: Callable, vret: int, args: tuple
 ):
     """Format a VCI error and attach failed function, decoded HRESULT and arguments
     :param CLibrary library_instance:

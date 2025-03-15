@@ -7,7 +7,7 @@ import logging
 import time
 import warnings
 from queue import SimpleQueue
-from typing import Any, Optional, Tuple, Union, cast
+from typing import Any, Optional, Union, cast
 
 from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message, typechecking
 from can.exceptions import (
@@ -230,7 +230,7 @@ class slcanBus(BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         canId = None
         remote = False
         extended = False
@@ -315,7 +315,7 @@ class slcanBus(BusABC):
 
     def get_version(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[int], Optional[int]]:
+    ) -> tuple[Optional[int], Optional[int]]:
         """Get HW and SW version of the slcan interface.
 
         :param timeout:

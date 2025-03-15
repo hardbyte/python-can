@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Dict
 
 from can import CanError
 
@@ -22,7 +21,7 @@ class UcanException(CanError, ABC):
 
     @property
     @abstractmethod
-    def _error_message_mapping(self) -> Dict[ReturnCode, str]: ...
+    def _error_message_mapping(self) -> dict[ReturnCode, str]: ...
 
 
 class UcanError(UcanException):
@@ -51,7 +50,7 @@ class UcanError(UcanException):
     }
 
     @property
-    def _error_message_mapping(self) -> Dict[ReturnCode, str]:
+    def _error_message_mapping(self) -> dict[ReturnCode, str]:
         return UcanError._ERROR_MESSAGES
 
 
@@ -77,7 +76,7 @@ class UcanCmdError(UcanException):
     }
 
     @property
-    def _error_message_mapping(self) -> Dict[ReturnCode, str]:
+    def _error_message_mapping(self) -> dict[ReturnCode, str]:
         return UcanCmdError._ERROR_MESSAGES
 
 
@@ -102,5 +101,5 @@ class UcanWarning(UcanException):
     }
 
     @property
-    def _error_message_mapping(self) -> Dict[ReturnCode, str]:
+    def _error_message_mapping(self) -> dict[ReturnCode, str]:
         return UcanWarning._ERROR_MESSAGES

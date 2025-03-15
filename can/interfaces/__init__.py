@@ -2,8 +2,6 @@
 Interfaces contain low level implementations that interact with CAN hardware.
 """
 
-from typing import Dict, Tuple
-
 from can._entry_points import read_entry_points
 
 __all__ = [
@@ -35,7 +33,7 @@ __all__ = [
 ]
 
 # interface_name => (module, classname)
-BACKENDS: Dict[str, Tuple[str, str]] = {
+BACKENDS: dict[str, tuple[str, str]] = {
     "kvaser": ("can.interfaces.kvaser", "KvaserBus"),
     "socketcan": ("can.interfaces.socketcan", "SocketcanBus"),
     "serial": ("can.interfaces.serial.serial_can", "SerialBus"),

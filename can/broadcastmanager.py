@@ -12,13 +12,12 @@ import sys
 import threading
 import time
 import warnings
+from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
     Callable,
     Final,
     Optional,
-    Sequence,
-    Tuple,
     Union,
     cast,
 )
@@ -127,7 +126,7 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
     @staticmethod
     def _check_and_convert_messages(
         messages: Union[Sequence[Message], Message],
-    ) -> Tuple[Message, ...]:
+    ) -> tuple[Message, ...]:
         """Helper function to convert a Message or Sequence of messages into a
         tuple, and raises an error when the given value is invalid.
 
@@ -194,7 +193,7 @@ class RestartableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
 
 
 class ModifiableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
-    def _check_modified_messages(self, messages: Tuple[Message, ...]) -> None:
+    def _check_modified_messages(self, messages: tuple[Message, ...]) -> None:
         """Helper function to perform error checking when modifying the data in
         the cyclic task.
 

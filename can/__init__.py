@@ -8,7 +8,7 @@ messages on a can bus.
 import contextlib
 import logging
 from importlib.metadata import PackageNotFoundError, version
-from typing import Any, Dict
+from typing import Any
 
 __all__ = [
     "VALID_INTERFACES",
@@ -130,4 +130,4 @@ with contextlib.suppress(PackageNotFoundError):
 
 log = logging.getLogger("can")
 
-rc: Dict[str, Any] = {}
+rc: dict[str, Any] = {}
