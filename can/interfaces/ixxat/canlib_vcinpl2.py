@@ -726,15 +726,7 @@ class IXXATBus(BusABC):
                 log.info("Accepting ID: 0x%X MASK: 0x%X", code, mask)
 
         # Start the CAN controller. Messages will be forwarded to the channel
-        start_begin = time.time()
         _canlib.canControlStart(self._control_handle, constants.TRUE)
-        start_end = time.time()
-
-        # Calculate an offset to make them relative to epoch
-        # Assume that the time offset is in the middle of the start command
-        self._timeoffset = start_begin + (start_end - start_begin / 2)
-        self._overrunticks = 0
-        self._starttickoffset = 0
 
         # For cyclic transmit list. Set when .send_periodic() is first called
         self._scheduler = None
@@ -839,9 +831,7 @@ class IXXATBus(BusABC):
                                 f"Unknown CAN info message code {self._message.abData[0]}",
                             )
                         )
-                	# Handle CAN start info message
-                    elif self._message.abData[0] == constants.CAN_INFO_START:
-                        self._starttickoffset = self._message.dwTime
+
                     elif (
                         self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR
                     ):
@@ -863,8 +853,7 @@ class IXXATBus(BusABC):
                         self._message.uMsgInfo.Bits.type
                         == constants.CAN_MSGTYPE_TIMEOVR
                     ):
-                        # Add the number of timestamp overruns to the high word
-                        self._overrunticks += (self._message.dwMsgId << 32);
+                        pass
                     else:
                         log.warning("Unexpected message info type")
 
@@ -878,9 +867,11 @@ class IXXATBus(BusABC):
             return None, True
 
         data_len = dlc2len(self._message.uMsgInfo.Bits.dlc)
+        # The _message.dwTime is a 32bit tick value and will overrun,
+        # so expect to see the value restarting from 0
         rx_msg = Message(
-            timestamp=((self._message.dwTime + self._overrunticks - self._starttickoffset)
-            / self._tick_resolution) + self._timeoffset,
+            timestamp=self._message.dwTime
+            / self._tick_resolution,  # Relative time in s
             is_remote_frame=bool(self._message.uMsgInfo.Bits.rtr),
             is_fd=bool(self._message.uMsgInfo.Bits.edl),
             is_rx=True,
