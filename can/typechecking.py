@@ -50,13 +50,13 @@ FileLike = typing.Union[typing.TextIO, typing.BinaryIO, gzip.GzipFile]
 StringPathLike = typing.Union[str, "os.PathLike[str]"]
 AcceptedIOType = typing.Union[FileLike, StringPathLike]
 
-BusConfig = typing.NewType("BusConfig", typing.Dict[str, typing.Any])
+BusConfig = typing.NewType("BusConfig", dict[str, typing.Any])
 
 # Used by CLI scripts
-TAdditionalCliArgs: TypeAlias = typing.Dict[str, typing.Union[str, int, float, bool]]
-TDataStructs: TypeAlias = typing.Dict[
-    typing.Union[int, typing.Tuple[int, ...]],
-    typing.Union[struct.Struct, typing.Tuple, None],
+TAdditionalCliArgs: TypeAlias = dict[str, typing.Union[str, int, float, bool]]
+TDataStructs: TypeAlias = dict[
+    typing.Union[int, tuple[int, ...]],
+    typing.Union[struct.Struct, tuple, None],
 ]
 
 

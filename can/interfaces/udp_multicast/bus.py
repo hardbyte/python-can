@@ -5,7 +5,7 @@ import socket
 import struct
 import time
 import warnings
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import can
 from can import BusABC, CanProtocol
@@ -26,8 +26,8 @@ log = logging.getLogger(__name__)
 
 
 # see socket.getaddrinfo()
-IPv4_ADDRESS_INFO = Tuple[str, int]  # address, port
-IPv6_ADDRESS_INFO = Tuple[str, int, int, int]  # address, port, flowinfo, scope_id
+IPv4_ADDRESS_INFO = tuple[str, int]  # address, port
+IPv6_ADDRESS_INFO = tuple[str, int, int, int]  # address, port, flowinfo, scope_id
 IP_ADDRESS_INFO = Union[IPv4_ADDRESS_INFO, IPv6_ADDRESS_INFO]
 
 # Additional constants for the interaction with Unix kernels
@@ -172,7 +172,7 @@ class UdpMulticastBus(BusABC):
         self._multicast.shutdown()
 
     @staticmethod
-    def _detect_available_configs() -> List[AutoDetectedConfig]:
+    def _detect_available_configs() -> list[AutoDetectedConfig]:
         if hasattr(socket, "CMSG_SPACE"):
             return [
                 {
@@ -341,7 +341,7 @@ class GeneralPurposeUdpMulticastBus:
 
     def recv(
         self, timeout: Optional[float] = None
-    ) -> Optional[Tuple[bytes, IP_ADDRESS_INFO, float]]:
+    ) -> Optional[tuple[bytes, IP_ADDRESS_INFO, float]]:
         """
         Receive up to **max_buffer** bytes.
 

@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 import math
-from typing import TYPE_CHECKING, Iterator, List, Mapping, cast
+from collections.abc import Iterator, Mapping
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from can.typechecking import BitTimingDict, BitTimingFdDict
@@ -286,7 +287,7 @@ class BitTiming(Mapping):
         if sample_point < 50.0:
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
 
-        possible_solutions: List[BitTiming] = list(
+        possible_solutions: list[BitTiming] = list(
             cls.iterate_from_sample_point(f_clock, bitrate, sample_point)
         )
 
@@ -874,7 +875,7 @@ class BitTimingFd(Mapping):
                 f"data_sample_point (={data_sample_point}) must not be below 50%."
             )
 
-        possible_solutions: List[BitTimingFd] = list(
+        possible_solutions: list[BitTimingFd] = list(
             cls.iterate_from_sample_point(
                 f_clock,
                 nom_bitrate,

@@ -17,15 +17,16 @@ import logging
 import struct
 import time
 import zlib
+from collections.abc import Generator
 from decimal import Decimal
-from typing import Any, BinaryIO, Generator, List, Optional, Tuple, Union, cast
+from typing import Any, BinaryIO, Optional, Union, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
 from .generic import BinaryIOMessageReader, FileIOMessageWriter
 
-TSystemTime = Tuple[int, int, int, int, int, int, int, int]
+TSystemTime = tuple[int, int, int, int, int, int, int, int]
 
 
 class BLFParseError(Exception):
@@ -422,7 +423,7 @@ class BLFWriter(FileIOMessageWriter):
         assert self.file is not None
         self.channel = channel
         self.compression_level = compression_level
-        self._buffer: List[bytes] = []
+        self._buffer: list[bytes] = []
         self._buffer_size = 0
         # If max container size is located in kwargs, then update the instance
         if kwargs.get("max_container_size", False):

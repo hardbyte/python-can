@@ -2,15 +2,12 @@ import argparse
 import errno
 import re
 import sys
+from collections.abc import Sequence
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Tuple,
     Union,
 )
 
@@ -111,7 +108,7 @@ def _create_bus(parsed_args: argparse.Namespace, **kwargs: Any) -> can.BusABC:
     logging_level_names = ["critical", "error", "warning", "info", "debug", "subdebug"]
     can.set_logging_level(logging_level_names[min(5, parsed_args.verbosity)])
 
-    config: Dict[str, Any] = {"single_handle": True, **kwargs}
+    config: dict[str, Any] = {"single_handle": True, **kwargs}
     if parsed_args.interface:
         config["interface"] = parsed_args.interface
     if parsed_args.bitrate:
@@ -140,7 +137,7 @@ class _CanFilterAction(argparse.Action):
             raise argparse.ArgumentError(None, "Invalid filter argument")
 
         print(f"Adding filter(s): {values}")
-        can_filters: List[CanFilter] = []
+        can_filters: list[CanFilter] = []
 
         for filt in values:
             if ":" in filt:
@@ -169,7 +166,7 @@ class _BitTimingAction(argparse.Action):
         if not isinstance(values, list):
             raise argparse.ArgumentError(None, "Invalid --timing argument")
 
-        timing_dict: Dict[str, int] = {}
+        timing_dict: dict[str, int] = {}
         for arg in values:
             try:
                 key, value_string = arg.split("=")
@@ -193,19 +190,19 @@ def _parse_additional_config(unknown_args: Sequence[str]) -> TAdditionalCliArgs:
         if not re.match(r"^--[a-zA-Z][a-zA-Z0-9\-]*=\S*?$", arg):
             raise ValueError(f"Parsing argument {arg} failed")
 
-    def _split_arg(_arg: str) -> Tuple[str, str]:
+    def _split_arg(_arg: str) -> tuple[str, str]:
         left, right = _arg.split("=", 1)
         return left.lstrip("-").replace("-", "_"), right
 
-    args: Dict[str, Union[str, int, float, bool]] = {}
+    args: dict[str, Union[str, int, float, bool]] = {}
     for key, string_val in map(_split_arg, unknown_args):
         args[key] = cast_from_string(string_val)
     return args
 
 
 def _parse_logger_args(
-    args: List[str],
-) -> Tuple[argparse.Namespace, TAdditionalCliArgs]:
+    args: list[str],
+) -> tuple[argparse.Namespace, TAdditionalCliArgs]:
     """Parse command line arguments for logger script."""
 
     parser = argparse.ArgumentParser(
