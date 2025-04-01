@@ -99,6 +99,9 @@ DIR = 0x1
 TIME_TEN_MICS = 0x00000001
 TIME_ONE_NANS = 0x00000002
 
+TIME_TEN_MICS_FACTOR = Decimal("1e-5")
+TIME_ONE_NANS_FACTOR = Decimal("1e-9")
+
 
 def timestamp_to_systemtime(timestamp: float) -> TSystemTime:
     if timestamp is None or timestamp < 631152000:
@@ -269,7 +272,7 @@ class BLFReader(BinaryIOMessageReader):
                 continue
 
             # Calculate absolute timestamp in seconds
-            factor = Decimal("1e-5") if flags == 1 else Decimal("1e-9")
+            factor = TIME_TEN_MICS_FACTOR if flags == 1 else TIME_ONE_NANS_FACTOR
             timestamp = float(Decimal(timestamp) * factor) + start_timestamp
 
             if obj_type in (CAN_MESSAGE, CAN_MESSAGE2):
