@@ -6,7 +6,6 @@ __all__ = [
     "CyclicSendTask",
     "MultiRateCyclicSendTask",
     "SocketcanBus",
-    "constants",
     "socketcan",
     "utils",
 ]
