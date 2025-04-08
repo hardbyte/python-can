@@ -6,12 +6,16 @@ Spec: https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html
 """
 
 import logging
-from typing import Any, BinaryIO, Dict, Optional, Union
+from typing import Any, BinaryIO, Dict, Generator, Optional, Union
 
 from ..message import Message
-from ..socketcan_common import CAN_FRAME_HEADER_STRUCT_BE, build_can_frame
+from ..socketcan_common import (
+    CAN_FRAME_HEADER_STRUCT_BE,
+    build_can_frame,
+    parse_can_frame,
+)
 from ..typechecking import Channel, StringPathLike
-from .generic import BinaryIOMessageWriter
+from .generic import BinaryIOMessageReader, BinaryIOMessageWriter
 
 logger = logging.getLogger("can.io.pcapng")
 
@@ -108,3 +112,56 @@ class PcapngWriter(BinaryIOMessageWriter):
                 endianness=">",  # big
             )
         )
+
+
+class PcapngReader(BinaryIOMessageReader):
+    """
+    Iterator of CAN messages from a Pcapng File.
+    """
+
+    file: BinaryIO
+
+    def __init__(
+        self,
+        file: Union[StringPathLike, BinaryIO],
+        **kwargs: Any,
+    ) -> None:
+        """
+        :param file: a path-like object or as file-like object to read from
+                     If this is a file-like object, is has to opened in binary
+                     read mode, not text read mode.
+        """
+
+        if pcapng is None:
+            raise NotImplementedError(
+                "The python-pcapng package was not found. Install python-can with "
+                "the optional dependency [pcapng] to use the PcapngReader."
+            )
+
+        super().__init__(file, mode="rb")
+        self._scanner = pcapng.FileScanner(self.file)
+
+    def __iter__(self) -> Generator[Message, None, None]:
+        for block in self._scanner:
+            if isinstance(block, blocks.EnhancedPacket):
+                idn: blocks.InterfaceDescription = block.interface
+                # We only care about the CAN packets
+                if idn.link_type != LINKTYPE_CAN_SOCKETCAN:
+                    logger.debug(
+                        "Skipping non-CAN packet, link type: %s", idn.link_type
+                    )
+                    continue
+
+                msg = parse_can_frame(
+                    block.packet_data, structure=CAN_FRAME_HEADER_STRUCT_BE
+                )
+
+                timestamp64 = (block.timestamp_high << 32) + block.timestamp_low
+                msg.timestamp = timestamp64 * idn.timestamp_resolution
+
+                if "if_name" in idn.options:
+                    msg.channel = idn.options["if_name"]
+                else:
+                    msg.channel = block.interface_id
+
+                yield msg

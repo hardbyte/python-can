@@ -27,6 +27,7 @@ from .canutils import CanutilsLogReader
 from .csv import CSVReader
 from .generic import BinaryIOMessageReader, MessageReader
 from .mf4 import MF4Reader
+from .pcapng import PcapngReader
 from .sqlite import SqliteReader
 from .trc import TRCReader
 
@@ -39,6 +40,7 @@ MESSAGE_READERS: Final[Dict[str, Type[MessageReader]]] = {
     ".db": SqliteReader,
     ".log": CanutilsLogReader,
     ".mf4": MF4Reader,
+    ".pcapng": PcapngReader,
     ".trc": TRCReader,
 }
 
