@@ -44,6 +44,11 @@ try:
 except ModuleNotFoundError:
     asammdf = None
 
+try:
+    import pcapng
+except ModuleNotFoundError:
+    pcapng = None
+
 
 @contextmanager
 def override_locale(category: int, locale_str: str) -> None:
@@ -101,6 +106,13 @@ class ReaderWriterExtensionTest(unittest.TestCase):
             self._test_extension(".mf4")
         except NotImplementedError:
             if asammdf is not None:
+                raise
+
+    def test_extension_matching_pcapng(self):
+        try:
+            self._test_extension(".pcapng")
+        except NotImplementedError:
+            if pcapng is not None:
                 raise
 
 
@@ -856,6 +868,28 @@ class TestMF4FileFormat(ReaderWriterTest):
             preserves_channel=False,
             allowed_timestamp_delta=1e-4,
             adds_default_channel=0,
+        )
+
+
+@unittest.skipIf(pcapng is None, "pcapng is unavailable")
+class TestPcapngFileFormat(ReaderWriterTest):
+    """Tests can.PcapngWriter and can.PcapngReader"""
+
+    def _setup_instance(self):
+        super()._setup_instance_helper(
+            can.PcapngWriter,
+            can.PcapngReader,
+            binary_file=True,
+            check_remote_frames=True,
+            check_error_frames=True,
+            check_fd=True,
+            check_comments=False,
+            test_append=True,
+            # default unit is nanoseconds, yet float causes smaller tolerance to fail
+            allowed_timestamp_delta=1e-6,
+            # It preserves channels, however adds_default_channel doesn't work properly
+            preserves_channel=False,
+            adds_default_channel="can0",
         )
 
 
