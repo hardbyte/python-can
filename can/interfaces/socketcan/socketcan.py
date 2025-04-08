@@ -42,9 +42,9 @@ except ImportError:
 
 
 # Constants needed for precise handling of timestamps
-RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@ll")
+RECEIVED_TIMESPEC_STRUCT = struct.Struct("@ll")
 RECEIVED_ANCILLARY_BUFFER_SIZE = (
-    CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size) if CMSG_SPACE_available else 0
+    CMSG_SPACE(RECEIVED_TIMESPEC_STRUCT.size * 3) if CMSG_SPACE_available else 0
 )
 
 
@@ -636,11 +636,24 @@ def capture_message(
     # Fetching the timestamp
     assert len(ancillary_data) == 1, "only requested a single extra field"
     cmsg_level, cmsg_type, cmsg_data = ancillary_data[0]
-    assert (
-        cmsg_level == socket.SOL_SOCKET and cmsg_type == constants.SO_TIMESTAMPNS
+    assert cmsg_level == socket.SOL_SOCKET and cmsg_type in (
+        constants.SO_TIMESTAMPNS,
+        constants.SO_TIMESTAMPING,
     ), "received control message type that was not requested"
     # see https://man7.org/linux/man-pages/man3/timespec.3.html -> struct timespec for details
-    seconds, nanoseconds = RECEIVED_TIMESTAMP_STRUCT.unpack_from(cmsg_data)
+    if cmsg_type == constants.SO_TIMESTAMPNS:
+        seconds, nanoseconds = RECEIVED_TIMESPEC_STRUCT.unpack_from(cmsg_data)
+    else:
+        # cmsg_type == constants.SO_TIMESTAMPING
+        #
+        # stamp[0] is the software timestamp
+        # stamp[1] is deprecated
+        # stamp[2] is the raw hardware timestamp
+        offset = struct.calcsize(RECEIVED_TIMESPEC_STRUCT.format) * 2
+        seconds, nanoseconds = RECEIVED_TIMESPEC_STRUCT.unpack_from(
+            cmsg_data, offset=offset
+        )
+
     if nanoseconds >= 1e9:
         raise can.CanOperationError(
             f"Timestamp nanoseconds field was out of range: {nanoseconds} not less than 1e9"
@@ -699,6 +712,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         self,
         channel: str = "",
         receive_own_messages: bool = False,
+        can_hardware_timestamps: bool = False,
         local_loopback: bool = True,
         fd: bool = False,
         can_filters: Optional[CanFilters] = None,
@@ -722,6 +736,17 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             channel using :attr:`can.Message.channel`.
         :param receive_own_messages:
             If transmitted messages should also be received by this bus.
+        :param bool can_hardware_timestamps:
+            Use raw hardware timestamp for can messages if available instead
+            of the system timestamp. By default we use the SO_TIMESTAMPNS
+            interface which provides ns resolution but low accuracy. If your
+            can hardware supports it you can use this parameter to
+            alternatively use the SO_TIMESTAMPING interface and request raw
+            hardware timestamps. These are much higher precision but will
+            almost certainly not be referenced to the time of day. There
+            may be other pitfalls to such as loopback packets reporting with
+            no timestamp at all.
+            See https://www.kernel.org/doc/html/latest/networking/timestamping.html
         :param local_loopback:
             If local loopback should be enabled on this bus.
             Please note that local loopback does not mean that messages sent
@@ -739,6 +764,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         self.socket = create_socket()
         self.channel = channel
         self.channel_info = f"socketcan channel '{channel}'"
+        self._can_hardware_timestamps = can_hardware_timestamps
         self._bcm_sockets: Dict[str, socket.socket] = {}
         self._is_filtered = False
         self._task_id = 0
@@ -783,12 +809,25 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             except OSError as error:
                 log.error("Could not enable error frames (%s)", error)
 
-        # enable nanosecond resolution timestamping
-        # we can always do this since
-        #  1) it is guaranteed to be at least as precise as without
-        #  2) it is available since Linux 2.6.22, and CAN support was only added afterward
-        #     so this is always supported by the kernel
-        self.socket.setsockopt(socket.SOL_SOCKET, constants.SO_TIMESTAMPNS, 1)
+        if not self._can_hardware_timestamps:
+            # Utilise SO_TIMESTAMPNS interface :
+            # we can always do this since
+            #  1) it is guaranteed to be at least as precise as without
+            #  2) it is available since Linux 2.6.22, and CAN support was only added afterward
+            #     so this is always supported by the kernel
+            self.socket.setsockopt(socket.SOL_SOCKET, constants.SO_TIMESTAMPNS, 1)
+        else:
+            # Utilise SO_TIMESTAMPING interface :
+            # Allows us to use raw hardware timestamps where available
+            timestamping_flags = (
+                constants.SOF_TIMESTAMPING_SOFTWARE
+                | constants.SOF_TIMESTAMPING_RX_SOFTWARE
+                | constants.SOF_TIMESTAMPING_RAW_HARDWARE
+            )
+
+            self.socket.setsockopt(
+                socket.SOL_SOCKET, constants.SO_TIMESTAMPING, timestamping_flags
+            )
 
         try:
             bind_socket(self.socket, channel)
