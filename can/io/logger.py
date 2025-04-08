@@ -37,6 +37,7 @@ from .generic import (
     MessageWriter,
 )
 from .mf4 import MF4Writer
+from .pcapng import PcapngWriter
 from .printer import Printer
 from .sqlite import SqliteWriter
 from .trc import TRCWriter
@@ -50,6 +51,7 @@ MESSAGE_WRITERS: Final[Dict[str, Type[MessageWriter]]] = {
     ".db": SqliteWriter,
     ".log": CanutilsLogWriter,
     ".mf4": MF4Writer,
+    ".pcapng": PcapngWriter,
     ".trc": TRCWriter,
     ".txt": Printer,
 }

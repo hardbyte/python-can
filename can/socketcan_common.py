@@ -87,19 +87,25 @@ MAX_29_BIT_ID = EXT_ACCEPTANCE_MASK_ALL_BITS
 # The 32bit can id is directly followed by the 8bit data link count
 # The data field is aligned on an 8 byte boundary, hence we add padding
 # which aligns the data field to an 8 byte boundary.
+
+# host-endian for communication with kernel
 CAN_FRAME_HEADER_STRUCT = struct.Struct("=IBB1xB")
+# big-endian for pcapng
+CAN_FRAME_HEADER_STRUCT_BE = struct.Struct(">IBB1xB")
 
 
 log = logging.getLogger(__name__)
 
 
-def parse_can_frame(cf: bytes) -> Message:
+def parse_can_frame(
+    cf: bytes, structure: struct.Struct = CAN_FRAME_HEADER_STRUCT
+) -> Message:
     """Parse a CAN frame.
 
     :param cf: A CAN frame in socketcan format
     :return: A :class:`~can.Message` object with the parsed data
     """
-    can_id, can_dlc, flags, data = dissect_can_frame(cf)
+    can_id, can_dlc, flags, data = dissect_can_frame(cf, structure)
 
     # EXT, RTR, ERR flags -> boolean attributes
     #   /* special address description flags for the CAN_ID */
@@ -148,7 +154,9 @@ def _compose_arbitration_id(message: Message) -> int:
     return can_id
 
 
-def build_can_frame(msg: Message) -> bytes:
+def build_can_frame(
+    msg: Message, structure: struct.Struct = CAN_FRAME_HEADER_STRUCT
+) -> bytes:
     """CAN frame packing (see 'struct can_frame' in <linux/can.h>)
 
     :param msg: A :class:`~can.Message` object to convert to a CAN frame
@@ -178,7 +186,7 @@ def build_can_frame(msg: Message) -> bytes:
         data_len = msg.dlc
     else:
         data_len = min(i for i in can.util.CAN_FD_DLC if i >= len(msg.data))
-    header = CAN_FRAME_HEADER_STRUCT.pack(can_id, data_len, flags, msg.dlc)
+    header = structure.pack(can_id, data_len, flags, msg.dlc)
     return header + data
 
 
@@ -188,14 +196,16 @@ def is_frame_fd(frame: bytes) -> bool:
     return len(frame) == CANFD_MTU
 
 
-def dissect_can_frame(frame: bytes) -> Tuple[int, int, int, bytes]:
+def dissect_can_frame(
+    frame: bytes, structure: struct.Struct = CAN_FRAME_HEADER_STRUCT
+) -> Tuple[int, int, int, bytes]:
     """Dissect a CAN frame into its components.
 
     :param frame: A CAN frame in socketcan format
     :return: Tuple of (CAN ID, CAN DLC, flags, data)
     """
 
-    can_id, data_len, flags, len8_dlc = CAN_FRAME_HEADER_STRUCT.unpack_from(frame)
+    can_id, data_len, flags, len8_dlc = structure.unpack_from(frame)
 
     if data_len not in can.util.CAN_FD_DLC:
         data_len = min(i for i in can.util.CAN_FD_DLC if i >= data_len)

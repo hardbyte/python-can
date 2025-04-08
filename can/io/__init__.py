@@ -20,6 +20,7 @@ __all__ = [
     "MF4Reader",
     "MF4Writer",
     "MessageSync",
+    "PcapngWriter",
     "Printer",
     "SizedRotatingLogger",
     "SqliteReader",
@@ -52,6 +53,7 @@ from .blf import BLFReader, BLFWriter
 from .canutils import CanutilsLogReader, CanutilsLogWriter
 from .csv import CSVReader, CSVWriter
 from .mf4 import MF4Reader, MF4Writer
+from .pcapng import PcapngWriter
 from .printer import Printer
 from .sqlite import SqliteReader, SqliteWriter
 from .trc import TRCFileVersion, TRCReader, TRCWriter

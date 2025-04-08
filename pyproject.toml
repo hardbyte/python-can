@@ -83,6 +83,7 @@ viewer = [
     "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
 ]
 mf4 = ["asammdf>=6.0.0"]
+pcapng = ["python-pcapng>=2.1.1"]
 
 [tool.setuptools.dynamic]
 readme = { file = "README.rst" }
