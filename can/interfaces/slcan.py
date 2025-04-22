@@ -49,6 +49,7 @@ class slcanBus(BusABC):
         83300: "S9",
     }
     _DATA_BITRATES = {
+        0: "",
         2000000: "Y2",
         5000000: "Y5",
     }
