@@ -721,7 +721,7 @@ class IXXATBus(BusABC):
                     )
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                 # Add the number of timestamp overruns to the high word
-                self._overrunticks += (self._message.dwMsgId << 32)
+                self._overrunticks += self._message.dwMsgId << 32
             else:
                 log.warning(
                     "Unexpected message info type 0x%X",
@@ -754,8 +754,11 @@ class IXXATBus(BusABC):
             return None, True
 
         rx_msg = Message(
-            timestamp=((self._message.dwTime + self._overrunticks - self._starttickoffset)
-            / self._tick_resolution) + self._timeoffset,
+            timestamp=(
+                (self._message.dwTime + self._overrunticks - self._starttickoffset)
+                / self._tick_resolution
+            )
+            + self._timeoffset,
             is_remote_frame=bool(self._message.uMsgInfo.Bits.rtr),
             is_extended_id=bool(self._message.uMsgInfo.Bits.ext),
             arbitration_id=self._message.dwMsgId,
