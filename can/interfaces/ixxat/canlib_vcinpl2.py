@@ -839,7 +839,7 @@ class IXXATBus(BusABC):
                                 f"Unknown CAN info message code {self._message.abData[0]}",
                             )
                         )
-                	# Handle CAN start info message
+                    # Handle CAN start info message
                     elif self._message.abData[0] == constants.CAN_INFO_START:
                         self._starttickoffset = self._message.dwTime
                     elif (
@@ -864,7 +864,7 @@ class IXXATBus(BusABC):
                         == constants.CAN_MSGTYPE_TIMEOVR
                     ):
                         # Add the number of timestamp overruns to the high word
-                        self._overrunticks += (self._message.dwMsgId << 32);
+                        self._overrunticks += (self._message.dwMsgId << 32)
                     else:
                         log.warning("Unexpected message info type")
 
