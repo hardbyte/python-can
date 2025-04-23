@@ -37,9 +37,16 @@ from .generic import (
     MessageWriter,
 )
 from .mf4 import MF4Writer
+from .pcapng import PcapngWriter
 from .printer import Printer
 from .sqlite import SqliteWriter
 from .trc import TRCWriter
+
+try:
+    import pyzstd
+except ImportError:
+    pyzstd = None
+
 
 #: A map of file suffixes to their corresponding
 #: :class:`can.io.generic.MessageWriter` class
@@ -50,6 +57,7 @@ MESSAGE_WRITERS: Final[Dict[str, Type[MessageWriter]]] = {
     ".db": SqliteWriter,
     ".log": CanutilsLogWriter,
     ".mf4": MF4Writer,
+    ".pcapng": PcapngWriter,
     ".trc": TRCWriter,
     ".txt": Printer,
 }
@@ -101,7 +109,16 @@ def _compress(
     else:
         mode = "at" if append else "wt"
 
-    return logger_type, gzip.open(filename, mode)
+    if suffixes[-1] == ".gz":
+        compressor = gzip.open(filename, mode)
+    elif suffixes[-1] == ".zst" and pyzstd is not None:
+        compressor = pyzstd.open(filename, mode)
+    else:
+        raise ValueError(
+            f"Unknown compression type {suffixes[-1]} in {filename}, maybe a dependency is missing?"
+        )
+
+    return logger_type, compressor
 
 
 def Logger(  # noqa: N802
@@ -123,7 +140,8 @@ def Logger(  # noqa: N802
 
     Any of these formats can be used with gzip compression by appending
     the suffix .gz (e.g. filename.asc.gz). However, third-party tools might not
-    be able to read these files.
+    be able to read these files. Zstandard (.zst) compression is also supported
+    when an optional dependency is installed.
 
     The **filename** may also be *None*, to fall back to :class:`can.Printer`.
 
@@ -148,7 +166,7 @@ def Logger(  # noqa: N802
 
     suffix = pathlib.PurePath(filename).suffix.lower()
     file_or_filename: AcceptedIOType = filename
-    if suffix == ".gz":
+    if suffix in (".gz", ".zst"):
         logger_type, file_or_filename = _compress(filename, **kwargs)
     else:
         logger_type = _get_logger_for_suffix(suffix)

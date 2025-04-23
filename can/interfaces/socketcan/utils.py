@@ -12,7 +12,8 @@ import sys
 from typing import List, Optional, cast
 
 from can import typechecking
-from can.interfaces.socketcan.constants import CAN_EFF_FLAG
+
+from ...socketcan_common import CAN_EFF_FLAG
 
 log = logging.getLogger(__name__)
 

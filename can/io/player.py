@@ -27,8 +27,15 @@ from .canutils import CanutilsLogReader
 from .csv import CSVReader
 from .generic import BinaryIOMessageReader, MessageReader
 from .mf4 import MF4Reader
+from .pcapng import PcapngReader
 from .sqlite import SqliteReader
 from .trc import TRCReader
+
+try:
+    import pyzstd
+except ImportError:
+    pyzstd = None
+
 
 #: A map of file suffixes to their corresponding
 #: :class:`can.io.generic.MessageReader` class
@@ -39,6 +46,7 @@ MESSAGE_READERS: Final[Dict[str, Type[MessageReader]]] = {
     ".db": SqliteReader,
     ".log": CanutilsLogReader,
     ".mf4": MF4Reader,
+    ".pcapng": PcapngReader,
     ".trc": TRCReader,
 }
 
@@ -79,7 +87,16 @@ def _decompress(
 
     mode = "rb" if issubclass(reader_type, BinaryIOMessageReader) else "rt"
 
-    return reader_type, gzip.open(filename, mode)
+    if suffixes[-1] == ".gz":
+        decompressor = gzip.open(filename, mode)
+    elif suffixes[-1] == ".zst" and pyzstd is not None:
+        decompressor = pyzstd.open(filename, mode)
+    else:
+        raise ValueError(
+            f"Unknown compression type {suffixes[-1]} in {filename}, maybe a dependency is missing?"
+        )
+
+    return reader_type, decompressor
 
 
 def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:  # noqa: N802
@@ -96,7 +113,7 @@ def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:  # noqa
         (optional, depends on `asammdf <https://github.com/danielhrisca/asammdf>`_)
       * .trc :class:`can.TRCReader`
 
-    Gzip compressed files can be used as long as the original
+    Gzip and Zstd compressed files can be used as long as the original
     files suffix is one of the above (e.g. filename.asc.gz).
 
 
@@ -123,7 +140,7 @@ def LogReader(filename: StringPathLike, **kwargs: Any) -> MessageReader:  # noqa
 
     suffix = pathlib.PurePath(filename).suffix.lower()
     file_or_filename: AcceptedIOType = filename
-    if suffix == ".gz":
+    if suffix in (".gz", ".zst"):
         reader_type, file_or_filename = _decompress(filename)
     else:
         reader_type = _get_logger_for_suffix(suffix)

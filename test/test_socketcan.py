@@ -10,7 +10,7 @@ import warnings
 from unittest.mock import patch
 
 import can
-from can.interfaces.socketcan.constants import (
+from can.socketcan_common import (
     CAN_BCM_TX_DELETE,
     CAN_BCM_TX_SETUP,
     SETTIMER,
