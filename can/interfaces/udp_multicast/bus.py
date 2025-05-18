@@ -5,6 +5,7 @@ import socket
 import struct
 import time
 import warnings
+import platform
 from typing import List, Optional, Tuple, Union
 
 import can
@@ -21,6 +22,8 @@ except ModuleNotFoundError:  # Missing on Windows
     ioctl_supported = False
     pass
 
+# All ioctls aren't supported on MacOS. 
+is_macos = platform.system() == "Darwin"
 
 log = logging.getLogger(__name__)
 
@@ -402,7 +405,7 @@ class GeneralPurposeUdpMulticastBus:
                     self.max_buffer
                 )
 
-                if ioctl_supported:
+                if ioctl_supported and not is_macos:
                     result_buffer = ioctl(
                         self._socket.fileno(),
                         SIOCGSTAMP,
