@@ -77,9 +77,13 @@ CAN_ERROR_EXT_STRUCT = struct.Struct("<HHLBBBxLLH2x8s")
 # group name length, marker name length, description length
 GLOBAL_MARKER_STRUCT = struct.Struct("<LLL3xBLLL12x")
 
+# Metadata object type, 4 context-specific bytes, metadata length, 4 more
+# context-specific bytes
+METADATA_HEADER_STRUCT = struct.Struct("<I4BI4B")
 
 CAN_MESSAGE = 1
 LOG_CONTAINER = 10
+METADATA = 65
 CAN_ERROR_EXT = 73
 CAN_MESSAGE2 = 86
 GLOBAL_MARKER = 96
@@ -142,7 +146,12 @@ class BLFReader(BinaryIOMessageReader):
     Iterator of CAN messages from a Binary Logging File.
 
     Only CAN messages and error frames are supported. Other object types are
-    silently ignored.
+    silently ignored. Metadata objects are parsed into `self.metadata` when
+    they are encountered while iterating.
+
+    Metadata are a list of tuples containing the parsed metadata objects. The
+    interpretation of this data is context-specific and out of scope of the
+    BLFReader class.
     """
 
     file: BinaryIO
@@ -173,6 +182,10 @@ class BLFReader(BinaryIOMessageReader):
         )
         # Read rest of header
         self.file.read(header[1] - FILE_HEADER_STRUCT.size)
+
+        # Metadata is appended when type 65 is encountered while iterating
+        self.metadata = []
+
         self._tail = b""
         self._pos = 0
 
@@ -230,6 +243,8 @@ class BLFReader(BinaryIOMessageReader):
         unpack_can_fd_64_msg = CAN_FD_MSG_64_STRUCT.unpack_from
         can_fd_64_msg_size = CAN_FD_MSG_64_STRUCT.size
         unpack_can_error_ext = CAN_ERROR_EXT_STRUCT.unpack_from
+        metadata_header = METADATA_HEADER_STRUCT.unpack_from
+        metadata_header_size = METADATA_HEADER_STRUCT.size
 
         start_timestamp = self.start_timestamp
         max_pos = len(data)
@@ -370,6 +385,24 @@ class BLFReader(BinaryIOMessageReader):
                     data=msg_data,
                     channel=channel - 1,
                 )
+            elif obj_type == METADATA:
+                # When we encounter a metadata object, parse it and save it in
+                # self.metadata and continue looping for a message to return
+                (
+                    mdobj_type,
+                    b0, b1, b2, b3, 
+                    mdsize, 
+                    b4, b5, b6, b7
+                ) = metadata_header(data, pos)
+                # Context-specific data
+                mdcontext = bytearray([b0, b1, b2, b3, b4, b5, b6, b7])
+                # Read until the end of the block rather than using the
+                # untrusted size bytes
+                mdstring = data[pos + metadata_header_size:next_pos]
+                # Append the metadata block, including the size bytes read
+                # from the header. Caller can determine what to do if there's
+                # a mismatch
+                self.metadata.append((mdobj_type, mdcontext, mdsize, mdstring))
 
             pos = next_pos
 
