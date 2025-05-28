@@ -146,7 +146,7 @@ class BLFReader(BinaryIOMessageReader):
     Iterator of CAN messages from a Binary Logging File.
 
     Only CAN messages and error frames are supported. Other object types are
-    silently ignored. APP_TEXT objects are parsed into `self.apt_text` when
+    silently ignored. APP_TEXT objects are parsed into `self.app_text` when
     they are encountered while iterating.
 
     self.app_text is a list of tuples containing the parsed app_text objects. The
@@ -185,7 +185,7 @@ class BLFReader(BinaryIOMessageReader):
 
         # APP_TEXT objects are appended when type 65 is encountered
         # while iterating
-        self.app_text: list[tuple] = []
+        self.app_text: List[Tuple] = []
 
         self._tail = b""
         self._pos = 0
