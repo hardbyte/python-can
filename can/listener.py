@@ -136,6 +136,7 @@ class AsyncBufferedReader(
     """
 
     def __init__(self, **kwargs: Any) -> None:
+        self._is_stopped: bool = False
         self.buffer: asyncio.Queue[Message]
 
         if "loop" in kwargs:
@@ -150,7 +151,6 @@ class AsyncBufferedReader(
                 return
 
         self.buffer = asyncio.Queue()
-        self._is_stopped: bool = False
 
     def on_message_received(self, msg: Message) -> None:
         """Append a message to the buffer.

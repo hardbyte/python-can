@@ -79,7 +79,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[lint]
+        pip install --group lint -e .
     - name: mypy 3.9
       run: |
         mypy --python-version 3.9 .
@@ -92,6 +92,9 @@ jobs:
     - name: mypy 3.12
       run: |
         mypy --python-version 3.12 .
+    - name: mypy 3.13
+      run: |
+        mypy --python-version 3.13 .
     - name: ruff
       run: |
         ruff check can
@@ -115,7 +118,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[lint]
+        pip install --group lint
     - name: Code Format Check with Black
       run: |
         black --check --verbose .
