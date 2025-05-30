@@ -11,7 +11,7 @@ import can
 from can import BusABC, CanProtocol
 from can.typechecking import AutoDetectedConfig
 
-from .utils import check_msgpack_installed, pack_message, unpack_message
+from .utils import is_msgpack_installed, pack_message, unpack_message
 
 ioctl_supported = True
 
@@ -104,7 +104,7 @@ class UdpMulticastBus(BusABC):
         fd: bool = True,
         **kwargs,
     ) -> None:
-        check_msgpack_installed()
+        is_msgpack_installed()
 
         if receive_own_messages:
             raise can.CanInterfaceNotImplementedError(

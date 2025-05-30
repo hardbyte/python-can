@@ -1,5 +1,0 @@
-sphinx>=5.2.3
-sphinxcontrib-programoutput
-sphinx-inline-tabs
-sphinx-copybutton
-furo

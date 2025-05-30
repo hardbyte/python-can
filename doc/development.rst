@@ -52,7 +52,7 @@ The documentation can be built with::
 
 The linters can be run with::
 
-    pip install -e .[lint]
+    pip install --group lint -e .
     black --check can
     mypy can
     ruff check can
