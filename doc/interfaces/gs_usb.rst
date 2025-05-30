@@ -6,7 +6,7 @@ Geschwister Schneider and candleLight
 Windows/Linux/Mac CAN driver based on usbfs or WinUSB WCID for Geschwister Schneider USB/CAN devices
 and candleLight USB CAN interfaces.
 
-Install: ``pip install "python-can[gs_usb]"``
+Install: ``pip install "python-can[gs-usb]"``
 
 Usage: pass device ``index`` or ``channel`` (starting from 0) if using automatic device detection:
 
