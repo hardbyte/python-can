@@ -11,6 +11,7 @@ build:
   tools:
     python: "3.12"
   commands:
+    - python -m pip install --upgrade pip
     - pip install --group docs
 
 # Build documentation in the docs/ directory with Sphinx
