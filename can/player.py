@@ -16,7 +16,7 @@ from can import LogReader, MessageSync
 from .logger import _create_base_argument_parser, _create_bus, _parse_additional_config
 
 if TYPE_CHECKING:
-    from typing import Iterable
+    from collections.abc import Iterable
 
     from can import Message
 

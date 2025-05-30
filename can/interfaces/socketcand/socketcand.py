@@ -17,7 +17,6 @@ import traceback
 import urllib.parse as urlparselib
 import xml.etree.ElementTree as ET
 from collections import deque
-from typing import List
 
 import can
 
@@ -27,7 +26,7 @@ DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS = ""
 DEFAULT_SOCKETCAND_DISCOVERY_PORT = 42000
 
 
-def detect_beacon(timeout_ms: int = 3100) -> List[can.typechecking.AutoDetectedConfig]:
+def detect_beacon(timeout_ms: int = 3100) -> list[can.typechecking.AutoDetectedConfig]:
     """
     Detects socketcand servers
 
@@ -340,7 +339,7 @@ class SocketCanDaemonBus(can.BusABC):
         self.__socket.close()
 
     @staticmethod
-    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
+    def _detect_available_configs() -> list[can.typechecking.AutoDetectedConfig]:
         try:
             return detect_beacon()
         except Exception as e:

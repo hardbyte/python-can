@@ -13,7 +13,7 @@ dependencies = [
     "typing_extensions>=3.10.0.0",
     "msgpack~=1.1.0",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "LGPL v3" }
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -29,7 +29,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -61,9 +60,9 @@ changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 [project.optional-dependencies]
 lint = [
     "pylint==3.2.*",
-    "ruff==0.10.0",
+    "ruff==0.11.12",
     "black==25.1.*",
-    "mypy==1.15.*",
+    "mypy==1.16.*",
 ]
 pywin32 = ["pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'"]
 seeedstudio = ["pyserial>=3.0"]

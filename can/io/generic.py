@@ -3,16 +3,15 @@
 import gzip
 import locale
 from abc import ABCMeta
+from collections.abc import Iterable
+from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import (
     Any,
     BinaryIO,
-    ContextManager,
-    Iterable,
     Literal,
     Optional,
     TextIO,
-    Type,
     Union,
     cast,
 )
@@ -24,7 +23,7 @@ from ..listener import Listener
 from ..message import Message
 
 
-class BaseIOHandler(ContextManager, metaclass=ABCMeta):
+class BaseIOHandler(AbstractContextManager):
     """A generic file handler that can be used for reading and writing.
 
     Can be used as a context manager.
@@ -60,10 +59,7 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
             # pylint: disable=consider-using-with
             # file is some path-like object
             self.file = cast(
-                "typechecking.FileLike",
-                open(
-                    cast("typechecking.StringPathLike", file), mode, encoding=encoding
-                ),
+                "typechecking.FileLike", open(file, mode, encoding=encoding)
             )
 
         # for multiple inheritance
@@ -74,7 +70,7 @@ class BaseIOHandler(ContextManager, metaclass=ABCMeta):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> Literal[False]:

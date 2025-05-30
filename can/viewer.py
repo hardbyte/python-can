@@ -27,7 +27,6 @@ import os
 import struct
 import sys
 import time
-from typing import Dict, List, Tuple
 
 from can import __version__
 from can.logger import (
@@ -161,7 +160,7 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
 
     # Unpack the data and then convert it into SI-units
     @staticmethod
-    def unpack_data(cmd: int, cmd_to_struct: Dict, data: bytes) -> List[float]:
+    def unpack_data(cmd: int, cmd_to_struct: dict, data: bytes) -> list[float]:
         if not cmd_to_struct or not data:
             # These messages do not contain a data package
             return []
@@ -390,8 +389,8 @@ class SmartFormatter(argparse.HelpFormatter):
 
 
 def _parse_viewer_args(
-    args: List[str],
-) -> Tuple[argparse.Namespace, TDataStructs, TAdditionalCliArgs]:
+    args: list[str],
+) -> tuple[argparse.Namespace, TDataStructs, TAdditionalCliArgs]:
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         "python -m can.viewer",
@@ -524,7 +523,7 @@ def _parse_viewer_args(
             key, fmt = int(tmp[0], base=16), tmp[1]
 
             # The scaling
-            scaling: List[float] = []
+            scaling: list[float] = []
             for t in tmp[2:]:
                 # First try to convert to int, if that fails, then convert to a float
                 try:

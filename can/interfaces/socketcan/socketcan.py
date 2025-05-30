@@ -15,7 +15,8 @@ import struct
 import threading
 import time
 import warnings
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Type, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 import can
 from can import BusABC, CanProtocol, Message
@@ -50,13 +51,13 @@ RECEIVED_ANCILLARY_BUFFER_SIZE = (
 
 # Setup BCM struct
 def bcm_header_factory(
-    fields: List[Tuple[str, Union[Type[ctypes.c_uint32], Type[ctypes.c_long]]]],
+    fields: list[tuple[str, Union[type[ctypes.c_uint32], type[ctypes.c_long]]]],
     alignment: int = 8,
 ):
     curr_stride = 0
-    results: List[
-        Tuple[
-            str, Union[Type[ctypes.c_uint8], Type[ctypes.c_uint32], Type[ctypes.c_long]]
+    results: list[
+        tuple[
+            str, Union[type[ctypes.c_uint8], type[ctypes.c_uint32], type[ctypes.c_long]]
         ]
     ] = []
     pad_index = 0
@@ -292,7 +293,7 @@ def build_bcm_transmit_header(
         # Note `TX_COUNTEVT` creates the message TX_EXPIRED when count expires
         flags |= constants.TX_COUNTEVT
 
-    def split_time(value: float) -> Tuple[int, int]:
+    def split_time(value: float) -> tuple[int, int]:
         """Given seconds as a float, return whole seconds and microseconds"""
         seconds = int(value)
         microseconds = int(1e6 * (value - seconds))
@@ -326,7 +327,7 @@ def is_frame_fd(frame: bytes):
     return len(frame) == constants.CANFD_MTU
 
 
-def dissect_can_frame(frame: bytes) -> Tuple[int, int, int, bytes]:
+def dissect_can_frame(frame: bytes) -> tuple[int, int, int, bytes]:
     can_id, data_len, flags, len8_dlc = CAN_FRAME_HEADER_STRUCT.unpack_from(frame)
 
     if data_len not in can.util.CAN_FD_DLC:
@@ -739,7 +740,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         self.socket = create_socket()
         self.channel = channel
         self.channel_info = f"socketcan channel '{channel}'"
-        self._bcm_sockets: Dict[str, socket.socket] = {}
+        self._bcm_sockets: dict[str, socket.socket] = {}
         self._is_filtered = False
         self._task_id = 0
         self._task_id_guard = threading.Lock()
@@ -819,7 +820,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         try:
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
@@ -992,7 +993,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         return self.socket.fileno()
 
     @staticmethod
-    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
+    def _detect_available_configs() -> list[can.typechecking.AutoDetectedConfig]:
         return [
             {"interface": "socketcan", "channel": channel}
             for channel in find_available_interfaces()

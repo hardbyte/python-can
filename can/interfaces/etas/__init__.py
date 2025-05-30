@@ -1,5 +1,5 @@
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import can
 from can.exceptions import CanInitializationError
@@ -16,7 +16,7 @@ class EtasBus(can.BusABC):
         bitrate: int = 1000000,
         fd: bool = True,
         data_bitrate: int = 2000000,
-        **kwargs: Dict[str, any],
+        **kwargs: dict[str, any],
     ):
         self.receive_own_messages = receive_own_messages
         self._can_protocol = can.CanProtocol.CAN_FD if fd else can.CanProtocol.CAN_20
@@ -122,7 +122,7 @@ class EtasBus(can.BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[can.Message], bool]:
+    ) -> tuple[Optional[can.Message], bool]:
         ociMsgs = (ctypes.POINTER(OCI_CANMessageEx) * 1)()
         ociMsg = OCI_CANMessageEx()
         ociMsgs[0] = ctypes.pointer(ociMsg)
@@ -295,12 +295,12 @@ class EtasBus(can.BusABC):
         raise NotImplementedError("Setting state is not implemented.")
 
     @staticmethod
-    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
+    def _detect_available_configs() -> list[can.typechecking.AutoDetectedConfig]:
         nodeRange = CSI_NodeRange(CSI_NODE_MIN, CSI_NODE_MAX)
         tree = ctypes.POINTER(CSI_Tree)()
         CSI_CreateProtocolTree(ctypes.c_char_p(b""), nodeRange, ctypes.byref(tree))
 
-        nodes: List[Dict[str, str]] = []
+        nodes: list[dict[str, str]] = []
 
         def _findNodes(tree, prefix):
             uri = f"{prefix}/{tree.contents.item.uriName.decode()}"

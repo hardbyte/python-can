@@ -10,7 +10,8 @@ TODO: This module could use https://docs.python.org/2/library/csv.html#module-cs
 """
 
 from base64 import b64decode, b64encode
-from typing import Any, Generator, TextIO, Union
+from collections.abc import Generator
+from typing import Any, TextIO, Union
 
 from can.message import Message
 

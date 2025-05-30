@@ -12,13 +12,9 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    Dict,
     Final,
     Literal,
     Optional,
-    Set,
-    Tuple,
-    Type,
     cast,
 )
 
@@ -43,7 +39,7 @@ from .trc import TRCWriter
 
 #: A map of file suffixes to their corresponding
 #: :class:`can.io.generic.MessageWriter` class
-MESSAGE_WRITERS: Final[Dict[str, Type[MessageWriter]]] = {
+MESSAGE_WRITERS: Final[dict[str, type[MessageWriter]]] = {
     ".asc": ASCWriter,
     ".blf": BLFWriter,
     ".csv": CSVWriter,
@@ -66,7 +62,7 @@ def _update_writer_plugins() -> None:
             MESSAGE_WRITERS[entry_point.key] = writer_class
 
 
-def _get_logger_for_suffix(suffix: str) -> Type[MessageWriter]:
+def _get_logger_for_suffix(suffix: str) -> type[MessageWriter]:
     try:
         return MESSAGE_WRITERS[suffix]
     except KeyError:
@@ -77,7 +73,7 @@ def _get_logger_for_suffix(suffix: str) -> Type[MessageWriter]:
 
 def _compress(
     filename: StringPathLike, **kwargs: Any
-) -> Tuple[Type[MessageWriter], FileLike]:
+) -> tuple[type[MessageWriter], FileLike]:
     """
     Return the suffix and io object of the decompressed file.
     File will automatically recompress upon close.
@@ -171,7 +167,7 @@ class BaseRotatingLogger(MessageWriter, ABC):
     Subclasses must set the `_writer` attribute upon initialization.
     """
 
-    _supported_formats: ClassVar[Set[str]] = set()
+    _supported_formats: ClassVar[set[str]] = set()
 
     #: If this attribute is set to a callable, the :meth:`~BaseRotatingLogger.rotation_filename`
     #: method delegates to this callable. The parameters passed to the callable are
@@ -290,7 +286,7 @@ class BaseRotatingLogger(MessageWriter, ABC):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> Literal[False]:
@@ -347,7 +343,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
     :meth:`~can.Listener.stop` is called.
     """
 
-    _supported_formats: ClassVar[Set[str]] = {".asc", ".blf", ".csv", ".log", ".txt"}
+    _supported_formats: ClassVar[set[str]] = {".asc", ".blf", ".csv", ".log", ".txt"}
 
     def __init__(
         self,

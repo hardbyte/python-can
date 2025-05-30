@@ -16,7 +16,7 @@ TODO: We could implement this interface such that setting other filters
 import ctypes
 import logging
 import sys
-from typing import Optional, Tuple, Type
+from typing import Optional
 
 import can.typechecking
 from can import (
@@ -112,7 +112,7 @@ def check_status(
     result: int,
     function,
     arguments,
-    error_class: Type[NicanError] = NicanOperationError,
+    error_class: type[NicanError] = NicanOperationError,
 ) -> int:
     if result > 0:
         logger.warning(get_error_message(result))
@@ -281,7 +281,7 @@ class NicanBus(BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         """
         Read a message from a NI-CAN bus.
 
