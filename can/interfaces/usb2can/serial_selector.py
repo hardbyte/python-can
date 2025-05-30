@@ -5,6 +5,7 @@ import logging
 log = logging.getLogger("can.usb2can")
 
 try:
+    import pythoncom
     import win32com.client
 except ImportError:
     log.warning(
@@ -50,6 +51,7 @@ def find_serial_devices(serial_matcher: str = "") -> list[str]:
         only device IDs starting with this string are returned
     """
     serial_numbers = []
+    pythoncom.CoInitialize()
     wmi = win32com.client.GetObject("winmgmts:")
     for usb_controller in wmi.InstancesOf("Win32_USBControllerDevice"):
         usb_device = wmi.Get(usb_controller.Dependent)

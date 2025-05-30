@@ -136,7 +136,7 @@ nitpick_ignore = [
 ]
 
 # mock windows specific attributes
-autodoc_mock_imports = ["win32com"]
+autodoc_mock_imports = ["win32com", "pythoncom"]
 ctypes.windll = MagicMock()
 ctypesutil.HRESULT = ctypes.c_long
 
