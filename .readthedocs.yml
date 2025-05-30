@@ -11,8 +11,7 @@ build:
   tools:
     python: "3.12"
   jobs:
-    pre_install:
-      - python -m pip install --upgrade pip
+    post_install:
       - pip install --group docs
 
 # Build documentation in the docs/ directory with Sphinx
