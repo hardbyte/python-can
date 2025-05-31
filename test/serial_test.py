@@ -86,7 +86,7 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
 
     def test_rx_tx_min_id(self):
         """
-        Tests the transfer with the lowest arbitration id
+        Tests the transfer with the lowest extended arbitration id
         """
         msg = can.Message(arbitration_id=0)
         self.bus.send(msg)
@@ -95,9 +95,27 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
 
     def test_rx_tx_max_id(self):
         """
-        Tests the transfer with the highest arbitration id
+        Tests the transfer with the highest extended arbitration id
         """
         msg = can.Message(arbitration_id=536870911)
+        self.bus.send(msg)
+        msg_receive = self.bus.recv()
+        self.assertMessageEqual(msg, msg_receive)
+
+    def test_rx_tx_min_nonext_id(self):
+        """
+        Tests the transfer with the lowest non-extended arbitration id
+        """
+        msg = can.Message(arbitration_id=0x000, is_extended_id=False)
+        self.bus.send(msg)
+        msg_receive = self.bus.recv()
+        self.assertMessageEqual(msg, msg_receive)
+
+    def test_rx_tx_max_nonext_id(self):
+        """
+        Tests the transfer with the highest non-extended arbitration id
+        """
+        msg = can.Message(arbitration_id=0x7FF, is_extended_id=False)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
         self.assertMessageEqual(msg, msg_receive)
