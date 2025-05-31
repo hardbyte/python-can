@@ -84,38 +84,38 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
         msg_receive = self.bus.recv()
         self.assertMessageEqual(msg, msg_receive)
 
-    def test_rx_tx_min_id(self):
+    def test_rx_tx_min_std_id(self):
+        """
+        Tests the transfer with the lowest standard arbitration id
+        """
+        msg = can.Message(arbitration_id=0, is_extended_id=False)
+        self.bus.send(msg)
+        msg_receive = self.bus.recv()
+        self.assertMessageEqual(msg, msg_receive)
+
+    def test_rx_tx_max_std_id(self):
+        """
+        Tests the transfer with the highest standard arbitration id
+        """
+        msg = can.Message(arbitration_id=0x7FF, is_extended_id=False)
+        self.bus.send(msg)
+        msg_receive = self.bus.recv()
+        self.assertMessageEqual(msg, msg_receive)
+
+    def test_rx_tx_min_ext_id(self):
         """
         Tests the transfer with the lowest extended arbitration id
         """
-        msg = can.Message(arbitration_id=0)
+        msg = can.Message(arbitration_id=0x000, is_extended_id=True)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
         self.assertMessageEqual(msg, msg_receive)
 
-    def test_rx_tx_max_id(self):
+    def test_rx_tx_max_ext_id(self):
         """
         Tests the transfer with the highest extended arbitration id
         """
-        msg = can.Message(arbitration_id=536870911)
-        self.bus.send(msg)
-        msg_receive = self.bus.recv()
-        self.assertMessageEqual(msg, msg_receive)
-
-    def test_rx_tx_min_nonext_id(self):
-        """
-        Tests the transfer with the lowest non-extended arbitration id
-        """
-        msg = can.Message(arbitration_id=0x000, is_extended_id=False)
-        self.bus.send(msg)
-        msg_receive = self.bus.recv()
-        self.assertMessageEqual(msg, msg_receive)
-
-    def test_rx_tx_max_nonext_id(self):
-        """
-        Tests the transfer with the highest non-extended arbitration id
-        """
-        msg = can.Message(arbitration_id=0x7FF, is_extended_id=False)
+        msg = can.Message(arbitration_id=0x1FFFFFFF, is_extended_id=True)
         self.bus.send(msg)
         msg_receive = self.bus.recv()
         self.assertMessageEqual(msg, msg_receive)
@@ -154,6 +154,28 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
         """
         msg = can.Message(timestamp=-1)
         self.assertRaises(ValueError, self.bus.send, msg)
+
+    def test_rx_tx_err_frame(self):
+        """
+        Test the transfer of error frames.
+        """
+        msg = can.Message(
+            is_extended_id=False, is_error_frame=True, is_remote_frame=False
+        )
+        self.bus.send(msg)
+        msg_receive = self.bus.recv()
+        self.assertMessageEqual(msg, msg_receive)
+
+    def test_rx_tx_rtr_frame(self):
+        """
+        Test the transfer of remote frames.
+        """
+        msg = can.Message(
+            is_extended_id=False, is_error_frame=False, is_remote_frame=True
+        )
+        self.bus.send(msg)
+        msg_receive = self.bus.recv()
+        self.assertMessageEqual(msg, msg_receive)
 
     def test_when_no_fileno(self):
         """
