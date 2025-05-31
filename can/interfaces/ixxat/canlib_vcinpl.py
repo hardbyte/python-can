@@ -864,19 +864,19 @@ class IXXATBus(BusABC):
         status = structures.CANLINESTATUS()
         _canlib.canControlGetStatus(self._control_handle, ctypes.byref(status))
         if status.bOpMode == constants.CAN_OPMODE_LISTONLY:
-            return BusState.PASSIVE
+            return BusState.ERROR_PASSIVE
 
         error_byte_1 = status.dwStatus & 0x0F
         # CAN_STATUS_BUSOFF = 0x08  # bus off status
         if error_byte_1 & constants.CAN_STATUS_BUSOFF:
-            return BusState.ERROR
+            return BusState.BUS_OFF
 
         error_byte_2 = status.dwStatus & 0xF0
         # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
         if error_byte_2 & constants.CAN_STATUS_BUSCERR:
-            return BusState.ERROR
+            return BusState.STOPPED
 
-        return BusState.ACTIVE
+        return BusState.ERROR_ACTIVE
 
 
 # ~class IXXATBus(BusABC): ---------------------------------------------------

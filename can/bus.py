@@ -31,9 +31,11 @@ LOG = logging.getLogger(__name__)
 class BusState(Enum):
     """The state in which a :class:`can.BusABC` can be."""
 
-    ACTIVE = auto()
-    PASSIVE = auto()
-    ERROR = auto()
+    ERROR_ACTIVE = auto()
+    ERROR_PASSIVE = auto()
+    BUS_OFF = auto()
+    STOPPED = auto()
+    UNKNOWN = auto()
 
 
 class CanProtocol(Enum):
@@ -506,7 +508,7 @@ class BusABC(metaclass=ABCMeta):
         """
         Return the current state of the hardware
         """
-        return BusState.ACTIVE
+        return BusState.ERROR_ACTIVE
 
     @state.setter
     def state(self, new_state: BusState) -> None:

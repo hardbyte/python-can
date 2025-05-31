@@ -71,7 +71,7 @@ class TestLoggerScriptModule(unittest.TestCase):
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
-        self.assertEqual(self.mock_virtual_bus.state, can.BusState.ACTIVE)
+        self.assertEqual(self.mock_virtual_bus.state, can.BusState.ERROR_ACTIVE)
 
     def test_log_virtual_passive(self):
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
@@ -80,7 +80,7 @@ class TestLoggerScriptModule(unittest.TestCase):
         can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
-        self.assertEqual(self.mock_virtual_bus.state, can.BusState.PASSIVE)
+        self.assertEqual(self.mock_virtual_bus.state, can.BusState.ERROR_PASSIVE)
 
     def test_log_virtual_with_config(self):
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
