@@ -42,6 +42,13 @@ except ImportError:
         return []
 
 
+CAN_ERR_FLAG = 0x20000000
+CAN_RTR_FLAG = 0x40000000
+CAN_EFF_FLAG = 0x80000000
+CAN_ID_MASK_EXT = 0x1FFFFFFF
+CAN_ID_MASK_STD = 0x7FF
+
+
 class SerialBus(BusABC):
     """
     Enable basic can communication over a serial device.
@@ -116,9 +123,6 @@ class SerialBus(BusABC):
         :param msg:
             Message to send.
 
-            .. note:: Flags like ``extended_id``, ``is_remote_frame`` and
-                      ``is_error_frame`` will be ignored.
-
             .. note:: If the timestamp is a float value it will be converted
                       to an integer.
 
@@ -134,20 +138,25 @@ class SerialBus(BusABC):
             raise ValueError(f"Timestamp is out of range: {msg.timestamp}") from None
 
         # Pack arbitration ID
-        try:
-            arbitration_id = msg.arbitration_id + (0 if msg.is_extended_id else 0x20000000)
-            arbitration_id = struct.pack("<I", arbitration_id)
-        except struct.error:
-            raise ValueError(
-                f"Arbitration ID is out of range: {msg.arbitration_id}"
-            ) from None
+        if msg.is_extended_id:
+            arbitration_id = msg.arbitration_id & CAN_ID_MASK_EXT
+            arbitration_id |= CAN_EFF_FLAG
+        else:
+            arbitration_id = msg.arbitration_id & CAN_ID_MASK_STD
+
+        if msg.is_error_frame:
+            arbitration_id |= CAN_ERR_FLAG
+        if msg.is_remote_frame:
+            arbitration_id |= CAN_RTR_FLAG
+
+        arbitration_id_bytes = struct.pack("<I", arbitration_id)
 
         # Assemble message
         byte_msg = bytearray()
         byte_msg.append(0xAA)
         byte_msg += timestamp
         byte_msg.append(msg.dlc)
-        byte_msg += arbitration_id
+        byte_msg += arbitration_id_bytes
         byte_msg += msg.data
         byte_msg.append(0xBB)
 
@@ -172,11 +181,6 @@ class SerialBus(BusABC):
 
         :returns:
             Received message and :obj:`False` (because no filtering as taken place).
-
-            .. warning::
-                Flags like ``is_extended_id``, ``is_remote_frame`` and ``is_error_frame``
-                will not be set over this function, the flags in the return
-                message are the default values.
         """
         try:
             rx_byte = self._ser.read()
@@ -189,16 +193,14 @@ class SerialBus(BusABC):
 
                 s = self._ser.read(4)
                 arbitration_id = struct.unpack("<I", s)[0]
-                is_extended_id = False if arbitration_id & 0x20000000 else True
-                arbitration_id -= 0 if is_extended_id else 0x20000000
-                if is_extended_id and arbitration_id >= 0x20000000:
-                    raise ValueError(
-                        "received arbitration id may not exceed or equal 2^29 (0x20000000) if extended"
-                    )
-                if not is_extended_id and arbitration_id >= 0x800:
-                    raise ValueError(
-                        "received arbitration id may not exceed or equal 2^11 (0x800) if not extended"
-                    )
+                is_extended_id = bool(arbitration_id & CAN_EFF_FLAG)
+                is_error_frame = bool(arbitration_id & CAN_ERR_FLAG)
+                is_remote_frame = bool(arbitration_id & CAN_RTR_FLAG)
+
+                if is_extended_id:
+                    arbitration_id = arbitration_id & CAN_ID_MASK_EXT
+                else:
+                    arbitration_id = arbitration_id & CAN_ID_MASK_STD
 
                 data = self._ser.read(dlc)
 
@@ -212,6 +214,8 @@ class SerialBus(BusABC):
                         dlc=dlc,
                         data=data,
                         is_extended_id=is_extended_id,
+                        is_error_frame=is_error_frame,
+                        is_remote_frame=is_remote_frame,
                     )
                     return msg, False
 

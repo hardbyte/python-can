@@ -41,6 +41,7 @@ jobs:
     - name: Setup SocketCAN
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
+        sudo apt-get update
         sudo apt-get -y install linux-modules-extra-$(uname -r)
         sudo ./test/open_vcan.sh
     - name: Test with pytest via tox
