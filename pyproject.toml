@@ -182,8 +182,10 @@ ignore = [
     "PGH003",  # blanket-type-ignore
     "RUF012",  # mutable-class-default
 ]
+"can/cli.py" = ["T20"]  # flake8-print
 "can/logger.py" = ["T20"]  # flake8-print
 "can/player.py" = ["T20"]  # flake8-print
+"can/viewer.py" = ["T20"]  # flake8-print
 "examples/*" = ["T20"]  # flake8-print
 
 [tool.ruff.lint.isort]

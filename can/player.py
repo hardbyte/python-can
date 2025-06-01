@@ -12,8 +12,13 @@ from datetime import datetime
 from typing import TYPE_CHECKING, cast
 
 from can import LogReader, MessageSync
-
-from .logger import _create_base_argument_parser, _create_bus, _parse_additional_config
+from can.cli import (
+    _add_extra_args,
+    _parse_additional_config,
+    _set_logging_level_from_namespace,
+    add_bus_arguments,
+    create_bus_from_namespace,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -24,9 +29,9 @@ if TYPE_CHECKING:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Replay CAN traffic.")
 
-    _create_base_argument_parser(parser)
+    player_group = parser.add_argument_group("Player arguments")
 
-    parser.add_argument(
+    player_group.add_argument(
         "-f",
         "--file_name",
         dest="log_file",
@@ -34,7 +39,7 @@ def main() -> None:
         default=None,
     )
 
-    parser.add_argument(
+    player_group.add_argument(
         "-v",
         action="count",
         dest="verbosity",
@@ -43,27 +48,27 @@ def main() -> None:
         default=2,
     )
 
-    parser.add_argument(
+    player_group.add_argument(
         "--ignore-timestamps",
         dest="timestamps",
         help="""Ignore timestamps (send all frames immediately with minimum gap between frames)""",
         action="store_false",
     )
 
-    parser.add_argument(
+    player_group.add_argument(
         "--error-frames",
         help="Also send error frames to the interface.",
         action="store_true",
     )
 
-    parser.add_argument(
+    player_group.add_argument(
         "-g",
         "--gap",
         type=float,
         help="<s> minimum time between replayed frames",
         default=0.0001,
     )
-    parser.add_argument(
+    player_group.add_argument(
         "-s",
         "--skip",
         type=float,
@@ -71,12 +76,18 @@ def main() -> None:
         help="<s> skip gaps greater than 's' seconds",
     )
 
-    parser.add_argument(
+    player_group.add_argument(
         "infile",
         metavar="input-file",
         type=str,
         help="The file to replay. For supported types see can.LogReader.",
     )
+
+    # handle remaining arguments
+    _add_extra_args(player_group)
+
+    # add bus options
+    add_bus_arguments(parser)
 
     # print help message when no arguments were given
     if len(sys.argv) < 2:
@@ -86,11 +97,12 @@ def main() -> None:
     results, unknown_args = parser.parse_known_args()
     additional_config = _parse_additional_config([*results.extra_args, *unknown_args])
 
+    _set_logging_level_from_namespace(results)
     verbosity = results.verbosity
 
     error_frames = results.error_frames
 
-    with _create_bus(results, **additional_config) as bus:
+    with create_bus_from_namespace(results) as bus:
         with LogReader(results.infile, **additional_config) as reader:
             in_sync = MessageSync(
                 cast("Iterable[Message]", reader),

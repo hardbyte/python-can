@@ -29,13 +29,12 @@ import sys
 import time
 
 from can import __version__
-from can.logger import (
-    _append_filter_argument,
-    _create_base_argument_parser,
-    _create_bus,
-    _parse_additional_config,
+from can.cli import (
+    _set_logging_level_from_namespace,
+    add_bus_arguments,
+    create_bus_from_namespace,
 )
-from can.typechecking import TAdditionalCliArgs, TDataStructs
+from can.typechecking import TDataStructs
 
 logger = logging.getLogger("can.viewer")
 
@@ -390,7 +389,7 @@ class SmartFormatter(argparse.HelpFormatter):
 
 def _parse_viewer_args(
     args: list[str],
-) -> tuple[argparse.Namespace, TDataStructs, TAdditionalCliArgs]:
+) -> tuple[argparse.Namespace, TDataStructs]:
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         "python -m can.viewer",
@@ -411,9 +410,8 @@ def _parse_viewer_args(
         allow_abbrev=False,
     )
 
-    # Generate the standard arguments:
-    # Channel, bitrate, data_bitrate, interface, app_name, CAN-FD support
-    _create_base_argument_parser(parser)
+    # add bus options group
+    add_bus_arguments(parser, filter_arg=True, group_title="Bus arguments")
 
     optional = parser.add_argument_group("Optional arguments")
 
@@ -470,8 +468,6 @@ def _parse_viewer_args(
         default="",
     )
 
-    _append_filter_argument(optional, "-f")
-
     optional.add_argument(
         "-v",
         action="count",
@@ -487,6 +483,8 @@ def _parse_viewer_args(
         raise SystemExit(errno.EINVAL)
 
     parsed_args, unknown_args = parser.parse_known_args(args)
+    if unknown_args:
+        print("Unknown arguments:", unknown_args)
 
     # Dictionary used to convert between Python values and C structs represented as Python strings.
     # If the value is 'None' then the message does not contain any data package.
@@ -536,15 +534,13 @@ def _parse_viewer_args(
             else:
                 data_structs[key] = struct.Struct(fmt)
 
-    additional_config = _parse_additional_config(
-        [*parsed_args.extra_args, *unknown_args]
-    )
-    return parsed_args, data_structs, additional_config
+    return parsed_args, data_structs
 
 
 def main() -> None:
-    parsed_args, data_structs, additional_config = _parse_viewer_args(sys.argv[1:])
-    bus = _create_bus(parsed_args, **additional_config)
+    parsed_args, data_structs = _parse_viewer_args(sys.argv[1:])
+    bus = create_bus_from_namespace(parsed_args)
+    _set_logging_level_from_namespace(parsed_args)
     curses.wrapper(CanViewer, bus, data_structs)  # type: ignore[attr-defined,unused-ignore]
 
 
