@@ -1,5 +1,6 @@
 import errno
 import logging
+import platform
 import select
 import socket
 import struct
@@ -21,6 +22,8 @@ except ModuleNotFoundError:  # Missing on Windows
     ioctl_supported = False
     pass
 
+# All ioctls aren't supported on MacOS.
+is_macos = platform.system() == "Darwin"
 
 log = logging.getLogger(__name__)
 
@@ -275,6 +278,10 @@ class GeneralPurposeUdpMulticastBus:
             # Allow multiple programs to access that address + port
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+            # Option not supported on Windows.
+            if hasattr(socket, "SO_REUSEPORT"):
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
             # set how to receive timestamps
             try:
                 sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
@@ -401,7 +408,7 @@ class GeneralPurposeUdpMulticastBus:
                     self.max_buffer
                 )
 
-                if ioctl_supported:
+                if ioctl_supported and not is_macos:
                     result_buffer = ioctl(
                         self._socket.fileno(),
                         SIOCGSTAMP,
