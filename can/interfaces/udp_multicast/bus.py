@@ -14,16 +14,9 @@ from can.typechecking import AutoDetectedConfig
 
 from .utils import check_msgpack_installed, pack_message, unpack_message
 
-ioctl_supported = True
-
-try:
+is_linux = platform.system() == "Linux"
+if is_linux:
     from fcntl import ioctl
-except ModuleNotFoundError:  # Missing on Windows
-    ioctl_supported = False
-    pass
-
-# All ioctls aren't supported on MacOS.
-is_macos = platform.system() == "Darwin"
 
 log = logging.getLogger(__name__)
 
@@ -408,7 +401,8 @@ class GeneralPurposeUdpMulticastBus:
                     self.max_buffer
                 )
 
-                if ioctl_supported and not is_macos:
+                if is_linux:
+                    # This ioctl isn't supported on Darwin & Windows.
                     result_buffer = ioctl(
                         self._socket.fileno(),
                         SIOCGSTAMP,
