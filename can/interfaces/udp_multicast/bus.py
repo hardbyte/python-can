@@ -1,5 +1,6 @@
 import errno
 import logging
+import platform
 import select
 import socket
 import struct
@@ -13,14 +14,9 @@ from can.typechecking import AutoDetectedConfig
 
 from .utils import is_msgpack_installed, pack_message, unpack_message
 
-ioctl_supported = True
-
-try:
+is_linux = platform.system() == "Linux"
+if is_linux:
     from fcntl import ioctl
-except ModuleNotFoundError:  # Missing on Windows
-    ioctl_supported = False
-    pass
-
 
 log = logging.getLogger(__name__)
 
@@ -275,6 +271,10 @@ class GeneralPurposeUdpMulticastBus:
             # Allow multiple programs to access that address + port
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+            # Option not supported on Windows.
+            if hasattr(socket, "SO_REUSEPORT"):
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
             # set how to receive timestamps
             try:
                 sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
@@ -401,7 +401,8 @@ class GeneralPurposeUdpMulticastBus:
                     self.max_buffer
                 )
 
-                if ioctl_supported:
+                if is_linux:
+                    # This ioctl isn't supported on Darwin & Windows.
                     result_buffer = ioctl(
                         self._socket.fileno(),
                         SIOCGSTAMP,
