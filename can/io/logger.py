@@ -15,14 +15,13 @@ from typing import (
     Final,
     Literal,
     Optional,
-    cast,
 )
 
 from typing_extensions import Self
 
 from .._entry_points import read_entry_points
 from ..message import Message
-from ..typechecking import AcceptedIOType, FileLike, StringPathLike
+from ..typechecking import StringPathLike
 from .asc import ASCWriter
 from .blf import BLFWriter
 from .canutils import CanutilsLogWriter
@@ -31,6 +30,8 @@ from .generic import (
     BinaryIOMessageWriter,
     FileIOMessageWriter,
     MessageWriter,
+    SizedMessageWriter,
+    TextIOMessageWriter,
 )
 from .mf4 import MF4Writer
 from .printer import Printer
@@ -71,9 +72,7 @@ def _get_logger_for_suffix(suffix: str) -> type[MessageWriter]:
         ) from None
 
 
-def _compress(
-    filename: StringPathLike, **kwargs: Any
-) -> tuple[type[MessageWriter], FileLike]:
+def _compress(filename: StringPathLike, **kwargs: Any) -> FileIOMessageWriter[Any]:
     """
     Return the suffix and io object of the decompressed file.
     File will automatically recompress upon close.
@@ -93,11 +92,18 @@ def _compress(
     append = kwargs.get("append", False)
 
     if issubclass(logger_type, BinaryIOMessageWriter):
-        mode = "ab" if append else "wb"
-    else:
-        mode = "at" if append else "wt"
+        return logger_type(
+            file=gzip.open(filename=filename, mode="ab" if append else "wb"), **kwargs
+        )
 
-    return logger_type, gzip.open(filename, mode)
+    elif issubclass(logger_type, TextIOMessageWriter):
+        return logger_type(
+            file=gzip.open(filename=filename, mode="at" if append else "wt"), **kwargs
+        )
+
+    raise ValueError(
+        f"The file type {real_suffix} is currently incompatible with gzip."
+    )
 
 
 def Logger(  # noqa: N802
@@ -143,12 +149,11 @@ def Logger(  # noqa: N802
     _update_writer_plugins()
 
     suffix = pathlib.PurePath(filename).suffix.lower()
-    file_or_filename: AcceptedIOType = filename
     if suffix == ".gz":
-        logger_type, file_or_filename = _compress(filename, **kwargs)
-    else:
-        logger_type = _get_logger_for_suffix(suffix)
-    return logger_type(file=file_or_filename, **kwargs)
+        return _compress(filename, **kwargs)
+
+    logger_type = _get_logger_for_suffix(suffix)
+    return logger_type(file=filename, **kwargs)
 
 
 class BaseRotatingLogger(MessageWriter, ABC):
@@ -183,13 +188,11 @@ class BaseRotatingLogger(MessageWriter, ABC):
     rollover_count: int = 0
 
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**{**kwargs, "file": None})
-
         self.writer_kwargs = kwargs
 
     @property
     @abstractmethod
-    def writer(self) -> FileIOMessageWriter:
+    def writer(self) -> MessageWriter:
         """This attribute holds an instance of a writer class which manages the actual file IO."""
         raise NotImplementedError
 
@@ -243,7 +246,7 @@ class BaseRotatingLogger(MessageWriter, ABC):
 
         self.writer.on_message_received(msg)
 
-    def _get_new_writer(self, filename: StringPathLike) -> FileIOMessageWriter:
+    def _get_new_writer(self, filename: StringPathLike) -> MessageWriter:
         """Instantiate a new writer.
 
         .. note::
@@ -261,10 +264,7 @@ class BaseRotatingLogger(MessageWriter, ABC):
             if suffix not in self._supported_formats:
                 continue
             logger = Logger(filename=filename, **self.writer_kwargs)
-            if isinstance(logger, FileIOMessageWriter):
-                return logger
-            elif isinstance(logger, Printer) and logger.file is not None:
-                return cast("FileIOMessageWriter", logger)
+            return logger
 
         raise ValueError(
             f'The log format of "{pathlib.Path(filename).name}" '
@@ -366,18 +366,25 @@ class SizedRotatingLogger(BaseRotatingLogger):
 
         self._writer = self._get_new_writer(self.base_filename)
 
+    def _get_new_writer(self, filename: StringPathLike) -> SizedMessageWriter:
+        writer = super()._get_new_writer(filename)
+        if isinstance(writer, SizedMessageWriter):
+            return writer
+        raise TypeError
+
     @property
-    def writer(self) -> FileIOMessageWriter:
+    def writer(self) -> SizedMessageWriter:
         return self._writer
 
     def should_rollover(self, msg: Message) -> bool:
         if self.max_bytes <= 0:
             return False
 
-        if self.writer.file_size() >= self.max_bytes:
-            return True
+        file_size = self.writer.file_size()
+        if file_size is None:
+            return False
 
-        return False
+        return file_size >= self.max_bytes
 
     def do_rollover(self) -> None:
         if self.writer:

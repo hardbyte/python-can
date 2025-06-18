@@ -8,8 +8,10 @@ import logging
 import sqlite3
 import threading
 import time
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from typing import Any
+
+from typing_extensions import TypeAlias
 
 from can.listener import BufferedReader
 from can.message import Message
@@ -18,6 +20,8 @@ from ..typechecking import StringPathLike
 from .generic import MessageReader, MessageWriter
 
 log = logging.getLogger("can.io.sqlite")
+
+_MessageTuple: TypeAlias = "tuple[float, int, bool, bool, bool, int, memoryview[int]]"
 
 
 class SqliteReader(MessageReader):
@@ -49,7 +53,6 @@ class SqliteReader(MessageReader):
                      do not accept file-like objects as the `file` parameter.
                      It also runs in ``append=True`` mode all the time.
         """
-        super().__init__(file=None)
         self._conn = sqlite3.connect(file)
         self._cursor = self._conn.cursor()
         self.table_name = table_name
@@ -59,7 +62,7 @@ class SqliteReader(MessageReader):
             yield SqliteReader._assemble_message(frame_data)
 
     @staticmethod
-    def _assemble_message(frame_data):
+    def _assemble_message(frame_data: _MessageTuple) -> Message:
         timestamp, can_id, is_extended, is_remote, is_error, dlc, data = frame_data
         return Message(
             timestamp=timestamp,
@@ -71,12 +74,12 @@ class SqliteReader(MessageReader):
             data=data,
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         # this might not run in constant time
         result = self._cursor.execute(f"SELECT COUNT(*) FROM {self.table_name}")
         return int(result.fetchone()[0])
 
-    def read_all(self):
+    def read_all(self) -> Iterator[Message]:
         """Fetches all messages in the database.
 
         :rtype: Generator[can.Message]
@@ -84,9 +87,8 @@ class SqliteReader(MessageReader):
         result = self._cursor.execute(f"SELECT * FROM {self.table_name}").fetchall()
         return (SqliteReader._assemble_message(frame) for frame in result)
 
-    def stop(self):
+    def stop(self) -> None:
         """Closes the connection to the database."""
-        super().stop()
         self._conn.close()
 
 
@@ -154,11 +156,10 @@ class SqliteWriter(MessageWriter, BufferedReader):
                 f"The append argument should not be used in "
                 f"conjunction with the {self.__class__.__name__}."
             )
-        super().__init__(file=None)
+        BufferedReader.__init__(self)
         self.table_name = table_name
         self._db_filename = file
         self._stop_running_event = threading.Event()
-        self._conn = None
         self._writer_thread = threading.Thread(target=self._db_writer_thread)
         self._writer_thread.start()
         self.num_frames = 0
@@ -167,7 +168,8 @@ class SqliteWriter(MessageWriter, BufferedReader):
             f"INSERT INTO {self.table_name} VALUES (?, ?, ?, ?, ?, ?, ?)"
         )
 
-    def _create_db(self):
+    @staticmethod
+    def _create_db(file: StringPathLike, table_name: str) -> sqlite3.Connection:
         """Creates a new databae or opens a connection to an existing one.
 
         .. note::
@@ -175,11 +177,11 @@ class SqliteWriter(MessageWriter, BufferedReader):
             hence we setup the db here. It has the upside of running async.
         """
         log.debug("Creating sqlite database")
-        self._conn = sqlite3.connect(self._db_filename)
+        conn = sqlite3.connect(file)
 
         # create table structure
-        self._conn.cursor().execute(
-            f"""CREATE TABLE IF NOT EXISTS {self.table_name}
+        conn.cursor().execute(
+            f"""CREATE TABLE IF NOT EXISTS {table_name}
             (
               ts REAL,
               arbitration_id INTEGER,
@@ -190,14 +192,16 @@ class SqliteWriter(MessageWriter, BufferedReader):
               data BLOB
             )"""
         )
-        self._conn.commit()
+        conn.commit()
 
-    def _db_writer_thread(self):
-        self._create_db()
+        return conn
+
+    def _db_writer_thread(self) -> None:
+        conn = SqliteWriter._create_db(self._db_filename, self.table_name)
 
         try:
             while True:
-                messages = []  # reset buffer
+                messages: list[_MessageTuple] = []  # reset buffer
 
                 msg = self.get_message(self.GET_MESSAGE_TIMEOUT)
                 while msg is not None:
@@ -226,10 +230,10 @@ class SqliteWriter(MessageWriter, BufferedReader):
 
                 count = len(messages)
                 if count > 0:
-                    with self._conn:
+                    with conn:
                         # log.debug("Writing %d frames to db", count)
-                        self._conn.executemany(self._insert_template, messages)
-                        self._conn.commit()  # make the changes visible to the entire database
+                        conn.executemany(self._insert_template, messages)
+                        conn.commit()  # make the changes visible to the entire database
                     self.num_frames += count
                     self.last_write = time.time()
 
@@ -238,14 +242,13 @@ class SqliteWriter(MessageWriter, BufferedReader):
                     break
 
         finally:
-            self._conn.close()
+            conn.close()
             log.info("Stopped sqlite writer after writing %d messages", self.num_frames)
 
-    def stop(self):
+    def stop(self) -> None:
         """Stops the reader an writes all remaining messages to the database. Thus, this
         might take a while and block.
         """
         BufferedReader.stop(self)
         self._stop_running_event.set()
         self._writer_thread.join()
-        MessageReader.stop(self)

@@ -17,14 +17,14 @@ import logging
 import struct
 import time
 import zlib
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from decimal import Decimal
 from typing import Any, BinaryIO, Optional, Union, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
-from .generic import BinaryIOMessageReader, FileIOMessageWriter
+from .generic import BinaryIOMessageReader, BinaryIOMessageWriter
 
 TSystemTime = tuple[int, int, int, int, int, int, int, int]
 
@@ -104,7 +104,7 @@ TIME_TEN_MICS_FACTOR = Decimal("1e-5")
 TIME_ONE_NANS_FACTOR = Decimal("1e-9")
 
 
-def timestamp_to_systemtime(timestamp: float) -> TSystemTime:
+def timestamp_to_systemtime(timestamp: Optional[float]) -> TSystemTime:
     if timestamp is None or timestamp < 631152000:
         # Probably not a Unix timestamp
         return 0, 0, 0, 0, 0, 0, 0, 0
@@ -145,8 +145,6 @@ class BLFReader(BinaryIOMessageReader):
     Only CAN messages and error frames are supported. Other object types are
     silently ignored.
     """
-
-    file: BinaryIO
 
     def __init__(
         self,
@@ -206,7 +204,7 @@ class BLFReader(BinaryIOMessageReader):
                 yield from self._parse_container(data)
         self.stop()
 
-    def _parse_container(self, data):
+    def _parse_container(self, data: bytes) -> Iterator[Message]:
         if self._tail:
             data = b"".join((self._tail, data))
         try:
@@ -217,7 +215,7 @@ class BLFReader(BinaryIOMessageReader):
         # Save the remaining data that could not be processed
         self._tail = data[self._pos :]
 
-    def _parse_data(self, data):
+    def _parse_data(self, data: bytes) -> Iterator[Message]:
         """Optimized inner loop by making local copies of global variables
         and class members and hardcoding some values."""
         unpack_obj_header_base = OBJ_HEADER_BASE_STRUCT.unpack_from
@@ -375,12 +373,10 @@ class BLFReader(BinaryIOMessageReader):
             pos = next_pos
 
 
-class BLFWriter(FileIOMessageWriter):
+class BLFWriter(BinaryIOMessageWriter):
     """
     Logs CAN data to a Binary Logging File compatible with Vector's tools.
     """
-
-    file: BinaryIO
 
     #: Max log container size of uncompressed data
     max_container_size = 128 * 1024
@@ -412,14 +408,12 @@ class BLFWriter(FileIOMessageWriter):
             Z_DEFAULT_COMPRESSION represents a default compromise between
             speed and compression (currently equivalent to level 6).
         """
-        mode = "rb+" if append else "wb"
         try:
-            super().__init__(file, mode=mode)
+            super().__init__(file, mode="rb+" if append else "wb")
         except FileNotFoundError:
             # Trying to append to a non-existing file, create a new one
             append = False
-            mode = "wb"
-            super().__init__(file, mode=mode)
+            super().__init__(file, mode="wb")
         assert self.file is not None
         self.channel = channel
         self.compression_level = compression_level
@@ -452,7 +446,7 @@ class BLFWriter(FileIOMessageWriter):
             # Write a default header which will be updated when stopped
             self._write_header(FILE_HEADER_SIZE)
 
-    def _write_header(self, filesize):
+    def _write_header(self, filesize: int) -> None:
         header = [b"LOGG", FILE_HEADER_SIZE, self.application_id, 0, 0, 0, 2, 6, 8, 1]
         # The meaning of "count of objects read" is unknown
         header.extend([filesize, self.uncompressed_size, self.object_count, 0])
@@ -462,7 +456,7 @@ class BLFWriter(FileIOMessageWriter):
         # Pad to header size
         self.file.write(b"\x00" * (FILE_HEADER_SIZE - FILE_HEADER_STRUCT.size))
 
-    def on_message_received(self, msg):
+    def on_message_received(self, msg: Message) -> None:
         channel = channel2int(msg.channel)
         if channel is None:
             channel = self.channel
@@ -514,7 +508,7 @@ class BLFWriter(FileIOMessageWriter):
             data = CAN_MSG_STRUCT.pack(channel, flags, msg.dlc, arb_id, can_data)
             self._add_object(CAN_MESSAGE, data, msg.timestamp)
 
-    def log_event(self, text, timestamp=None):
+    def log_event(self, text: str, timestamp: Optional[float] = None) -> None:
         """Add an arbitrary message to the log file as a global marker.
 
         :param str text:
@@ -525,17 +519,19 @@ class BLFWriter(FileIOMessageWriter):
         """
         try:
             # Only works on Windows
-            text = text.encode("mbcs")
+            encoded = text.encode("mbcs")
         except LookupError:
-            text = text.encode("ascii")
+            encoded = text.encode("ascii")
         comment = b"Added by python-can"
         marker = b"python-can"
         data = GLOBAL_MARKER_STRUCT.pack(
-            0, 0xFFFFFF, 0xFF3300, 0, len(text), len(marker), len(comment)
+            0, 0xFFFFFF, 0xFF3300, 0, len(encoded), len(marker), len(comment)
         )
-        self._add_object(GLOBAL_MARKER, data + text + marker + comment, timestamp)
+        self._add_object(GLOBAL_MARKER, data + encoded + marker + comment, timestamp)
 
-    def _add_object(self, obj_type, data, timestamp=None):
+    def _add_object(
+        self, obj_type: int, data: bytes, timestamp: Optional[float] = None
+    ) -> None:
         if timestamp is None:
             timestamp = self.stop_timestamp or time.time()
         if self.start_timestamp is None:
@@ -564,7 +560,7 @@ class BLFWriter(FileIOMessageWriter):
         if self._buffer_size >= self.max_container_size:
             self._flush()
 
-    def _flush(self):
+    def _flush(self) -> None:
         """Compresses and writes data in the buffer to file."""
         if self.file.closed:
             return
@@ -578,7 +574,7 @@ class BLFWriter(FileIOMessageWriter):
         self._buffer = [tail]
         self._buffer_size = len(tail)
         if not self.compression_level:
-            data = uncompressed_data
+            data: "Union[bytes, memoryview[int]]" = uncompressed_data  # noqa: UP037
             method = NO_COMPRESSION
         else:
             data = zlib.compress(uncompressed_data, self.compression_level)
@@ -601,7 +597,7 @@ class BLFWriter(FileIOMessageWriter):
         """Return an estimate of the current file size in bytes."""
         return self.file.tell() + self._buffer_size
 
-    def stop(self):
+    def stop(self) -> None:
         """Stops logging and closes the file."""
         self._flush()
         if self.file.seekable():
