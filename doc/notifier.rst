@@ -58,7 +58,8 @@ readers are also documented here.
     be added using the ``can.io.message_writer`` entry point.
 
     The format of the entry point is ``reader_name=module:classname`` where ``classname``
-    is a :class:`can.io.generic.BaseIOHandler` concrete implementation.
+    is a concrete implementation of :class:`~can.io.generic.MessageReader` or
+    :class:`~can.io.generic.MessageWriter`.
 
     ::
 

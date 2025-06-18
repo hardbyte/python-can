@@ -50,7 +50,7 @@ elif platform.system() == "Windows" or platform.python_implementation() == "Iron
 
 
 def load_file_config(
-    path: Optional[typechecking.AcceptedIOType] = None, section: str = "default"
+    path: Optional[typechecking.StringPathLike] = None, section: str = "default"
 ) -> dict[str, str]:
     """
     Loads configuration from file with following content::
@@ -120,7 +120,7 @@ def load_environment_config(context: Optional[str] = None) -> dict[str, str]:
 
 
 def load_config(
-    path: Optional[typechecking.AcceptedIOType] = None,
+    path: Optional[typechecking.StringPathLike] = None,
     config: Optional[dict[str, Any]] = None,
     context: Optional[str] = None,
 ) -> typechecking.BusConfig:
