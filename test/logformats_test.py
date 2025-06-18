@@ -212,7 +212,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         self._write_all(writer)
         self._ensure_fsync(writer)
         writer.stop()
-        if hasattr(writer.file, "closed"):
+        if hasattr(writer, "file") and hasattr(writer.file, "closed"):
             self.assertTrue(writer.file.closed)
 
         print("reading all messages")
@@ -220,7 +220,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         read_messages = list(reader)
         # redundant, but this checks if stop() can be called multiple times
         reader.stop()
-        if hasattr(writer.file, "closed"):
+        if hasattr(writer, "file") and hasattr(writer.file, "closed"):
             self.assertTrue(writer.file.closed)
 
         # check if at least the number of messages matches
@@ -243,7 +243,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
             self._write_all(writer)
             self._ensure_fsync(writer)
             w = writer
-        if hasattr(w.file, "closed"):
+        if hasattr(writer, "file") and hasattr(w.file, "closed"):
             self.assertTrue(w.file.closed)
 
         # read all written messages
@@ -251,7 +251,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         with self.reader_constructor(self.test_file_name) as reader:
             read_messages = list(reader)
             r = reader
-        if hasattr(r.file, "closed"):
+        if hasattr(writer, "file") and hasattr(r.file, "closed"):
             self.assertTrue(r.file.closed)
 
         # check if at least the number of messages matches;
@@ -274,7 +274,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         self._write_all(writer)
         self._ensure_fsync(writer)
         writer.stop()
-        if hasattr(my_file, "closed"):
+        if hasattr(writer, "file") and hasattr(my_file, "closed"):
             self.assertTrue(my_file.closed)
 
         print("reading all messages")
@@ -283,7 +283,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
         read_messages = list(reader)
         # redundant, but this checks if stop() can be called multiple times
         reader.stop()
-        if hasattr(my_file, "closed"):
+        if hasattr(writer, "file") and hasattr(my_file, "closed"):
             self.assertTrue(my_file.closed)
 
         # check if at least the number of messages matches
@@ -380,7 +380,7 @@ class ReaderWriterTest(unittest.TestCase, ComparingMessagesTestCase, metaclass=A
                 writer(msg)
 
     def _ensure_fsync(self, io_handler):
-        if hasattr(io_handler.file, "fileno"):
+        if hasattr(io_handler, "file") and hasattr(io_handler.file, "fileno"):
             io_handler.file.flush()
             os.fsync(io_handler.file.fileno())
 

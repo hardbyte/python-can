@@ -39,8 +39,6 @@ class ASCReader(TextIOMessageReader):
     bus statistics, J1939 Transport Protocol messages) is ignored.
     """
 
-    file: TextIO
-
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
@@ -321,8 +319,6 @@ class ASCWriter(TextIOMessageWriter):
     it gets assigned the timestamp that was written for the last message.
     It the first message does not have a timestamp, it is set to zero.
     """
-
-    file: TextIO
 
     FORMAT_MESSAGE = "{channel}  {id:<15} {dir:<4} {dtype} {data}"
     FORMAT_MESSAGE_FD = " ".join(
