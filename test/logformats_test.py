@@ -990,6 +990,7 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
             ("V1_0", "test_CanMessage_V1_0_BUS1.trc", False),
             ("V1_1", "test_CanMessage_V1_1.trc", True),
             ("V1_3", "test_CanMessage_V1_3.trc", True),
+            ("V2_0", "test_CanMessage_V2_0_BUS1.trc", True),
             ("V2_1", "test_CanMessage_V2_1.trc", True),
         ]
     )
@@ -1029,6 +1030,20 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
                     msg.is_rx = False
                 return msg
 
+            def msg_rtr(timestamp):
+                msg = can.Message(
+                    timestamp=timestamp + start_time,
+                    arbitration_id=0x704,
+                    is_extended_id=False,
+                    is_remote_frame=True,
+                    channel=1,
+                    dlc=1,
+                    data=[],
+                )
+                if is_rx_support:
+                    msg.is_rx = True
+                return msg
+
             expected_messages = [
                 msg_ext(17.5354),
                 msg_ext(17.7003),
@@ -1040,6 +1055,7 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
                 msg_ext(20.7986),
                 msg_ext(20.9560),
                 msg_ext(21.0971),
+                msg_rtr(48.9376)
             ]
             actual = self._read_log_file(filename)
             self.assertMessagesEqual(actual, expected_messages)

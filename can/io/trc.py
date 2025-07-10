@@ -153,7 +153,10 @@ class TRCReader(TextIOMessageReader):
         msg.is_extended_id = len(arbit_id) > 4
         msg.channel = 1
         msg.dlc = int(cols[3])
-        msg.data = bytearray([int(cols[i + 4], 16) for i in range(msg.dlc)])
+        if len(cols) > 4 and cols[4] == "RTR":
+            msg.is_remote_frame = True
+        else:
+            msg.data = bytearray([int(cols[i + 4], 16) for i in range(msg.dlc)])
         return msg
 
     def _parse_msg_v1_1(self, cols: tuple[str, ...]) -> Optional[Message]:
@@ -165,7 +168,10 @@ class TRCReader(TextIOMessageReader):
         msg.is_extended_id = len(arbit_id) > 4
         msg.channel = 1
         msg.dlc = int(cols[4])
-        msg.data = bytearray([int(cols[i + 5], 16) for i in range(msg.dlc)])
+        if len(cols) > 5 and cols[5] == "RTR":
+            msg.is_remote_frame = True
+        else:
+            msg.data = bytearray([int(cols[i + 5], 16) for i in range(msg.dlc)])
         msg.is_rx = cols[2] == "Rx"
         return msg
 
@@ -178,7 +184,10 @@ class TRCReader(TextIOMessageReader):
         msg.is_extended_id = len(arbit_id) > 4
         msg.channel = int(cols[2])
         msg.dlc = int(cols[6])
-        msg.data = bytearray([int(cols[i + 7], 16) for i in range(msg.dlc)])
+        if len(cols) > 7 and cols[7] == "RTR":
+            msg.is_remote_frame = True
+        else:
+            msg.data = bytearray([int(cols[i + 7], 16) for i in range(msg.dlc)])
         msg.is_rx = cols[3] == "Rx"
         return msg
 
@@ -200,7 +209,8 @@ class TRCReader(TextIOMessageReader):
         msg.is_extended_id = len(cols[self.columns["I"]]) > 4
         msg.channel = int(cols[bus]) if bus is not None else 1
         msg.dlc = dlc
-        if dlc:
+        msg.is_remote_frame = type_ in {"RR"}
+        if dlc and not msg.is_remote_frame:
             msg.data = bytearray.fromhex(cols[self.columns["D"]])
         msg.is_rx = cols[self.columns["d"]] == "Rx"
         msg.is_fd = type_ in {"FD", "FB", "FE", "BI"}
@@ -227,7 +237,7 @@ class TRCReader(TextIOMessageReader):
 
     def _parse_cols_v2_x(self, cols: tuple[str, ...]) -> Optional[Message]:
         dtype = cols[self.columns["T"]]
-        if dtype in {"DT", "FD", "FB", "FE", "BI"}:
+        if dtype in {"DT", "FD", "FB", "FE", "BI", "RR"}:
             return self._parse_msg_v2_x(cols)
         else:
             logger.info("TRCReader: Unsupported type '%s'", dtype)
