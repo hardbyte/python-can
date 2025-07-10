@@ -1055,7 +1055,7 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
                 msg_ext(20.7986),
                 msg_ext(20.9560),
                 msg_ext(21.0971),
-                msg_rtr(48.9376)
+                msg_rtr(48.9376),
             ]
             actual = self._read_log_file(filename)
             self.assertMessagesEqual(actual, expected_messages)
