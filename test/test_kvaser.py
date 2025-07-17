@@ -284,7 +284,7 @@ class KvaserTest(unittest.TestCase):
         self.assertGreater(canlib.canOpenChannel.call_count, 0)
         for call in canlib.canOpenChannel.call_args_list:
             self.assertEqual(
-                call[0][1] & constants.canOPEN_NO_INIT_ACCESS, 
+                call[0][1] & constants.canOPEN_NO_INIT_ACCESS,
                 constants.canOPEN_NO_INIT_ACCESS
             )
 
