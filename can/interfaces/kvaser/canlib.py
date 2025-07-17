@@ -439,7 +439,8 @@ class KvaserBus(BusABC):
         :param int data_bitrate:
             Which bitrate to use for data phase in CAN FD.
             Defaults to arbitration bitrate.
-
+        :param bool no_init_access:
+            Don't open the handle with init access.
         """
 
         log.info(f"CAN Filters: {can_filters}")
@@ -455,6 +456,7 @@ class KvaserBus(BusABC):
         exclusive = kwargs.get("exclusive", False)
         override_exclusive = kwargs.get("override_exclusive", False)
         accept_virtual = kwargs.get("accept_virtual", True)
+        no_init_access = kwargs.get("no_init_access", False)
         fd = isinstance(timing, BitTimingFd) if timing else kwargs.get("fd", False)
         data_bitrate = kwargs.get("data_bitrate", None)
         fd_non_iso = kwargs.get("fd_non_iso", False)
@@ -491,6 +493,8 @@ class KvaserBus(BusABC):
             flags |= canstat.canOPEN_OVERRIDE_EXCLUSIVE
         if accept_virtual:
             flags |= canstat.canOPEN_ACCEPT_VIRTUAL
+        if no_init_access:
+            flags |= canstat.canOPEN_NO_INIT_ACCESS
         if fd:
             if fd_non_iso:
                 flags |= canstat.canOPEN_CAN_FD_NONISO
