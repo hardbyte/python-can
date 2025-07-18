@@ -268,6 +268,12 @@ class PcanBus(BusABC):
 
         self.check_api_version()
 
+        if not isinstance(state, BusState):
+            try:
+                state = BusState[state]
+            except KeyError as e:
+                raise ValueError("State must be ACTIVE or PASSIVE") from e
+
         if state in [BusState.ACTIVE, BusState.PASSIVE]:
             self.state = state
         else:
