@@ -161,11 +161,11 @@ class slcanBus(BusABC):
 
         super().__init__(channel, **kwargs)
 
-    def set_bitrate(self, bitrate: int, dbitrate: int = 0) -> None:
+    def set_bitrate(self, bitrate: int, data_bitrate: int = None) -> None:
         """
         :param bitrate:
             Bitrate in bit/s
-        :param dbitrate:
+        :param data_bitrate:
             Data Bitrate in bit/s for FD frames
 
         :raise ValueError: if ``bitrate`` is not among the possible values
@@ -175,8 +175,8 @@ class slcanBus(BusABC):
         else:
             bitrates = ", ".join(str(k) for k in self._BITRATES.keys())
             raise ValueError(f"Invalid bitrate, choose one of {bitrates}.")
-        if dbitrate in self._DATA_BITRATES:
-            dbitrate_code = self._DATA_BITRATES[dbitrate]
+        if data_bitrate in self._DATA_BITRATES:
+            dbitrate_code = self._DATA_BITRATES[data_bitrate]
         else:
             dbitrates = ", ".join(str(k) for k in self._DATA_BITRATES.keys())
             raise ValueError(f"Invalid data bitrate, choose one of {dbitrates}.")
