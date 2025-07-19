@@ -5,7 +5,8 @@ It is is compatible with "candump -L" from the canutils program
 """
 
 import logging
-from typing import Any, Generator, TextIO, Union
+from collections.abc import Generator
+from typing import Any, TextIO, Union
 
 from can.message import Message
 
@@ -165,7 +166,7 @@ class CanutilsLogWriter(TextIOMessageWriter):
             timestamp = msg.timestamp
 
         channel = msg.channel if msg.channel is not None else self.channel
-        if isinstance(channel, int) or isinstance(channel, str) and channel.isdigit():
+        if isinstance(channel, int) or (isinstance(channel, str) and channel.isdigit()):
             channel = f"can{channel}"
 
         framestr = f"({timestamp:f}) {channel}"

@@ -8,20 +8,23 @@ messages on a can bus.
 import contextlib
 import logging
 from importlib.metadata import PackageNotFoundError, version
-from typing import Any, Dict
+from typing import Any
 
 __all__ = [
+    "VALID_INTERFACES",
     "ASCReader",
     "ASCWriter",
     "AsyncBufferedReader",
-    "BitTiming",
-    "BitTimingFd",
     "BLFReader",
     "BLFWriter",
+    "BitTiming",
+    "BitTimingFd",
     "BufferedReader",
     "Bus",
     "BusABC",
     "BusState",
+    "CSVReader",
+    "CSVWriter",
     "CanError",
     "CanInitializationError",
     "CanInterfaceNotImplementedError",
@@ -30,18 +33,16 @@ __all__ = [
     "CanTimeoutError",
     "CanutilsLogReader",
     "CanutilsLogWriter",
-    "CSVReader",
-    "CSVWriter",
     "CyclicSendTaskABC",
     "LimitedDurationCyclicSendTaskABC",
     "Listener",
-    "Logger",
     "LogReader",
-    "ModifiableCyclicTaskABC",
-    "Message",
-    "MessageSync",
+    "Logger",
     "MF4Reader",
     "MF4Writer",
+    "Message",
+    "MessageSync",
+    "ModifiableCyclicTaskABC",
     "Notifier",
     "Printer",
     "RedirectReader",
@@ -49,11 +50,10 @@ __all__ = [
     "SizedRotatingLogger",
     "SqliteReader",
     "SqliteWriter",
-    "ThreadSafeBus",
     "TRCFileVersion",
     "TRCReader",
     "TRCWriter",
-    "VALID_INTERFACES",
+    "ThreadSafeBus",
     "bit_timing",
     "broadcastmanager",
     "bus",
@@ -64,8 +64,8 @@ __all__ = [
     "interfaces",
     "io",
     "listener",
-    "logconvert",
     "log",
+    "logconvert",
     "logger",
     "message",
     "notifier",
@@ -130,4 +130,4 @@ with contextlib.suppress(PackageNotFoundError):
 
 log = logging.getLogger("can")
 
-rc: Dict[str, Any] = {}
+rc: dict[str, Any] = {}

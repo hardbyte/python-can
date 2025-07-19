@@ -12,15 +12,13 @@ import os.path
 import platform
 import re
 import warnings
+from collections.abc import Iterable
 from configparser import ConfigParser
 from time import get_clock_info, perf_counter, time
 from typing import (
     Any,
     Callable,
-    Dict,
-    Iterable,
     Optional,
-    Tuple,
     TypeVar,
     Union,
     cast,
@@ -53,7 +51,7 @@ elif platform.system() == "Windows" or platform.python_implementation() == "Iron
 
 def load_file_config(
     path: Optional[typechecking.AcceptedIOType] = None, section: str = "default"
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Loads configuration from file with following content::
 
@@ -77,7 +75,7 @@ def load_file_config(
     else:
         config.read(path)
 
-    _config: Dict[str, str] = {}
+    _config: dict[str, str] = {}
 
     if config.has_section(section):
         _config.update(config.items(section))
@@ -85,7 +83,7 @@ def load_file_config(
     return _config
 
 
-def load_environment_config(context: Optional[str] = None) -> Dict[str, str]:
+def load_environment_config(context: Optional[str] = None) -> dict[str, str]:
     """
     Loads config dict from environmental variables (if set):
 
@@ -111,7 +109,7 @@ def load_environment_config(context: Optional[str] = None) -> Dict[str, str]:
 
     context_suffix = f"_{context}" if context else ""
     can_config_key = f"CAN_CONFIG{context_suffix}"
-    config: Dict[str, str] = json.loads(os.environ.get(can_config_key, "{}"))
+    config: dict[str, str] = json.loads(os.environ.get(can_config_key, "{}"))
 
     for key, val in mapper.items():
         config_option = os.environ.get(val + context_suffix, None)
@@ -123,7 +121,7 @@ def load_environment_config(context: Optional[str] = None) -> Dict[str, str]:
 
 def load_config(
     path: Optional[typechecking.AcceptedIOType] = None,
-    config: Optional[Dict[str, Any]] = None,
+    config: Optional[dict[str, Any]] = None,
     context: Optional[str] = None,
 ) -> typechecking.BusConfig:
     """
@@ -178,7 +176,7 @@ def load_config(
 
     # Use the given dict for default values
     config_sources = cast(
-        Iterable[Union[Dict[str, Any], Callable[[Any], Dict[str, Any]]]],
+        "Iterable[Union[dict[str, Any], Callable[[Any], dict[str, Any]]]]",
         [
             given_config,
             can.rc,
@@ -212,7 +210,7 @@ def load_config(
     return bus_config
 
 
-def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
+def _create_bus_config(config: dict[str, Any]) -> typechecking.BusConfig:
     """Validates some config values, performs compatibility mappings and creates specific
     structures (e.g. for bit timings).
 
@@ -251,10 +249,10 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
     if "fd" in config:
         config["fd"] = config["fd"] not in (0, False)
 
-    return cast(typechecking.BusConfig, config)
+    return cast("typechecking.BusConfig", config)
 
 
-def _dict2timing(data: Dict[str, Any]) -> Union[BitTiming, BitTimingFd, None]:
+def _dict2timing(data: dict[str, Any]) -> Union[BitTiming, BitTimingFd, None]:
     """Try to instantiate a :class:`~can.BitTiming` or :class:`~can.BitTimingFd` from
     a dictionary. Return `None` if not possible."""
 
@@ -396,8 +394,8 @@ def _rename_kwargs(
     func_name: str,
     start: str,
     end: Optional[str],
-    kwargs: P1.kwargs,
-    aliases: Dict[str, Optional[str]],
+    kwargs: dict[str, Any],
+    aliases: dict[str, Optional[str]],
 ) -> None:
     """Helper function for `deprecated_args_alias`"""
     for alias, new in aliases.items():
@@ -468,7 +466,7 @@ def check_or_adjust_timing_clock(timing: T2, valid_clocks: Iterable[int]) -> T2:
     ) from None
 
 
-def time_perfcounter_correlation() -> Tuple[float, float]:
+def time_perfcounter_correlation() -> tuple[float, float]:
     """Get the `perf_counter` value nearest to when time.time() is updated
 
     Computed if the default timer used by `time.time` on this platform has a resolution

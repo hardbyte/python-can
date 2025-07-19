@@ -6,7 +6,7 @@ import logging
 import platform
 import time
 import warnings
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from packaging import version
 
@@ -502,7 +502,7 @@ class PcanBus(BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         end_time = time.time() + timeout if timeout is not None else None
 
         while True:
@@ -726,7 +726,7 @@ class PcanBus(BusABC):
             res, value = library_handle.GetValue(PCAN_NONEBUS, PCAN_ATTACHED_CHANNELS)
             if res != PCAN_ERROR_OK:
                 return interfaces
-            channel_information: List[TPCANChannelInformation] = list(value)
+            channel_information: list[TPCANChannelInformation] = list(value)
             for channel in channel_information:
                 # find channel name in PCAN_CHANNEL_NAMES by value
                 channel_name = next(

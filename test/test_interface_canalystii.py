@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-"""
+""" """
 
 import unittest
 from ctypes import c_ubyte

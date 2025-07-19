@@ -13,8 +13,10 @@ import ctypes
 import functools
 import logging
 import sys
+import time
 import warnings
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 from can import (
     BusABC,
@@ -35,11 +37,11 @@ from . import constants, structures
 from .exceptions import *
 
 __all__ = [
-    "VCITimeout",
-    "VCIError",
+    "IXXATBus",
     "VCIBusOffError",
     "VCIDeviceNotFoundError",
-    "IXXATBus",
+    "VCIError",
+    "VCITimeout",
     "vciFormatError",
 ]
 
@@ -64,7 +66,7 @@ else:
 
 
 def __vciFormatErrorExtended(
-    library_instance: CLibrary, function: Callable, vret: int, args: Tuple
+    library_instance: CLibrary, function: Callable, vret: int, args: tuple
 ):
     """Format a VCI error and attach failed function, decoded HRESULT and arguments
     :param CLibrary library_instance:
@@ -619,7 +621,15 @@ class IXXATBus(BusABC):
                 log.info("Accepting ID: 0x%X MASK: 0x%X", code, mask)
 
         # Start the CAN controller. Messages will be forwarded to the channel
+        start_begin = time.time()
         _canlib.canControlStart(self._control_handle, constants.TRUE)
+        start_end = time.time()
+
+        # Calculate an offset to make them relative to epoch
+        # Assume that the time offset is in the middle of the start command
+        self._timeoffset = start_begin + (start_end - start_begin / 2)
+        self._overrunticks = 0
+        self._starttickoffset = 0
 
         # For cyclic transmit list. Set when .send_periodic() is first called
         self._scheduler = None
@@ -692,6 +702,9 @@ class IXXATBus(BusABC):
                         f"Unknown CAN info message code {self._message.abData[0]}",
                     )
                 )
+                # Handle CAN start info message
+                if self._message.abData[0] == constants.CAN_INFO_START:
+                    self._starttickoffset = self._message.dwTime
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
                 if self._message.uMsgInfo.Bytes.bFlags & constants.CAN_MSGFLAGS_OVR:
                     log.warning("CAN error: data overrun")
@@ -708,7 +721,8 @@ class IXXATBus(BusABC):
                         self._message.uMsgInfo.Bytes.bFlags,
                     )
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
-                pass
+                # Add the number of timestamp overruns to the high word
+                self._overrunticks += self._message.dwMsgId << 32
             else:
                 log.warning(
                     "Unexpected message info type 0x%X",
@@ -740,11 +754,12 @@ class IXXATBus(BusABC):
             # Timed out / can message type is not DATA
             return None, True
 
-        # The _message.dwTime is a 32bit tick value and will overrun,
-        # so expect to see the value restarting from 0
         rx_msg = Message(
-            timestamp=self._message.dwTime
-            / self._tick_resolution,  # Relative time in s
+            timestamp=(
+                (self._message.dwTime + self._overrunticks - self._starttickoffset)
+                / self._tick_resolution
+            )
+            + self._timeoffset,
             is_remote_frame=bool(self._message.uMsgInfo.Bits.rtr),
             is_extended_id=bool(self._message.uMsgInfo.Bits.ext),
             arbitration_id=self._message.dwMsgId,
@@ -890,7 +905,7 @@ class CyclicSendTask(LimitedDurationCyclicSendTaskABC, RestartableCyclicTaskABC)
         self._count = int(duration / period) if duration else 0
 
         self._msg = structures.CANCYCLICTXMSG()
-        self._msg.wCycleTime = int(round(period * resolution))
+        self._msg.wCycleTime = round(period * resolution)
         self._msg.dwMsgId = self.messages[0].arbitration_id
         self._msg.uMsgInfo.Bits.type = constants.CAN_MSGTYPE_DATA
         self._msg.uMsgInfo.Bits.ext = 1 if self.messages[0].is_extended_id else 0
@@ -961,7 +976,7 @@ def get_ixxat_hwids():
     return hwids
 
 
-def _detect_available_configs() -> List[AutoDetectedConfig]:
+def _detect_available_configs() -> list[AutoDetectedConfig]:
     config_list = []  # list in wich to store the resulting bus kwargs
 
     # used to detect HWID

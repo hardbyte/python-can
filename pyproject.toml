@@ -11,9 +11,8 @@ dependencies = [
     "wrapt~=1.10",
     "packaging >= 23.1",
     "typing_extensions>=3.10.0.0",
-    "msgpack~=1.1.0",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "LGPL v3" }
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -29,7 +28,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -59,12 +57,6 @@ repository = "https://github.com/hardbyte/python-can"
 changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
 
 [project.optional-dependencies]
-lint = [
-    "pylint==3.2.*",
-    "ruff==0.7.0",
-    "black==24.10.*",
-    "mypy==1.12.*",
-]
 pywin32 = ["pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'"]
 seeedstudio = ["pyserial>=3.0"]
 serial = ["pyserial~=3.0"]
@@ -72,17 +64,43 @@ neovi = ["filelock", "python-ics>=2.12"]
 canalystii = ["canalystii>=0.1.0"]
 cantact = ["cantact>=0.0.7"]
 cvector = ["python-can-cvector"]
-gs_usb = ["gs_usb>=0.2.1"]
+gs-usb = ["gs-usb>=0.2.1"]
 nixnet = ["nixnet>=0.3.2"]
 pcan = ["uptime~=3.0.1"]
 remote = ["python-can-remote"]
 sontheim = ["python-can-sontheim>=0.1.2"]
 canine = ["python-can-canine>=0.2.2"]
-zlgcan = ["zlgcan-driver-py"]
+zlgcan = ["zlgcan"]
 viewer = [
     "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
 ]
 mf4 = ["asammdf>=6.0.0"]
+multicast = ["msgpack~=1.1.0"]
+
+[dependency-groups]
+docs = [
+    "sphinx>=5.2.3",
+    "sphinxcontrib-programoutput",
+    "sphinx-inline-tabs",
+    "sphinx-copybutton",
+    "furo",
+]
+lint = [
+    "pylint==3.3.*",
+    "ruff==0.11.12",
+    "black==25.1.*",
+    "mypy==1.16.*",
+]
+test = [
+    "pytest==8.3.*",
+    "pytest-timeout==2.1.*",
+    "coveralls==3.3.1",
+    "pytest-cov==4.0.0",
+    "coverage==6.5.0",
+    "hypothesis~=6.35.0",
+    "pyserial~=3.5",
+    "parameterized~=0.8",
+]
 
 [tool.setuptools.dynamic]
 readme = { file = "README.rst" }
@@ -133,7 +151,7 @@ exclude = [
 line-length = 100
 
 [tool.ruff.lint]
-select = [
+extend-select = [
     "A",  # flake8-builtins
     "B",  # flake8-bugbear
     "C4",  # flake8-comprehensions
@@ -164,8 +182,11 @@ ignore = [
     "PGH003",  # blanket-type-ignore
     "RUF012",  # mutable-class-default
 ]
+"can/cli.py" = ["T20"]  # flake8-print
 "can/logger.py" = ["T20"]  # flake8-print
 "can/player.py" = ["T20"]  # flake8-print
+"can/viewer.py" = ["T20"]  # flake8-print
+"examples/*" = ["T20"]  # flake8-print
 
 [tool.ruff.lint.isort]
 known-first-party = ["can"]
@@ -187,6 +208,7 @@ disable = [
     "too-many-branches",
     "too-many-instance-attributes",
     "too-many-locals",
+    "too-many-positional-arguments",
     "too-many-public-methods",
     "too-many-statements",
 ]

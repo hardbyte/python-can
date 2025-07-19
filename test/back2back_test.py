@@ -14,14 +14,12 @@ import pytest
 import can
 from can import CanInterfaceNotImplementedError
 from can.interfaces.udp_multicast import UdpMulticastBus
+from can.interfaces.udp_multicast.utils import is_msgpack_installed
 
 from .config import (
     IS_CI,
     IS_OSX,
     IS_PYPY,
-    IS_TRAVIS,
-    IS_UNIX,
-    IS_WINDOWS,
     TEST_CAN_FD,
     TEST_INTERFACE_SOCKETCAN,
 )
@@ -307,6 +305,10 @@ class BasicTestSocketCan(Back2BackTestCase):
     IS_CI and IS_OSX,
     "not supported for macOS CI",
 )
+@unittest.skipUnless(
+    is_msgpack_installed(raise_exception=False),
+    "msgpack not installed",
+)
 class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
     INTERFACE_1 = "udp_multicast"
     CHANNEL_1 = UdpMulticastBus.DEFAULT_GROUP_IPv4
@@ -323,6 +325,10 @@ class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
 @unittest.skipIf(
     IS_CI and IS_OSX,
     "not supported for macOS CI",
+)
+@unittest.skipUnless(
+    is_msgpack_installed(raise_exception=False),
+    "msgpack not installed",
 )
 class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
     HOST_LOCAL_MCAST_GROUP_IPv6 = "ff11:7079:7468:6f6e:6465:6d6f:6d63:6173"

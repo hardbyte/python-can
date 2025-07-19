@@ -1,33 +1,29 @@
 import errno
 import logging
+import platform
 import select
 import socket
 import struct
 import time
 import warnings
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import can
 from can import BusABC, CanProtocol
 from can.typechecking import AutoDetectedConfig
 
-from .utils import check_msgpack_installed, pack_message, unpack_message
+from .utils import is_msgpack_installed, pack_message, unpack_message
 
-ioctl_supported = True
-
-try:
+is_linux = platform.system() == "Linux"
+if is_linux:
     from fcntl import ioctl
-except ModuleNotFoundError:  # Missing on Windows
-    ioctl_supported = False
-    pass
-
 
 log = logging.getLogger(__name__)
 
 
 # see socket.getaddrinfo()
-IPv4_ADDRESS_INFO = Tuple[str, int]  # address, port
-IPv6_ADDRESS_INFO = Tuple[str, int, int, int]  # address, port, flowinfo, scope_id
+IPv4_ADDRESS_INFO = tuple[str, int]  # address, port
+IPv6_ADDRESS_INFO = tuple[str, int, int, int]  # address, port, flowinfo, scope_id
 IP_ADDRESS_INFO = Union[IPv4_ADDRESS_INFO, IPv6_ADDRESS_INFO]
 
 # Additional constants for the interaction with Unix kernels
@@ -104,7 +100,7 @@ class UdpMulticastBus(BusABC):
         fd: bool = True,
         **kwargs,
     ) -> None:
-        check_msgpack_installed()
+        is_msgpack_installed()
 
         if receive_own_messages:
             raise can.CanInterfaceNotImplementedError(
@@ -172,7 +168,7 @@ class UdpMulticastBus(BusABC):
         self._multicast.shutdown()
 
     @staticmethod
-    def _detect_available_configs() -> List[AutoDetectedConfig]:
+    def _detect_available_configs() -> list[AutoDetectedConfig]:
         if hasattr(socket, "CMSG_SPACE"):
             return [
                 {
@@ -275,6 +271,10 @@ class GeneralPurposeUdpMulticastBus:
             # Allow multiple programs to access that address + port
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+            # Option not supported on Windows.
+            if hasattr(socket, "SO_REUSEPORT"):
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
             # set how to receive timestamps
             try:
                 sock.setsockopt(socket.SOL_SOCKET, SO_TIMESTAMPNS, 1)
@@ -341,7 +341,7 @@ class GeneralPurposeUdpMulticastBus:
 
     def recv(
         self, timeout: Optional[float] = None
-    ) -> Optional[Tuple[bytes, IP_ADDRESS_INFO, float]]:
+    ) -> Optional[tuple[bytes, IP_ADDRESS_INFO, float]]:
         """
         Receive up to **max_buffer** bytes.
 
@@ -401,7 +401,8 @@ class GeneralPurposeUdpMulticastBus:
                     self.max_buffer
                 )
 
-                if ioctl_supported:
+                if is_linux:
+                    # This ioctl isn't supported on Darwin & Windows.
                     result_buffer = ioctl(
                         self._socket.fileno(),
                         SIOCGSTAMP,

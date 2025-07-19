@@ -14,6 +14,7 @@ from unittest.mock import Mock
 import pytest
 
 import can
+import can.cli
 import can.logger
 
 
@@ -89,7 +90,7 @@ class TestLoggerScriptModule(unittest.TestCase):
             "--bitrate",
             "250000",
             "--fd",
-            "--data_bitrate",
+            "--data-bitrate",
             "2000000",
         ]
         can.logger.main()
@@ -111,7 +112,7 @@ class TestLoggerScriptModule(unittest.TestCase):
             "--bitrate",
             "250000",
             "--fd",
-            "--data_bitrate",
+            "--data-bitrate",
             "2000000",
             "--receive-own-messages=True",
         ]
@@ -205,7 +206,7 @@ class TestLoggerScriptModule(unittest.TestCase):
             "--offset=1.5",
             "--tseg1-abr=127",
         ]
-        parsed_args = can.logger._parse_additional_config(unknown_args)
+        parsed_args = can.cli._parse_additional_config(unknown_args)
 
         assert "app_name" in parsed_args
         assert parsed_args["app_name"] == "CANalyzer"
@@ -232,16 +233,16 @@ class TestLoggerScriptModule(unittest.TestCase):
         assert parsed_args["tseg1_abr"] == 127
 
         with pytest.raises(ValueError):
-            can.logger._parse_additional_config(["--wrong-format"])
+            can.cli._parse_additional_config(["--wrong-format"])
 
         with pytest.raises(ValueError):
-            can.logger._parse_additional_config(["-wrongformat=value"])
+            can.cli._parse_additional_config(["-wrongformat=value"])
 
         with pytest.raises(ValueError):
-            can.logger._parse_additional_config(["--wrongformat=value1 value2"])
+            can.cli._parse_additional_config(["--wrongformat=value1 value2"])
 
         with pytest.raises(ValueError):
-            can.logger._parse_additional_config(["wrongformat="])
+            can.cli._parse_additional_config(["wrongformat="])
 
 
 class TestLoggerCompressedFile(unittest.TestCase):

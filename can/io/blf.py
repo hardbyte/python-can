@@ -17,15 +17,16 @@ import logging
 import struct
 import time
 import zlib
+from collections.abc import Generator
 from decimal import Decimal
-from typing import Any, BinaryIO, Generator, List, Optional, Tuple, Union, cast
+from typing import Any, BinaryIO, Optional, Union, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
 from .generic import BinaryIOMessageReader, FileIOMessageWriter
 
-TSystemTime = Tuple[int, int, int, int, int, int, int, int]
+TSystemTime = tuple[int, int, int, int, int, int, int, int]
 
 
 class BLFParseError(Exception):
@@ -99,6 +100,9 @@ DIR = 0x1
 TIME_TEN_MICS = 0x00000001
 TIME_ONE_NANS = 0x00000002
 
+TIME_TEN_MICS_FACTOR = Decimal("1e-5")
+TIME_ONE_NANS_FACTOR = Decimal("1e-9")
+
 
 def timestamp_to_systemtime(timestamp: float) -> TSystemTime:
     if timestamp is None or timestamp < 631152000:
@@ -162,8 +166,12 @@ class BLFReader(BinaryIOMessageReader):
         self.file_size = header[10]
         self.uncompressed_size = header[11]
         self.object_count = header[12]
-        self.start_timestamp = systemtime_to_timestamp(cast(TSystemTime, header[14:22]))
-        self.stop_timestamp = systemtime_to_timestamp(cast(TSystemTime, header[22:30]))
+        self.start_timestamp = systemtime_to_timestamp(
+            cast("TSystemTime", header[14:22])
+        )
+        self.stop_timestamp = systemtime_to_timestamp(
+            cast("TSystemTime", header[22:30])
+        )
         # Read rest of header
         self.file.read(header[1] - FILE_HEADER_STRUCT.size)
         self._tail = b""
@@ -265,7 +273,7 @@ class BLFReader(BinaryIOMessageReader):
                 continue
 
             # Calculate absolute timestamp in seconds
-            factor = Decimal("1e-5") if flags == 1 else Decimal("1e-9")
+            factor = TIME_TEN_MICS_FACTOR if flags == 1 else TIME_ONE_NANS_FACTOR
             timestamp = float(Decimal(timestamp) * factor) + start_timestamp
 
             if obj_type in (CAN_MESSAGE, CAN_MESSAGE2):
@@ -415,7 +423,7 @@ class BLFWriter(FileIOMessageWriter):
         assert self.file is not None
         self.channel = channel
         self.compression_level = compression_level
-        self._buffer: List[bytes] = []
+        self._buffer: list[bytes] = []
         self._buffer_size = 0
         # If max container size is located in kwargs, then update the instance
         if kwargs.get("max_container_size", False):
@@ -429,10 +437,10 @@ class BLFWriter(FileIOMessageWriter):
             self.uncompressed_size = header[11]
             self.object_count = header[12]
             self.start_timestamp: Optional[float] = systemtime_to_timestamp(
-                cast(TSystemTime, header[14:22])
+                cast("TSystemTime", header[14:22])
             )
             self.stop_timestamp: Optional[float] = systemtime_to_timestamp(
-                cast(TSystemTime, header[22:30])
+                cast("TSystemTime", header[22:30])
             )
             # Jump to the end of the file
             self.file.seek(0, 2)

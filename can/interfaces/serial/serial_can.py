@@ -10,7 +10,7 @@ See the interface documentation for the format being used.
 import io
 import logging
 import struct
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 from can import (
     BusABC,
@@ -38,8 +38,15 @@ try:
     from serial.tools.list_ports import comports as list_comports
 except ImportError:
     # If unavailable on some platform, just return nothing
-    def list_comports() -> List[Any]:
+    def list_comports() -> list[Any]:
         return []
+
+
+CAN_ERR_FLAG = 0x20000000
+CAN_RTR_FLAG = 0x40000000
+CAN_EFF_FLAG = 0x80000000
+CAN_ID_MASK_EXT = 0x1FFFFFFF
+CAN_ID_MASK_STD = 0x7FF
 
 
 class SerialBus(BusABC):
@@ -116,9 +123,6 @@ class SerialBus(BusABC):
         :param msg:
             Message to send.
 
-            .. note:: Flags like ``extended_id``, ``is_remote_frame`` and
-                      ``is_error_frame`` will be ignored.
-
             .. note:: If the timestamp is a float value it will be converted
                       to an integer.
 
@@ -134,19 +138,25 @@ class SerialBus(BusABC):
             raise ValueError(f"Timestamp is out of range: {msg.timestamp}") from None
 
         # Pack arbitration ID
-        try:
-            arbitration_id = struct.pack("<I", msg.arbitration_id)
-        except struct.error:
-            raise ValueError(
-                f"Arbitration ID is out of range: {msg.arbitration_id}"
-            ) from None
+        if msg.is_extended_id:
+            arbitration_id = msg.arbitration_id & CAN_ID_MASK_EXT
+            arbitration_id |= CAN_EFF_FLAG
+        else:
+            arbitration_id = msg.arbitration_id & CAN_ID_MASK_STD
+
+        if msg.is_error_frame:
+            arbitration_id |= CAN_ERR_FLAG
+        if msg.is_remote_frame:
+            arbitration_id |= CAN_RTR_FLAG
+
+        arbitration_id_bytes = struct.pack("<I", arbitration_id)
 
         # Assemble message
         byte_msg = bytearray()
         byte_msg.append(0xAA)
         byte_msg += timestamp
         byte_msg.append(msg.dlc)
-        byte_msg += arbitration_id
+        byte_msg += arbitration_id_bytes
         byte_msg += msg.data
         byte_msg.append(0xBB)
 
@@ -160,7 +170,7 @@ class SerialBus(BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         """
         Read a message from the serial device.
 
@@ -171,11 +181,6 @@ class SerialBus(BusABC):
 
         :returns:
             Received message and :obj:`False` (because no filtering as taken place).
-
-            .. warning::
-                Flags like ``is_extended_id``, ``is_remote_frame`` and ``is_error_frame``
-                will not be set over this function, the flags in the return
-                message are the default values.
         """
         try:
             rx_byte = self._ser.read()
@@ -188,10 +193,14 @@ class SerialBus(BusABC):
 
                 s = self._ser.read(4)
                 arbitration_id = struct.unpack("<I", s)[0]
-                if arbitration_id >= 0x20000000:
-                    raise ValueError(
-                        "received arbitration id may not exceed 2^29 (0x20000000)"
-                    )
+                is_extended_id = bool(arbitration_id & CAN_EFF_FLAG)
+                is_error_frame = bool(arbitration_id & CAN_ERR_FLAG)
+                is_remote_frame = bool(arbitration_id & CAN_RTR_FLAG)
+
+                if is_extended_id:
+                    arbitration_id = arbitration_id & CAN_ID_MASK_EXT
+                else:
+                    arbitration_id = arbitration_id & CAN_ID_MASK_STD
 
                 data = self._ser.read(dlc)
 
@@ -204,6 +213,9 @@ class SerialBus(BusABC):
                         arbitration_id=arbitration_id,
                         dlc=dlc,
                         data=data,
+                        is_extended_id=is_extended_id,
+                        is_error_frame=is_error_frame,
+                        is_remote_frame=is_remote_frame,
                     )
                     return msg, False
 
@@ -229,7 +241,7 @@ class SerialBus(BusABC):
             raise CanOperationError("Cannot fetch fileno") from exception
 
     @staticmethod
-    def _detect_available_configs() -> List[AutoDetectedConfig]:
+    def _detect_available_configs() -> list[AutoDetectedConfig]:
         return [
             {"interface": "serial", "channel": port.device} for port in list_comports()
         ]

@@ -8,8 +8,9 @@ Example .asc files:
 
 import logging
 import re
+from collections.abc import Generator
 from datetime import datetime
-from typing import Any, Dict, Final, Generator, Optional, TextIO, Union
+from typing import Any, Final, Optional, TextIO, Union
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -153,7 +154,7 @@ class ASCReader(TextIOMessageReader):
 
         raise ValueError(f"Incompatible datetime string {datetime_string}")
 
-    def _extract_can_id(self, str_can_id: str, msg_kwargs: Dict[str, Any]) -> None:
+    def _extract_can_id(self, str_can_id: str, msg_kwargs: dict[str, Any]) -> None:
         if str_can_id[-1:].lower() == "x":
             msg_kwargs["is_extended_id"] = True
             can_id = int(str_can_id[0:-1], self._converted_base)
@@ -169,7 +170,7 @@ class ASCReader(TextIOMessageReader):
         return BASE_DEC if base == "dec" else BASE_HEX
 
     def _process_data_string(
-        self, data_str: str, data_length: int, msg_kwargs: Dict[str, Any]
+        self, data_str: str, data_length: int, msg_kwargs: dict[str, Any]
     ) -> None:
         frame = bytearray()
         data = data_str.split()
@@ -178,7 +179,7 @@ class ASCReader(TextIOMessageReader):
         msg_kwargs["data"] = frame
 
     def _process_classic_can_frame(
-        self, line: str, msg_kwargs: Dict[str, Any]
+        self, line: str, msg_kwargs: dict[str, Any]
     ) -> Message:
         # CAN error frame
         if line.strip()[0:10].lower() == "errorframe":
@@ -213,7 +214,7 @@ class ASCReader(TextIOMessageReader):
 
         return Message(**msg_kwargs)
 
-    def _process_fd_can_frame(self, line: str, msg_kwargs: Dict[str, Any]) -> Message:
+    def _process_fd_can_frame(self, line: str, msg_kwargs: dict[str, Any]) -> Message:
         channel, direction, rest_of_message = line.split(None, 2)
         # See ASCWriter
         msg_kwargs["channel"] = int(channel) - 1
@@ -285,7 +286,7 @@ class ASCReader(TextIOMessageReader):
                 # J1939 message or some other unsupported event
                 continue
 
-            msg_kwargs: Dict[str, Union[float, bool, int]] = {}
+            msg_kwargs: dict[str, Union[float, bool, int]] = {}
             try:
                 _timestamp, channel, rest_of_message = line.split(None, 2)
                 timestamp = float(_timestamp) + self.start_time

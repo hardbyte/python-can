@@ -14,7 +14,7 @@ import time
 import warnings
 from queue import SimpleQueue
 from types import ModuleType
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import can.typechecking
 from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
@@ -203,7 +203,7 @@ class NiXNETcanBus(BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         end_time = time.perf_counter() + timeout if timeout is not None else None
 
         while True:
@@ -327,7 +327,7 @@ class NiXNETcanBus(BusABC):
             self._session_receive.close()
 
     @staticmethod
-    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
+    def _detect_available_configs() -> list[can.typechecking.AutoDetectedConfig]:
         configs = []
 
         try:

@@ -12,13 +12,12 @@ import sys
 import threading
 import time
 import warnings
+from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
     Callable,
     Final,
     Optional,
-    Sequence,
-    Tuple,
     Union,
     cast,
 )
@@ -61,7 +60,7 @@ class _Pywin32:
         ):
             event = self.win32event.CreateWaitableTimer(None, False, None)
 
-        return cast(_Pywin32Event, event)
+        return cast("_Pywin32Event", event)
 
     def set_timer(self, event: _Pywin32Event, period_ms: int) -> None:
         self.win32event.SetWaitableTimer(event.handle, 0, period_ms, None, None, False)
@@ -121,13 +120,13 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
         # Take the Arbitration ID of the first element
         self.arbitration_id = messages[0].arbitration_id
         self.period = period
-        self.period_ns = int(round(period * 1e9))
+        self.period_ns = round(period * 1e9)
         self.messages = messages
 
     @staticmethod
     def _check_and_convert_messages(
-        messages: Union[Sequence[Message], Message]
-    ) -> Tuple[Message, ...]:
+        messages: Union[Sequence[Message], Message],
+    ) -> tuple[Message, ...]:
         """Helper function to convert a Message or Sequence of messages into a
         tuple, and raises an error when the given value is invalid.
 
@@ -194,7 +193,7 @@ class RestartableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
 
 
 class ModifiableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
-    def _check_modified_messages(self, messages: Tuple[Message, ...]) -> None:
+    def _check_modified_messages(self, messages: tuple[Message, ...]) -> None:
         """Helper function to perform error checking when modifying the data in
         the cyclic task.
 

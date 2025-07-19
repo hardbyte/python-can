@@ -6,8 +6,9 @@ import asyncio
 import sys
 import warnings
 from abc import ABCMeta, abstractmethod
+from collections.abc import AsyncIterator
 from queue import Empty, SimpleQueue
-from typing import Any, AsyncIterator, Optional
+from typing import Any, Optional
 
 from can.bus import BusABC
 from can.message import Message
@@ -135,6 +136,7 @@ class AsyncBufferedReader(
     """
 
     def __init__(self, **kwargs: Any) -> None:
+        self._is_stopped: bool = False
         self.buffer: asyncio.Queue[Message]
 
         if "loop" in kwargs:
@@ -149,7 +151,6 @@ class AsyncBufferedReader(
                 return
 
         self.buffer = asyncio.Queue()
-        self._is_stopped: bool = False
 
     def on_message_received(self, msg: Message) -> None:
         """Append a message to the buffer.

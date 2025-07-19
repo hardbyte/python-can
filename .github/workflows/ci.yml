@@ -18,7 +18,6 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         experimental: [false]
         python-version: [
-          "3.8",
           "3.9",
           "3.10",
           "3.11",
@@ -42,6 +41,7 @@ jobs:
     - name: Setup SocketCAN
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
+        sudo apt-get update
         sudo apt-get -y install linux-modules-extra-$(uname -r)
         sudo ./test/open_vcan.sh
     - name: Test with pytest via tox
@@ -80,10 +80,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[lint]
-    - name: mypy 3.8
-      run: |
-        mypy --python-version 3.8 .
+        pip install --group lint -e .
     - name: mypy 3.9
       run: |
         mypy --python-version 3.9 .
@@ -96,6 +93,9 @@ jobs:
     - name: mypy 3.12
       run: |
         mypy --python-version 3.12 .
+    - name: mypy 3.13
+      run: |
+        mypy --python-version 3.13 .
     - name: ruff
       run: |
         ruff check can
@@ -119,7 +119,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[lint]
+        pip install --group lint
     - name: Code Format Check with Black
       run: |
         black --check --verbose .

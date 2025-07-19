@@ -1,4 +1,5 @@
-from typing import Callable, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 import can.interfaces.ixxat.canlib_vcinpl as vcinpl
 import can.interfaces.ixxat.canlib_vcinpl2 as vcinpl2
@@ -174,5 +175,5 @@ class IXXATBus(BusABC):
         return self.bus.state
 
     @staticmethod
-    def _detect_available_configs() -> List[AutoDetectedConfig]:
+    def _detect_available_configs() -> list[AutoDetectedConfig]:
         return vcinpl._detect_available_configs()

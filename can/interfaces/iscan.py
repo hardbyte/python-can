@@ -5,7 +5,7 @@ Interface for isCAN from *Thorsis Technologies GmbH*, former *ifak system GmbH*.
 import ctypes
 import logging
 import time
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 from can import (
     BusABC,
@@ -117,7 +117,7 @@ class IscanBus(BusABC):
 
     def _recv_internal(
         self, timeout: Optional[float]
-    ) -> Tuple[Optional[Message], bool]:
+    ) -> tuple[Optional[Message], bool]:
         raw_msg = MessageExStruct()
         end_time = time.time() + timeout if timeout is not None else None
         while True:

@@ -12,11 +12,11 @@ from can import (
 )
 
 __all__ = [
-    "VCITimeout",
-    "VCIError",
-    "VCIRxQueueEmptyError",
     "VCIBusOffError",
     "VCIDeviceNotFoundError",
+    "VCIError",
+    "VCIRxQueueEmptyError",
+    "VCITimeout",
 ]
 
 

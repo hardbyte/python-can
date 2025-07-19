@@ -27,16 +27,14 @@ import os
 import struct
 import sys
 import time
-from typing import Dict, List, Tuple
 
 from can import __version__
-from can.logger import (
-    _append_filter_argument,
-    _create_base_argument_parser,
-    _create_bus,
-    _parse_additional_config,
+from can.cli import (
+    _set_logging_level_from_namespace,
+    add_bus_arguments,
+    create_bus_from_namespace,
 )
-from can.typechecking import TAdditionalCliArgs, TDataStructs
+from can.typechecking import TDataStructs
 
 logger = logging.getLogger("can.viewer")
 
@@ -161,14 +159,13 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
 
     # Unpack the data and then convert it into SI-units
     @staticmethod
-    def unpack_data(cmd: int, cmd_to_struct: Dict, data: bytes) -> List[float]:
+    def unpack_data(cmd: int, cmd_to_struct: dict, data: bytes) -> list[float]:
         if not cmd_to_struct or not data:
             # These messages do not contain a data package
             return []
 
-        for key in cmd_to_struct:
+        for key, value in cmd_to_struct.items():
             if cmd == key if isinstance(key, int) else cmd in key:
-                value = cmd_to_struct[key]
                 if isinstance(value, tuple):
                     # The struct is given as the fist argument
                     struct_t: struct.Struct = value[0]
@@ -391,8 +388,8 @@ class SmartFormatter(argparse.HelpFormatter):
 
 
 def _parse_viewer_args(
-    args: List[str],
-) -> Tuple[argparse.Namespace, TDataStructs, TAdditionalCliArgs]:
+    args: list[str],
+) -> tuple[argparse.Namespace, TDataStructs]:
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         "python -m can.viewer",
@@ -413,9 +410,8 @@ def _parse_viewer_args(
         allow_abbrev=False,
     )
 
-    # Generate the standard arguments:
-    # Channel, bitrate, data_bitrate, interface, app_name, CAN-FD support
-    _create_base_argument_parser(parser)
+    # add bus options group
+    add_bus_arguments(parser, filter_arg=True, group_title="Bus arguments")
 
     optional = parser.add_argument_group("Optional arguments")
 
@@ -472,8 +468,6 @@ def _parse_viewer_args(
         default="",
     )
 
-    _append_filter_argument(optional, "-f")
-
     optional.add_argument(
         "-v",
         action="count",
@@ -489,6 +483,8 @@ def _parse_viewer_args(
         raise SystemExit(errno.EINVAL)
 
     parsed_args, unknown_args = parser.parse_known_args(args)
+    if unknown_args:
+        print("Unknown arguments:", unknown_args)
 
     # Dictionary used to convert between Python values and C structs represented as Python strings.
     # If the value is 'None' then the message does not contain any data package.
@@ -525,7 +521,7 @@ def _parse_viewer_args(
             key, fmt = int(tmp[0], base=16), tmp[1]
 
             # The scaling
-            scaling: List[float] = []
+            scaling: list[float] = []
             for t in tmp[2:]:
                 # First try to convert to int, if that fails, then convert to a float
                 try:
@@ -538,15 +534,13 @@ def _parse_viewer_args(
             else:
                 data_structs[key] = struct.Struct(fmt)
 
-    additional_config = _parse_additional_config(
-        [*parsed_args.extra_args, *unknown_args]
-    )
-    return parsed_args, data_structs, additional_config
+    return parsed_args, data_structs
 
 
 def main() -> None:
-    parsed_args, data_structs, additional_config = _parse_viewer_args(sys.argv[1:])
-    bus = _create_bus(parsed_args, **additional_config)
+    parsed_args, data_structs = _parse_viewer_args(sys.argv[1:])
+    bus = create_bus_from_namespace(parsed_args)
+    _set_logging_level_from_namespace(parsed_args)
     curses.wrapper(CanViewer, bus, data_structs)  # type: ignore[attr-defined,unused-ignore]
 
 

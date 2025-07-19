@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 import math
-from typing import TYPE_CHECKING, Iterator, List, Mapping, cast
+from collections.abc import Iterator, Mapping
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from can.typechecking import BitTimingDict, BitTimingFdDict
@@ -155,7 +156,7 @@ class BitTiming(Mapping):
             if the arguments are invalid.
         """
         try:
-            brp = int(round(f_clock / (bitrate * (1 + tseg1 + tseg2))))
+            brp = round(f_clock / (bitrate * (1 + tseg1 + tseg2)))
         except ZeroDivisionError:
             raise ValueError("Invalid inputs") from None
 
@@ -232,7 +233,7 @@ class BitTiming(Mapping):
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
 
         for brp in range(1, 65):
-            nbt = round(int(f_clock / (bitrate * brp)))
+            nbt = int(f_clock / (bitrate * brp))
             if nbt < 8:
                 break
 
@@ -240,7 +241,7 @@ class BitTiming(Mapping):
             if abs(effective_bitrate - bitrate) > bitrate / 256:
                 continue
 
-            tseg1 = int(round(sample_point / 100 * nbt)) - 1
+            tseg1 = round(sample_point / 100 * nbt) - 1
             # limit tseg1, so tseg2 is at least 1 TQ
             tseg1 = min(tseg1, nbt - 2)
 
@@ -286,7 +287,7 @@ class BitTiming(Mapping):
         if sample_point < 50.0:
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
 
-        possible_solutions: List[BitTiming] = list(
+        possible_solutions: list[BitTiming] = list(
             cls.iterate_from_sample_point(f_clock, bitrate, sample_point)
         )
 
@@ -312,7 +313,7 @@ class BitTiming(Mapping):
     @property
     def bitrate(self) -> int:
         """Bitrate in bits/s."""
-        return int(round(self.f_clock / (self.nbt * self.brp)))
+        return round(self.f_clock / (self.nbt * self.brp))
 
     @property
     def brp(self) -> int:
@@ -322,7 +323,7 @@ class BitTiming(Mapping):
     @property
     def tq(self) -> int:
         """Time quantum in nanoseconds"""
-        return int(round(self.brp / self.f_clock * 1e9))
+        return round(self.brp / self.f_clock * 1e9)
 
     @property
     def nbt(self) -> int:
@@ -433,7 +434,7 @@ class BitTiming(Mapping):
                 "f_clock change failed because of sample point discrepancy."
             )
         # adapt synchronization jump width, so it has the same size relative to bit time as self
-        sjw = int(round(self.sjw / self.nbt * bt.nbt))
+        sjw = round(self.sjw / self.nbt * bt.nbt)
         sjw = max(1, min(4, bt.tseg2, sjw))
         bt._data["sjw"] = sjw  # pylint: disable=protected-access
         bt._data["nof_samples"] = self.nof_samples  # pylint: disable=protected-access
@@ -458,7 +459,7 @@ class BitTiming(Mapping):
         return f"can.{self.__class__.__name__}({args})"
 
     def __getitem__(self, key: str) -> int:
-        return cast(int, self._data.__getitem__(key))
+        return cast("int", self._data.__getitem__(key))
 
     def __len__(self) -> int:
         return self._data.__len__()
@@ -716,10 +717,8 @@ class BitTimingFd(Mapping):
             if the arguments are invalid.
         """
         try:
-            nom_brp = int(round(f_clock / (nom_bitrate * (1 + nom_tseg1 + nom_tseg2))))
-            data_brp = int(
-                round(f_clock / (data_bitrate * (1 + data_tseg1 + data_tseg2)))
-            )
+            nom_brp = round(f_clock / (nom_bitrate * (1 + nom_tseg1 + nom_tseg2)))
+            data_brp = round(f_clock / (data_bitrate * (1 + data_tseg1 + data_tseg2)))
         except ZeroDivisionError:
             raise ValueError("Invalid inputs.") from None
 
@@ -787,7 +786,7 @@ class BitTimingFd(Mapping):
         sync_seg = 1
 
         for nom_brp in range(1, 257):
-            nbt = round(int(f_clock / (nom_bitrate * nom_brp)))
+            nbt = int(f_clock / (nom_bitrate * nom_brp))
             if nbt < 1:
                 break
 
@@ -795,7 +794,7 @@ class BitTimingFd(Mapping):
             if abs(effective_nom_bitrate - nom_bitrate) > nom_bitrate / 256:
                 continue
 
-            nom_tseg1 = int(round(nom_sample_point / 100 * nbt)) - 1
+            nom_tseg1 = round(nom_sample_point / 100 * nbt) - 1
             # limit tseg1, so tseg2 is at least 2 TQ
             nom_tseg1 = min(nom_tseg1, nbt - sync_seg - 2)
             nom_tseg2 = nbt - nom_tseg1 - 1
@@ -811,7 +810,7 @@ class BitTimingFd(Mapping):
                 if abs(effective_data_bitrate - data_bitrate) > data_bitrate / 256:
                     continue
 
-                data_tseg1 = int(round(data_sample_point / 100 * dbt)) - 1
+                data_tseg1 = round(data_sample_point / 100 * dbt) - 1
                 # limit tseg1, so tseg2 is at least 2 TQ
                 data_tseg1 = min(data_tseg1, dbt - sync_seg - 2)
                 data_tseg2 = dbt - data_tseg1 - 1
@@ -876,7 +875,7 @@ class BitTimingFd(Mapping):
                 f"data_sample_point (={data_sample_point}) must not be below 50%."
             )
 
-        possible_solutions: List[BitTimingFd] = list(
+        possible_solutions: list[BitTimingFd] = list(
             cls.iterate_from_sample_point(
                 f_clock,
                 nom_bitrate,
@@ -923,7 +922,7 @@ class BitTimingFd(Mapping):
     @property
     def nom_bitrate(self) -> int:
         """Nominal (arbitration phase) bitrate."""
-        return int(round(self.f_clock / (self.nbt * self.nom_brp)))
+        return round(self.f_clock / (self.nbt * self.nom_brp))
 
     @property
     def nom_brp(self) -> int:
@@ -933,7 +932,7 @@ class BitTimingFd(Mapping):
     @property
     def nom_tq(self) -> int:
         """Nominal time quantum in nanoseconds"""
-        return int(round(self.nom_brp / self.f_clock * 1e9))
+        return round(self.nom_brp / self.f_clock * 1e9)
 
     @property
     def nbt(self) -> int:
@@ -969,7 +968,7 @@ class BitTimingFd(Mapping):
     @property
     def data_bitrate(self) -> int:
         """Bitrate of the data phase in bit/s."""
-        return int(round(self.f_clock / (self.dbt * self.data_brp)))
+        return round(self.f_clock / (self.dbt * self.data_brp))
 
     @property
     def data_brp(self) -> int:
@@ -979,7 +978,7 @@ class BitTimingFd(Mapping):
     @property
     def data_tq(self) -> int:
         """Data time quantum in nanoseconds"""
-        return int(round(self.data_brp / self.f_clock * 1e9))
+        return round(self.data_brp / self.f_clock * 1e9)
 
     @property
     def dbt(self) -> int:
@@ -1106,10 +1105,10 @@ class BitTimingFd(Mapping):
                 "f_clock change failed because of sample point discrepancy."
             )
         # adapt synchronization jump width, so it has the same size relative to bit time as self
-        nom_sjw = int(round(self.nom_sjw / self.nbt * bt.nbt))
+        nom_sjw = round(self.nom_sjw / self.nbt * bt.nbt)
         nom_sjw = max(1, min(bt.nom_tseg2, nom_sjw))
         bt._data["nom_sjw"] = nom_sjw  # pylint: disable=protected-access
-        data_sjw = int(round(self.data_sjw / self.dbt * bt.dbt))
+        data_sjw = round(self.data_sjw / self.dbt * bt.dbt)
         data_sjw = max(1, min(bt.data_tseg2, data_sjw))
         bt._data["data_sjw"] = data_sjw  # pylint: disable=protected-access
         bt._validate()  # pylint: disable=protected-access
@@ -1138,7 +1137,7 @@ class BitTimingFd(Mapping):
         return f"can.{self.__class__.__name__}({args})"
 
     def __getitem__(self, key: str) -> int:
-        return cast(int, self._data.__getitem__(key))
+        return cast("int", self._data.__getitem__(key))
 
     def __len__(self) -> int:
         return self._data.__len__()

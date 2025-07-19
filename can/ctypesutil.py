@@ -5,11 +5,11 @@ This module contains common `ctypes` utils.
 import ctypes
 import logging
 import sys
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 log = logging.getLogger("can.ctypesutil")
 
-__all__ = ["CLibrary", "HANDLE", "PHANDLE", "HRESULT"]
+__all__ = ["HANDLE", "HRESULT", "PHANDLE", "CLibrary"]
 
 if sys.platform == "win32":
     _LibBase = ctypes.WinDLL
@@ -32,7 +32,7 @@ class CLibrary(_LibBase):
         self,
         func_name: str,
         restype: Any = None,
-        argtypes: Tuple[Any, ...] = (),
+        argtypes: tuple[Any, ...] = (),
         errcheck: Optional[Callable[..., Any]] = None,
     ) -> Any:
         """

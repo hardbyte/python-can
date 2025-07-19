@@ -5,10 +5,12 @@ This example demonstrates how to use async IO with python-can.
 """
 
 import asyncio
-from typing import List
+from typing import TYPE_CHECKING
 
 import can
-from can.notifier import MessageRecipient
+
+if TYPE_CHECKING:
+    from can.notifier import MessageRecipient
 
 
 def print_message(msg: can.Message) -> None:
@@ -25,32 +27,28 @@ async def main() -> None:
         reader = can.AsyncBufferedReader()
         logger = can.Logger("logfile.asc")
 
-        listeners: List[MessageRecipient] = [
+        listeners: list[MessageRecipient] = [
             print_message,  # Callback function
             reader,  # AsyncBufferedReader() listener
             logger,  # Regular Listener object
         ]
         # Create Notifier with an explicit loop to use for scheduling of callbacks
-        loop = asyncio.get_running_loop()
-        notifier = can.Notifier(bus, listeners, loop=loop)
-        # Start sending first message
-        bus.send(can.Message(arbitration_id=0))
+        with can.Notifier(bus, listeners, loop=asyncio.get_running_loop()):
+            # Start sending first message
+            bus.send(can.Message(arbitration_id=0))
 
-        print("Bouncing 10 messages...")
-        for _ in range(10):
-            # Wait for next message from AsyncBufferedReader
-            msg = await reader.get_message()
-            # Delay response
-            await asyncio.sleep(0.5)
-            msg.arbitration_id += 1
-            bus.send(msg)
+            print("Bouncing 10 messages...")
+            for _ in range(10):
+                # Wait for next message from AsyncBufferedReader
+                msg = await reader.get_message()
+                # Delay response
+                await asyncio.sleep(0.5)
+                msg.arbitration_id += 1
+                bus.send(msg)
 
-        # Wait for last message to arrive
-        await reader.get_message()
-        print("Done!")
-
-        # Clean-up
-        notifier.stop()
+            # Wait for last message to arrive
+            await reader.get_message()
+            print("Done!")
 
 
 if __name__ == "__main__":

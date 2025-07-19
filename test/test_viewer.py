@@ -397,19 +397,19 @@ class CanViewerTest(unittest.TestCase):
             )
 
     def test_parse_args(self):
-        parsed_args, _, _ = _parse_viewer_args(["-b", "250000"])
+        parsed_args, _ = _parse_viewer_args(["-b", "250000"])
         self.assertEqual(parsed_args.bitrate, 250000)
 
-        parsed_args, _, _ = _parse_viewer_args(["--bitrate", "500000"])
+        parsed_args, _ = _parse_viewer_args(["--bitrate", "500000"])
         self.assertEqual(parsed_args.bitrate, 500000)
 
-        parsed_args, _, _ = _parse_viewer_args(["-c", "can0"])
+        parsed_args, _ = _parse_viewer_args(["-c", "can0"])
         self.assertEqual(parsed_args.channel, "can0")
 
-        parsed_args, _, _ = _parse_viewer_args(["--channel", "PCAN_USBBUS1"])
+        parsed_args, _ = _parse_viewer_args(["--channel", "PCAN_USBBUS1"])
         self.assertEqual(parsed_args.channel, "PCAN_USBBUS1")
 
-        parsed_args, data_structs, _ = _parse_viewer_args(["-d", "100:<L"])
+        parsed_args, data_structs = _parse_viewer_args(["-d", "100:<L"])
         self.assertEqual(parsed_args.decode, ["100:<L"])
 
         self.assertIsInstance(data_structs, dict)
@@ -422,7 +422,7 @@ class CanViewerTest(unittest.TestCase):
         f = open("test.txt", "w")
         f.write("100:<BB\n101:<HH\n")
         f.close()
-        parsed_args, data_structs, _ = _parse_viewer_args(["-d", "test.txt"])
+        parsed_args, data_structs = _parse_viewer_args(["-d", "test.txt"])
 
         self.assertIsInstance(data_structs, dict)
         self.assertEqual(len(data_structs), 2)
@@ -436,7 +436,7 @@ class CanViewerTest(unittest.TestCase):
         self.assertEqual(data_structs[0x101].size, 4)
         os.remove("test.txt")
 
-        parsed_args, data_structs, _ = _parse_viewer_args(
+        parsed_args, data_structs = _parse_viewer_args(
             ["--decode", "100:<LH:10.:100.", "101:<ff", "102:<Bf:1:57.3"]
         )
         self.assertEqual(
@@ -469,13 +469,13 @@ class CanViewerTest(unittest.TestCase):
         self.assertEqual(data_structs[0x102][1], 1)
         self.assertAlmostEqual(data_structs[0x102][2], 57.3)
 
-        parsed_args, _, _ = _parse_viewer_args(["-f", "100:7FF"])
+        parsed_args, _ = _parse_viewer_args(["--filter", "100:7FF"])
         self.assertIsInstance(parsed_args.can_filters, list)
         self.assertIsInstance(parsed_args.can_filters[0], dict)
         self.assertEqual(parsed_args.can_filters[0]["can_id"], 0x100)
         self.assertEqual(parsed_args.can_filters[0]["can_mask"], 0x7FF)
 
-        parsed_args, _, _ = _parse_viewer_args(["-f", "101:7FF", "102:7FC"])
+        parsed_args, _ = _parse_viewer_args(["--filter", "101:7FF", "102:7FC"])
         self.assertIsInstance(parsed_args.can_filters, list)
         self.assertIsInstance(parsed_args.can_filters[0], dict)
         self.assertIsInstance(parsed_args.can_filters[1], dict)
@@ -485,18 +485,18 @@ class CanViewerTest(unittest.TestCase):
         self.assertEqual(parsed_args.can_filters[1]["can_mask"], 0x7FC)
 
         with self.assertRaises(SystemExit):
-            _parse_viewer_args(["-f", "101,7FF"])
+            _parse_viewer_args(["--filter", "101,7FF"])
 
-        parsed_args, _, _ = _parse_viewer_args(["--filter", "100~7FF"])
+        parsed_args, _ = _parse_viewer_args(["--filter", "100~7FF"])
         self.assertIsInstance(parsed_args.can_filters, list)
         self.assertIsInstance(parsed_args.can_filters[0], dict)
         self.assertEqual(parsed_args.can_filters[0]["can_id"], 0x100 | 0x20000000)
         self.assertEqual(parsed_args.can_filters[0]["can_mask"], 0x7FF & 0x20000000)
 
-        parsed_args, _, _ = _parse_viewer_args(["-i", "socketcan"])
+        parsed_args, _ = _parse_viewer_args(["-i", "socketcan"])
         self.assertEqual(parsed_args.interface, "socketcan")
 
-        parsed_args, _, _ = _parse_viewer_args(["--interface", "pcan"])
+        parsed_args, _ = _parse_viewer_args(["--interface", "pcan"])
         self.assertEqual(parsed_args.interface, "pcan")
 
         # Make sure it exits with the correct error code when displaying the help page

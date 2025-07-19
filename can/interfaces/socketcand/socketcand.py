@@ -17,7 +17,6 @@ import traceback
 import urllib.parse as urlparselib
 import xml.etree.ElementTree as ET
 from collections import deque
-from typing import List
 
 import can
 
@@ -27,7 +26,7 @@ DEFAULT_SOCKETCAND_DISCOVERY_ADDRESS = ""
 DEFAULT_SOCKETCAND_DISCOVERY_PORT = 42000
 
 
-def detect_beacon(timeout_ms: int = 3100) -> List[can.typechecking.AutoDetectedConfig]:
+def detect_beacon(timeout_ms: int = 3100) -> list[can.typechecking.AutoDetectedConfig]:
     """
     Detects socketcand servers
 
@@ -125,10 +124,11 @@ def detect_beacon(timeout_ms: int = 3100) -> List[can.typechecking.AutoDetectedC
 
 
 def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
-    if not ascii_msg.startswith("< frame ") or not ascii_msg.endswith(" >"):
-        log.warning(f"Could not parse ascii message: {ascii_msg}")
+    if not ascii_msg.endswith(" >"):
+        log.warning(f"Missing ending character in ascii message: {ascii_msg}")
         return None
-    else:
+
+    if ascii_msg.startswith("< frame "):
         # frame_string = ascii_msg.removeprefix("< frame ").removesuffix(" >")
         frame_string = ascii_msg[8:-2]
         parts = frame_string.split(" ", 3)
@@ -146,6 +146,31 @@ def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
             is_rx=True,
         )
         return can_message
+
+    if ascii_msg.startswith("< error "):
+        frame_string = ascii_msg[8:-2]
+        parts = frame_string.split(" ", 3)
+        can_id, timestamp = int(parts[0], 16), float(parts[1])
+        is_ext = len(parts[0]) != 3
+
+        # socketcand sends no data in the error message so we don't have information
+        # about the error details, therefore the can frame is created with one
+        # data byte set to zero
+        data = bytearray([0])
+        can_dlc = len(data)
+        can_message = can.Message(
+            timestamp=timestamp,
+            arbitration_id=can_id & 0x1FFFFFFF,
+            is_error_frame=True,
+            data=data,
+            dlc=can_dlc,
+            is_extended_id=True,
+            is_rx=True,
+        )
+        return can_message
+
+    log.warning(f"Could not parse ascii message: {ascii_msg}")
+    return None
 
 
 def convert_can_message_to_ascii_message(can_message: can.Message) -> str:
@@ -340,7 +365,7 @@ class SocketCanDaemonBus(can.BusABC):
         self.__socket.close()
 
     @staticmethod
-    def _detect_available_configs() -> List[can.typechecking.AutoDetectedConfig]:
+    def _detect_available_configs() -> list[can.typechecking.AutoDetectedConfig]:
         try:
             return detect_beacon()
         except Exception as e:

@@ -1,4 +1,4 @@
-""" Neousys CAN bus driver """
+"""Neousys CAN bus driver"""
 
 __all__ = [
     "NeousysBus",
