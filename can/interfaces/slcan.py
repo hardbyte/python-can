@@ -16,7 +16,7 @@ from can.exceptions import (
     CanOperationError,
     error_check,
 )
-from can.util import CAN_FD_DLC, check_or_adjust_timing_clock, deprecated_args_alias
+from can.util import CAN_FD_DLC, check_or_adjust_timing_clock, deprecated_args_alias, len2dlc
 
 logger = logging.getLogger(__name__)
 
@@ -319,7 +319,7 @@ class slcanBus(BusABC):
                 is_remote_frame=remote,
                 is_fd=isFd,
                 bitrate_switch=fdBrs,
-                dlc=dlc,
+                dlc=CAN_FD_DLC[dlc],
                 data=data,
             )
             return msg, False
@@ -334,17 +334,18 @@ class slcanBus(BusABC):
             else:
                 sendStr = f"r{msg.arbitration_id:03X}{msg.dlc:d}"
         elif msg.is_fd:
+            fd_dlc = len2dlc(msg.dlc)
             if msg.bitrate_switch:
                 if msg.is_extended_id:
-                    sendStr = f"B{msg.arbitration_id:08X}{msg.dlc:d}"
+                    sendStr = f"B{msg.arbitration_id:08X}{fd_dlc:X}"
                 else:
-                    sendStr = f"b{msg.arbitration_id:03X}{msg.dlc:d}"
+                    sendStr = f"b{msg.arbitration_id:03X}{fd_dlc:X}"
                 sendStr += msg.data.hex().upper()
             else:
                 if msg.is_extended_id:
-                    sendStr = f"D{msg.arbitration_id:08X}{msg.dlc:d}"
+                    sendStr = f"D{msg.arbitration_id:08X}{fd_dlc:X}"
                 else:
-                    sendStr = f"d{msg.arbitration_id:03X}{msg.dlc:d}"
+                    sendStr = f"d{msg.arbitration_id:03X}{fd_dlc:X}"
                 sendStr += msg.data.hex().upper()
         else:
             if msg.is_extended_id:
