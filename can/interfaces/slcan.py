@@ -16,7 +16,12 @@ from can.exceptions import (
     CanOperationError,
     error_check,
 )
-from can.util import CAN_FD_DLC, check_or_adjust_timing_clock, deprecated_args_alias, len2dlc
+from can.util import (
+    CAN_FD_DLC,
+    check_or_adjust_timing_clock,
+    deprecated_args_alias,
+    len2dlc,
+)
 
 logger = logging.getLogger(__name__)
 

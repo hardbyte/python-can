@@ -188,12 +188,52 @@ class slcanTestCase(unittest.TestCase):
         self.assertEqual(msg.is_fd, True)
         self.assertEqual(msg.bitrate_switch, False)
         self.assertEqual(msg.dlc, 16)
-        self.assertSequenceEqual(msg.data, [0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F])
+        self.assertSequenceEqual(
+            msg.data,
+            [
+                0x30,
+                0x31,
+                0x32,
+                0x33,
+                0x34,
+                0x35,
+                0x36,
+                0x37,
+                0x38,
+                0x39,
+                0x3A,
+                0x3B,
+                0x3C,
+                0x3D,
+                0x3E,
+                0x3F,
+            ],
+        )
 
     def test_send_fd(self):
         payload = b"d123A303132333435363738393A3B3C3D3E3F\r"
         msg = can.Message(
-            arbitration_id=0x123, is_extended_id=False, is_fd=True, data=[0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F]
+            arbitration_id=0x123,
+            is_extended_id=False,
+            is_fd=True,
+            data=[
+                0x30,
+                0x31,
+                0x32,
+                0x33,
+                0x34,
+                0x35,
+                0x36,
+                0x37,
+                0x38,
+                0x39,
+                0x3A,
+                0x3B,
+                0x3C,
+                0x3D,
+                0x3E,
+                0x3F,
+            ],
         )
         self.bus.send(msg)
         self.assertEqual(payload, self.serial.get_output_buffer())
@@ -212,12 +252,52 @@ class slcanTestCase(unittest.TestCase):
         self.assertEqual(msg.dlc, 16)
         self.assertEqual(msg.bitrate_switch, False)
         self.assertTrue(msg.is_fd)
-        self.assertSequenceEqual(msg.data, [0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F])
+        self.assertSequenceEqual(
+            msg.data,
+            [
+                0x30,
+                0x31,
+                0x32,
+                0x33,
+                0x34,
+                0x35,
+                0x36,
+                0x37,
+                0x38,
+                0x39,
+                0x3A,
+                0x3B,
+                0x3C,
+                0x3D,
+                0x3E,
+                0x3F,
+            ],
+        )
 
     def test_send_fd_extended(self):
         payload = b"D12ABCDEFA303132333435363738393A3B3C3D3E3F\r"
         msg = can.Message(
-            arbitration_id=0x12ABCDEF, is_extended_id=True, is_fd=True, data=[0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F]
+            arbitration_id=0x12ABCDEF,
+            is_extended_id=True,
+            is_fd=True,
+            data=[
+                0x30,
+                0x31,
+                0x32,
+                0x33,
+                0x34,
+                0x35,
+                0x36,
+                0x37,
+                0x38,
+                0x39,
+                0x3A,
+                0x3B,
+                0x3C,
+                0x3D,
+                0x3E,
+                0x3F,
+            ],
         )
         self.bus.send(msg)
         self.assertEqual(payload, self.serial.get_output_buffer())
@@ -236,12 +316,53 @@ class slcanTestCase(unittest.TestCase):
         self.assertEqual(msg.is_fd, True)
         self.assertEqual(msg.bitrate_switch, True)
         self.assertEqual(msg.dlc, 16)
-        self.assertSequenceEqual(msg.data, [0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F])
+        self.assertSequenceEqual(
+            msg.data,
+            [
+                0x30,
+                0x31,
+                0x32,
+                0x33,
+                0x34,
+                0x35,
+                0x36,
+                0x37,
+                0x38,
+                0x39,
+                0x3A,
+                0x3B,
+                0x3C,
+                0x3D,
+                0x3E,
+                0x3F,
+            ],
+        )
 
     def test_send_fd_brs(self):
         payload = b"b123A303132333435363738393A3B3C3D3E3F\r"
         msg = can.Message(
-            arbitration_id=0x123, is_extended_id=False, is_fd=True, bitrate_switch=True, data=[0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F]
+            arbitration_id=0x123,
+            is_extended_id=False,
+            is_fd=True,
+            bitrate_switch=True,
+            data=[
+                0x30,
+                0x31,
+                0x32,
+                0x33,
+                0x34,
+                0x35,
+                0x36,
+                0x37,
+                0x38,
+                0x39,
+                0x3A,
+                0x3B,
+                0x3C,
+                0x3D,
+                0x3E,
+                0x3F,
+            ],
         )
         self.bus.send(msg)
         self.assertEqual(payload, self.serial.get_output_buffer())
@@ -260,12 +381,53 @@ class slcanTestCase(unittest.TestCase):
         self.assertEqual(msg.dlc, 16)
         self.assertEqual(msg.bitrate_switch, True)
         self.assertTrue(msg.is_fd)
-        self.assertSequenceEqual(msg.data, [0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F])
+        self.assertSequenceEqual(
+            msg.data,
+            [
+                0x30,
+                0x31,
+                0x32,
+                0x33,
+                0x34,
+                0x35,
+                0x36,
+                0x37,
+                0x38,
+                0x39,
+                0x3A,
+                0x3B,
+                0x3C,
+                0x3D,
+                0x3E,
+                0x3F,
+            ],
+        )
 
     def test_send_fd_brs_extended(self):
         payload = b"B12ABCDEFA303132333435363738393A3B3C3D3E3F\r"
         msg = can.Message(
-            arbitration_id=0x12ABCDEF, is_extended_id=True, is_fd=True, bitrate_switch=True, data=[0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F]
+            arbitration_id=0x12ABCDEF,
+            is_extended_id=True,
+            is_fd=True,
+            bitrate_switch=True,
+            data=[
+                0x30,
+                0x31,
+                0x32,
+                0x33,
+                0x34,
+                0x35,
+                0x36,
+                0x37,
+                0x38,
+                0x39,
+                0x3A,
+                0x3B,
+                0x3C,
+                0x3D,
+                0x3E,
+                0x3F,
+            ],
         )
         self.bus.send(msg)
         self.assertEqual(payload, self.serial.get_output_buffer())
