@@ -285,7 +285,7 @@ class KvaserTest(unittest.TestCase):
         for call in canlib.canOpenChannel.call_args_list:
             self.assertEqual(
                 call[0][1] & constants.canOPEN_NO_INIT_ACCESS,
-                constants.canOPEN_NO_INIT_ACCESS
+                constants.canOPEN_NO_INIT_ACCESS,
             )
 
         bus.shutdown()
