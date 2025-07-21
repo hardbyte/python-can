@@ -209,6 +209,28 @@ class TestBusConfig(unittest.TestCase):
         assert timing.data_tseg2 == 10
         assert timing.data_sjw == 10
 
+    def test_state_with_str(self):
+        can_cfg = _create_bus_config(
+            {
+                **self.base_config,
+                "state": "PASSIVE",
+            }
+        )
+        state = can_cfg["state"]
+        assert isinstance(state, can.BusState)
+        assert state == can.BusState.PASSIVE
+
+    def test_state_with_enum(self):
+        expected_state = can.BusState.PASSIVE
+        can_cfg = _create_bus_config(
+            {
+                **self.base_config,
+                "state": expected_state,
+            }
+        )
+        state = can_cfg["state"]
+        assert isinstance(state, can.BusState)
+        assert state == expected_state
 
 class TestChannel2Int(unittest.TestCase):
     def test_channel2int(self) -> None:
