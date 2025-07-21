@@ -277,6 +277,19 @@ class KvaserTest(unittest.TestCase):
         self.assertTrue(canlib.canGetBusStatistics.called)
         self.assertIsInstance(stats, canlib.structures.BusStatistics)
 
+    def test_bus_no_init_access(self):
+        canlib.canOpenChannel.reset_mock()
+        bus = can.Bus(interface="kvaser", channel=0, no_init_access=True)
+
+        self.assertGreater(canlib.canOpenChannel.call_count, 0)
+        for call in canlib.canOpenChannel.call_args_list:
+            self.assertEqual(
+                call[0][1] & constants.canOPEN_NO_INIT_ACCESS,
+                constants.canOPEN_NO_INIT_ACCESS,
+            )
+
+        bus.shutdown()
+
     @staticmethod
     def canGetNumberOfChannels(count):
         count._obj.value = 2
