@@ -218,7 +218,7 @@ class TestBusConfig(unittest.TestCase):
         )
         state = can_cfg["state"]
         assert isinstance(state, can.BusState)
-        assert state == can.BusState.PASSIVE
+        assert state is can.BusState.PASSIVE
 
     def test_state_with_enum(self):
         expected_state = can.BusState.PASSIVE
@@ -230,7 +230,7 @@ class TestBusConfig(unittest.TestCase):
         )
         state = can_cfg["state"]
         assert isinstance(state, can.BusState)
-        assert state == expected_state
+        assert state is expected_state
 
 
 class TestChannel2Int(unittest.TestCase):
