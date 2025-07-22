@@ -232,6 +232,7 @@ class TestBusConfig(unittest.TestCase):
         assert isinstance(state, can.BusState)
         assert state == expected_state
 
+
 class TestChannel2Int(unittest.TestCase):
     def test_channel2int(self) -> None:
         self.assertEqual(0, channel2int("can0"))
