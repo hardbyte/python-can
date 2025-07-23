@@ -77,53 +77,57 @@ Step-by-Step Contribution Guide
 
 2. **Set Up Your Development Environment**
 
-   You can use either `pipx <https://pipx.pypa.io/>`__ or `uv <https://docs.astral.sh/uv/>`__ 
-   to install development tools. Both methods are supported:
-
-   * **pipx** is a tool for installing and running Python applications (such as tox) 
-     in isolated environments, separate from your global Python installation. 
-     It is useful for globally installing CLI tools without affecting your project's dependencies or environment.
-   * **uv** is a modern Python packaging tool that can quickly create virtual environments and manage dependencies, 
-     including downloading required Python versions automatically. 
-     The `uvx` command also provides functionality similar to pipx, 
-     allowing you to run CLI tools in isolated environments.
-
-   Choose the method that best fits your workflow and system setup.
+   We recommend using `uv <https://docs.astral.sh/uv/>`__ to install development tools and run CLI utilities.
+   `uv` is a modern Python packaging tool that can quickly create virtual environments and manage dependencies,
+   including downloading required Python versions automatically. The `uvx` command allows you to run CLI tools
+   in isolated environments, separate from your global Python installation. This is useful for installing and
+   running Python applications (such as tox) without affecting your project's dependencies or environment.
 
    **Install tox (if not already available):**
 
-   .. tab:: Using uv
 
-     .. code-block:: shell
+   .. code-block:: shell
 
-        uv tool install tox --with tox-uv
+      uv tool install tox --with tox-uv
 
-   .. tab:: Using pipx
 
-     .. code-block:: shell
+   **Quickly running your local python-can code**
 
-        pipx install tox
+   To run a local script (e.g., `snippet.py`) using your current python-can code,
+   you can use either the traditional `virtualenv` and `pip` workflow or the modern `uv` tool.
 
-   **Create a virtual environment and install python-can in editable mode**
+   **Traditional method (virtualenv + pip):**
 
-   .. tab:: Using uv
+   Create a virtual environment and install the package in editable mode.
+   This allows changes to your local code to be reflected immediately, without reinstalling.
 
-      .. code-block:: shell
+   .. code-block:: shell
 
-         uv venv
-         .venv\Scripts\activate  # On Windows
-         source .venv/bin/activate  # On Unix/macOS
-         uv pip install -e . --group dev
+      # Create a new virtual environment
+      python -m venv .venv
 
-   .. tab:: Using virtualenv and pip
+      # Activate the environment
+      .venv\Scripts\activate    # On Windows
+      source .venv/bin/activate  # On Unix/macOS
 
-      .. code-block:: shell
+      # Upgrade pip and install python-can in editable mode with development dependencies
+      python -m pip install --upgrade pip
+      pip install -e .[dev]
 
-         python -m venv .venv
-         .venv\Scripts\activate  # On Windows
-         source .venv/bin/activate  # On Unix/macOS
-         python -m pip install --upgrade pip
-         pip install -e . --group dev
+      # Run your script
+      python snippet.py
+
+   **Modern method (uv):**
+
+   With `uv`, you can run your script directly:
+
+   .. code-block:: shell
+
+      uv run snippet.py
+
+   When ``uv run ...`` is called inside a project, 
+   `uv` automatically sets up the environment and symlinks local packages. 
+   No editable install is needed—changes to your code are reflected immediately.
 
 3. **Make Your Changes**
 
@@ -158,28 +162,17 @@ Step-by-Step Contribution Guide
       tox p
 
    Some environments require specific Python versions. 
-   If you use `uv`, it will automatically download and manage these for you. 
-   With `pipx`, you may need to install the required Python versions yourself.
+   If you use `uv`, it will automatically download and manage these for you.
 
 5. **(Optional) Build Source Distribution and Wheels**
 
-   If you want to manually build the source distribution (sdist) and wheels for python-can, 
-   you can use either `uvx` or `pipx` to run the build and twine tools. 
-   Choose the method that best fits your workflow.
+   If you want to manually build the source distribution (sdist) and wheels for python-can,
+   you can use `uvx` to run the build and twine tools:
 
-   .. tab:: Using uvx
+   .. code-block:: shell
 
-      .. code-block:: shell
-
-         uvx --from build pyproject-build --installer uv
-         uvx twine check --strict dist/*
-
-   .. tab:: Using pipx
-
-      .. code-block:: shell
-
-         pipx run build
-         pipx run twine check dist/*
+      uv build
+      uvx twine check --strict dist/*
 
 6. **Push and Submit Your Contribution**
 
@@ -197,10 +190,15 @@ Creating a new interface/backend
 --------------------------------
 
 .. attention::
-    We strongly recommend using the :ref:`plugin interface` to extend python-can.
-    Publish a python package that contains your :class:`can.BusABC` subclass and use
-    it within the python-can API. We will mention your package inside this documentation
-    and add it as an optional dependency.
+   Please note: Pull requests that attempt to add new hardware interfaces directly to the
+   python-can codebase will not be accepted. Instead, we encourage contributors to create
+   plugins by publishing a Python package containing your :class:`can.BusABC` subclass and
+   using it within the python-can API. We will mention your package in this documentation
+   and add it as an optional dependency. For current best practices, please refer to
+   :ref:`plugin interface`.
+
+   The following guideline is retained for informational purposes only and is not valid for new
+   contributions.
 
 These steps are a guideline on how to add a new backend to python-can.
 
