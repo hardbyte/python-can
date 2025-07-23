@@ -122,7 +122,7 @@ Step-by-Step Contribution Guide
          python -m venv .venv
          .venv\Scripts\activate  # On Windows
          source .venv/bin/activate  # On Unix/macOS
-         python -m pip --upgrade pip
+         python -m pip install --upgrade pip
          pip install -e . --group dev
 
 3. **Make Your Changes**
