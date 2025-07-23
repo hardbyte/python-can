@@ -12,22 +12,18 @@ import time
 from copy import deepcopy
 from random import randint
 from threading import RLock
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 from can import CanOperationError
 from can.bus import BusABC, CanProtocol
 from can.message import Message
-from can.typechecking import AutoDetectedConfig
+from can.typechecking import AutoDetectedConfig, Channel
 
 logger = logging.getLogger(__name__)
 
 
 # Channels are lists of queues, one for each connection
-if TYPE_CHECKING:
-    # https://mypy.readthedocs.io/en/stable/runtime_troubles.html#using-classes-that-are-generic-in-stubs-but-not-at-runtime
-    channels: dict[Optional[Any], list[queue.Queue[Message]]] = {}
-else:
-    channels = {}
+channels: dict[Optional[Channel], list[queue.Queue[Message]]] = {}
 channels_lock = RLock()
 
 
@@ -58,7 +54,7 @@ class VirtualBus(BusABC):
 
     def __init__(
         self,
-        channel: Any = None,
+        channel: Optional[Channel] = None,
         receive_own_messages: bool = False,
         rx_queue_size: int = 0,
         preserve_timestamps: bool = False,

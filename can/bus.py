@@ -11,7 +11,6 @@ from enum import Enum, auto
 from time import time
 from types import TracebackType
 from typing import (
-    Any,
     Callable,
     Optional,
     Union,
@@ -69,7 +68,7 @@ class BusABC(metaclass=ABCMeta):
     @abstractmethod
     def __init__(
         self,
-        channel: Any,
+        channel: Optional[can.typechecking.Channel],
         can_filters: Optional[can.typechecking.CanFilters] = None,
         **kwargs: object,
     ):
