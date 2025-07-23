@@ -28,8 +28,6 @@ class CSVReader(TextIOMessageReader):
     Any line separator is accepted.
     """
 
-    file: TextIO
-
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
@@ -89,8 +87,6 @@ class CSVWriter(TextIOMessageWriter):
     Each line is terminated with a platform specific line separator.
     """
 
-    file: TextIO
-
     def __init__(
         self,
         file: Union[StringPathLike, TextIO],
@@ -106,8 +102,7 @@ class CSVWriter(TextIOMessageWriter):
                             the file is truncated and starts with a newly
                             written header line
         """
-        mode = "a" if append else "w"
-        super().__init__(file, mode=mode)
+        super().__init__(file, mode="a" if append else "w")
 
         # Write a header row
         if not append:

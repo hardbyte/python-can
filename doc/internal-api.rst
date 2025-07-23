@@ -90,8 +90,8 @@ About the IO module
 
 Handling of the different file formats is implemented in ``can.io``.
 Each file/IO type is within a separate module and ideally implements both a *Reader* and a *Writer*.
-The reader usually extends :class:`can.io.generic.BaseIOHandler`, while
-the writer often additionally extends :class:`can.Listener`,
+The reader extends :class:`can.io.generic.MessageReader`, while the writer extends
+:class:`can.io.generic.MessageWriter`, a subclass of the :class:`can.Listener`,
 to be able to be passed directly to a :class:`can.Notifier`.
 
 
@@ -104,9 +104,9 @@ Ideally add both reading and writing support for the new file format, although t
 
 1. Create a new module: *can/io/canstore.py*
    (*or* simply copy some existing one like *can/io/csv.py*)
-2. Implement a reader ``CanstoreReader`` (which often extends :class:`can.io.generic.BaseIOHandler`, but does not have to).
+2. Implement a reader ``CanstoreReader`` which extends :class:`can.io.generic.MessageReader`.
    Besides from a constructor, only ``__iter__(self)`` needs to be implemented.
-3. Implement a writer ``CanstoreWriter`` (which often extends :class:`can.io.generic.BaseIOHandler` and :class:`can.Listener`, but does not have to).
+3. Implement a writer ``CanstoreWriter`` which extends :class:`can.io.generic.MessageWriter`.
    Besides from a constructor, only ``on_message_received(self, msg)`` needs to be implemented.
 4. Add a case to ``can.io.player.LogReader``'s ``__new__()``.
 5. Document the two new classes (and possibly additional helpers) with docstrings and comments.
@@ -126,7 +126,9 @@ IO Utilities
 
 
 .. automodule:: can.io.generic
+    :show-inheritance:
     :members:
+    :private-members:
     :member-order: bysource
 
 

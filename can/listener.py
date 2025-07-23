@@ -147,7 +147,9 @@ class AsyncBufferedReader(
                 stacklevel=2,
             )
             if sys.version_info < (3, 10):
-                self.buffer = asyncio.Queue(loop=kwargs["loop"])
+                self.buffer = asyncio.Queue(  # pylint: disable=unexpected-keyword-arg
+                    loop=kwargs["loop"]
+                )
                 return
 
         self.buffer = asyncio.Queue()

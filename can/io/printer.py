@@ -3,16 +3,18 @@ This Listener simply prints to stdout / the terminal or a file.
 """
 
 import logging
-from typing import Any, Optional, TextIO, Union, cast
+import sys
+from io import TextIOWrapper
+from typing import Any, TextIO, Union
 
 from ..message import Message
 from ..typechecking import StringPathLike
-from .generic import MessageWriter
+from .generic import TextIOMessageWriter
 
 log = logging.getLogger("can.io.printer")
 
 
-class Printer(MessageWriter):
+class Printer(TextIOMessageWriter):
     """
     The Printer class is a subclass of :class:`~can.Listener` which simply prints
     any messages it receives to the terminal (stdout). A message is turned into a
@@ -22,11 +24,9 @@ class Printer(MessageWriter):
                          standard out
     """
 
-    file: Optional[TextIO]
-
     def __init__(
         self,
-        file: Optional[Union[StringPathLike, TextIO]] = None,
+        file: Union[StringPathLike, TextIO, TextIOWrapper] = sys.stdout,
         append: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -38,18 +38,17 @@ class Printer(MessageWriter):
         :param append: If set to `True` messages, are appended to the file,
                        else the file is truncated
         """
-        self.write_to_file = file is not None
-        mode = "a" if append else "w"
-        super().__init__(file, mode=mode)
+        super().__init__(file, mode="a" if append else "w")
 
     def on_message_received(self, msg: Message) -> None:
-        if self.write_to_file:
-            cast("TextIO", self.file).write(str(msg) + "\n")
-        else:
-            print(msg)  # noqa: T201
+        self.file.write(str(msg) + "\n")
 
     def file_size(self) -> int:
         """Return an estimate of the current file size in bytes."""
-        if self.file is not None:
+        if self.file is not sys.stdout:
             return self.file.tell()
         return 0
+
+    def stop(self) -> None:
+        if self.file is not sys.stdout:
+            super().stop()

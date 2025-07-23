@@ -6,7 +6,7 @@ It is is compatible with "candump -L" from the canutils program
 
 import logging
 from collections.abc import Generator
-from typing import Any, TextIO, Union
+from typing import Any, Optional, TextIO, Union
 
 from can.message import Message
 
@@ -33,8 +33,6 @@ class CanutilsLogReader(TextIOMessageReader):
 
         ``(0.0) vcan0 001#8d00100100820100``
     """
-
-    file: TextIO
 
     def __init__(
         self,
@@ -148,13 +146,12 @@ class CanutilsLogWriter(TextIOMessageWriter):
         :param bool append: if set to `True` messages are appended to
                             the file, else the file is truncated
         """
-        mode = "a" if append else "w"
-        super().__init__(file, mode=mode)
+        super().__init__(file, mode="a" if append else "w")
 
         self.channel = channel
-        self.last_timestamp = None
+        self.last_timestamp: Optional[float] = None
 
-    def on_message_received(self, msg):
+    def on_message_received(self, msg: Message) -> None:
         # this is the case for the very first message:
         if self.last_timestamp is None:
             self.last_timestamp = msg.timestamp or 0.0

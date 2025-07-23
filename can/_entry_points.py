@@ -30,5 +30,5 @@ else:
     def read_entry_points(group: str) -> list[_EntryPoint]:
         return [
             _EntryPoint(ep.name, *ep.value.split(":", maxsplit=1))
-            for ep in entry_points().get(group, [])
+            for ep in entry_points().get(group, [])  # pylint: disable=no-member
         ]
