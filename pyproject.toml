@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 67.7", "setuptools_scm>=8"]
+requires = ["setuptools >= 77.0", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,7 +13,7 @@ dependencies = [
     "typing_extensions>=3.10.0.0",
 ]
 requires-python = ">=3.9"
-license = { text = "LGPL v3" }
+license = "LGPL-3.0-only"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -22,7 +22,6 @@ classifiers = [
     "Intended Audience :: Information Technology",
     "Intended Audience :: Manufacturing",
     "Intended Audience :: Telecommunications Industry",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Natural Language :: English",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
@@ -99,8 +98,12 @@ test = [
     "pytest-cov==4.0.0",
     "coverage==6.5.0",
     "hypothesis~=6.35.0",
-    "pyserial~=3.5",
     "parameterized~=0.8",
+]
+dev = [
+    {include-group = "docs"},
+    {include-group = "lint"},
+    {include-group = "test"},
 ]
 
 [tool.setuptools.dynamic]
@@ -193,8 +196,8 @@ ignore = [
 known-first-party = ["can"]
 
 [tool.pylint]
+extension-pkg-allow-list = ["curses"]
 disable = [
-    "c-extension-no-member",
     "cyclic-import",
     "duplicate-code",
     "fixme",

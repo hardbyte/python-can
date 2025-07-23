@@ -12,32 +12,26 @@ env:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental }} # See: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        experimental: [false]
-        python-version: [
-          "3.9",
-          "3.10",
-          "3.11",
-          "3.12",
-          "3.13",
-          "pypy-3.9",
-          "pypy-3.10",
+        env: [
+          "py39",
+          "py310",
+          "py311",
+          "py312",
+          "py313", "py313t",
+          "py314", "py314t",
+          "pypy310",
+          "pypy311",
         ]
       fail-fast: false
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-        allow-prereleases: true
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install tox
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+    - name: Install tox
+      run: uv tool install tox --with tox-uv
     - name: Setup SocketCAN
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
@@ -46,11 +40,11 @@ jobs:
         sudo ./test/open_vcan.sh
     - name: Test with pytest via tox
       run: |
-        tox -e gh
+        tox -e ${{ matrix.env }}
       env:
         # SocketCAN tests currently fail with PyPy because it does not support raw CAN sockets
         # See: https://foss.heptapod.net/pypy/pypy/-/issues/3809
-        TEST_SOCKETCAN: "${{ matrix.os == 'ubuntu-latest' && ! startsWith(matrix.python-version, 'pypy' ) }}"
+        TEST_SOCKETCAN: "${{ matrix.os == 'ubuntu-latest' && ! startsWith(matrix.env, 'pypy' ) }}"
     - name: Coveralls Parallel
       uses: coverallsapp/github-action@v2
       with:
@@ -73,69 +67,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.13"
-    - name: Install dependencies
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+    - name: Install tox
+      run: uv tool install tox --with tox-uv
+    - name: Run linters
       run: |
-        python -m pip install --upgrade pip
-        pip install --group lint -e .
-    - name: mypy 3.9
+        tox -e lint
+    - name: Run type checker
       run: |
-        mypy --python-version 3.9 .
-    - name: mypy 3.10
-      run: |
-        mypy --python-version 3.10 .
-    - name: mypy 3.11
-      run: |
-        mypy --python-version 3.11 .
-    - name: mypy 3.12
-      run: |
-        mypy --python-version 3.12 .
-    - name: mypy 3.13
-      run: |
-        mypy --python-version 3.13 .
-    - name: ruff
-      run: |
-        ruff check can
-    - name: pylint
-      run: |
-        pylint \
-        can/**.py \
-        can/io \
-        doc/conf.py \
-        examples/**.py \
-        can/interfaces/socketcan
-
-  format:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install --group lint
-    - name: Code Format Check with Black
-      run: |
-        black --check --verbose .
+        tox -e type
 
   docs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.13"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install tox
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+    - name: Install tox
+      run: uv tool install tox --with tox-uv
     - name: Build documentation
       run: |
         tox -e docs
@@ -147,14 +97,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # fetch tags for setuptools-scm
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
       - name: Build wheel and sdist
-        run: pipx run build
+        run: uvx --from build pyproject-build --installer uv
       - name: Check build artifacts
-        run: pipx run twine check --strict dist/*
+        run: uvx twine check --strict dist/*
       - name: Save artifacts
         uses: actions/upload-artifact@v4
         with:
