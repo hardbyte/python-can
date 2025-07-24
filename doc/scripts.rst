@@ -66,12 +66,6 @@ A small application that can be used to connect two can buses:
     :shell:
 
 
-Example call:
-::
-
-    python -m can.bridge -i socketcan -c can0 -- -i socketcan -c can1
-
-
 can.logconvert
 --------------
 
