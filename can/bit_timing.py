@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from can.typechecking import BitTimingDict, BitTimingFdDict
 
 
-class BitTiming(Mapping):
+class BitTiming(Mapping[str, int]):
     """Representation of a bit timing configuration for a CAN 2.0 bus.
 
     The class can be constructed in multiple ways, depending on the information
@@ -477,7 +477,7 @@ class BitTiming(Mapping):
         return tuple(self._data.values()).__hash__()
 
 
-class BitTimingFd(Mapping):
+class BitTimingFd(Mapping[str, int]):
     """Representation of a bit timing configuration for a CAN FD bus.
 
     The class can be constructed in multiple ways, depending on the information

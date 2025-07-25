@@ -5,7 +5,7 @@ Contains the ABC bus implementation and its documentation.
 import contextlib
 import logging
 import threading
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from enum import Enum, auto
 from time import time
@@ -19,7 +19,6 @@ from typing import (
 
 from typing_extensions import Self
 
-import can
 import can.typechecking
 from can.broadcastmanager import CyclicSendTaskABC, ThreadBasedCyclicSendTask
 from can.message import Message
@@ -44,7 +43,7 @@ class CanProtocol(Enum):
     CAN_XL = auto()
 
 
-class BusABC(metaclass=ABCMeta):
+class BusABC(ABC):
     """The CAN Bus Abstract Base Class that serves as the basis
     for all concrete interfaces.
 
@@ -68,7 +67,7 @@ class BusABC(metaclass=ABCMeta):
     @abstractmethod
     def __init__(
         self,
-        channel: Optional[can.typechecking.Channel],
+        channel: can.typechecking.Channel,
         can_filters: Optional[can.typechecking.CanFilters] = None,
         **kwargs: object,
     ):
@@ -447,7 +446,6 @@ class BusABC(metaclass=ABCMeta):
         for _filter in self._filters:
             # check if this filter even applies to the message
             if "extended" in _filter:
-                _filter = cast("can.typechecking.CanFilterExtended", _filter)
                 if _filter["extended"] != msg.is_extended_id:
                     continue
 
@@ -524,7 +522,7 @@ class BusABC(metaclass=ABCMeta):
         return self._can_protocol
 
     @staticmethod
-    def _detect_available_configs() -> list[can.typechecking.AutoDetectedConfig]:
+    def _detect_available_configs() -> Sequence[can.typechecking.AutoDetectedConfig]:
         """Detect all configurations/channels that this interface could
         currently connect with.
 

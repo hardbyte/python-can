@@ -12,7 +12,7 @@ import time
 from copy import deepcopy
 from random import randint
 from threading import RLock
-from typing import Any, Optional
+from typing import Any, Final, Optional
 
 from can import CanOperationError
 from can.bus import BusABC, CanProtocol
@@ -21,10 +21,9 @@ from can.typechecking import AutoDetectedConfig, Channel
 
 logger = logging.getLogger(__name__)
 
-
 # Channels are lists of queues, one for each connection
-channels: dict[Optional[Channel], list[queue.Queue[Message]]] = {}
-channels_lock = RLock()
+channels: Final[dict[Channel, list[queue.Queue[Message]]]] = {}
+channels_lock: Final = RLock()
 
 
 class VirtualBus(BusABC):
@@ -54,7 +53,7 @@ class VirtualBus(BusABC):
 
     def __init__(
         self,
-        channel: Optional[Channel] = None,
+        channel: Channel = "channel-0",
         receive_own_messages: bool = False,
         rx_queue_size: int = 0,
         preserve_timestamps: bool = False,
@@ -67,9 +66,9 @@ class VirtualBus(BusABC):
         bus by virtual instances constructed with the same channel identifier.
 
         :param channel: The channel identifier. This parameter can be an
-            arbitrary value. The bus instance will be able to see messages
-            from other virtual bus instances that were created with the same
-            value.
+            arbitrary hashable value. The bus instance will be able to see
+            messages from other virtual bus instances that were created with
+            the same value.
         :param receive_own_messages: If set to True, sent messages will be
             reflected back on the input queue.
         :param rx_queue_size: The size of the reception queue. The reception
@@ -179,7 +178,7 @@ class VirtualBus(BusABC):
             available_channels = list(channels.keys())
 
         # find a currently unused channel
-        def get_extra():
+        def get_extra() -> str:
             return f"channel-{randint(0, 9999)}"
 
         extra = get_extra()

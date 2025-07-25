@@ -21,18 +21,16 @@ if TYPE_CHECKING:
     import struct
 
 
-class CanFilter(TypedDict):
+class _CanFilterBase(TypedDict):
     can_id: int
     can_mask: int
 
 
-class CanFilterExtended(TypedDict):
-    can_id: int
-    can_mask: int
+class CanFilter(_CanFilterBase, total=False):
     extended: bool
 
 
-CanFilters = Sequence[Union[CanFilter, CanFilterExtended]]
+CanFilters = Sequence[CanFilter]
 
 # TODO: Once buffer protocol support lands in typing, we should switch to that,
 # since can.message.Message attempts to call bytearray() on the given data, so

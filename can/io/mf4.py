@@ -274,7 +274,7 @@ class MF4Writer(BinaryIOMessageWriter):
         self._rtr_buffer = np.zeros(1, dtype=RTR_DTYPE)
 
 
-class FrameIterator(metaclass=abc.ABCMeta):
+class FrameIterator(abc.ABC):
     """
     Iterator helper class for common handling among CAN DataFrames, ErrorFrames and RemoteFrames.
     """

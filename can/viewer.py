@@ -159,7 +159,7 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
 
     # Unpack the data and then convert it into SI-units
     @staticmethod
-    def unpack_data(cmd: int, cmd_to_struct: dict, data: bytes) -> list[float]:
+    def unpack_data(cmd: int, cmd_to_struct: TDataStructs, data: bytes) -> list[float]:
         if not cmd_to_struct or not data:
             # These messages do not contain a data package
             return []

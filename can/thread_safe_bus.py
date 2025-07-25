@@ -1,4 +1,12 @@
+from contextlib import nullcontext
 from threading import RLock
+from typing import Any, Optional
+
+from can import typechecking
+from can.bus import BusABC, BusState, CanProtocol
+from can.message import Message
+
+from .interface import Bus
 
 try:
     # Only raise an exception on instantiation but allow module
@@ -9,10 +17,6 @@ try:
 except ImportError as exc:
     ObjectProxy = object
     import_exc = exc
-
-from contextlib import nullcontext
-
-from .interface import Bus
 
 
 class ThreadSafeBus(ObjectProxy):  # pylint: disable=abstract-method
@@ -32,65 +36,81 @@ class ThreadSafeBus(ObjectProxy):  # pylint: disable=abstract-method
         instead of :meth:`~can.BusABC.recv` directly.
     """
 
-    def __init__(self, *args, **kwargs):
+    __wrapped__: BusABC
+
+    def __init__(
+        self,
+        channel: Optional[typechecking.Channel] = None,
+        interface: Optional[str] = None,
+        config_context: Optional[str] = None,
+        ignore_config: bool = False,
+        **kwargs: Any,
+    ) -> None:
         if import_exc is not None:
             raise import_exc
 
-        super().__init__(Bus(*args, **kwargs))
+        super().__init__(
+            Bus(
+                channel=channel,
+                interface=interface,
+                config_context=config_context,
+                ignore_config=ignore_config,
+                **kwargs,
+            )
+        )
 
         # now, BusABC.send_periodic() does not need a lock anymore, but the
         # implementation still requires a context manager
-        self.__wrapped__._lock_send_periodic = nullcontext()
+        self.__wrapped__._lock_send_periodic = nullcontext()  # type: ignore[assignment]
 
         # init locks for sending and receiving separately
         self._lock_send = RLock()
         self._lock_recv = RLock()
 
-    def recv(
-        self, timeout=None, *args, **kwargs
-    ):  # pylint: disable=keyword-arg-before-vararg
+    def recv(self, timeout: Optional[float] = None) -> Optional[Message]:
         with self._lock_recv:
-            return self.__wrapped__.recv(timeout=timeout, *args, **kwargs)
+            return self.__wrapped__.recv(timeout=timeout)
 
-    def send(
-        self, msg, timeout=None, *args, **kwargs
-    ):  # pylint: disable=keyword-arg-before-vararg
+    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
         with self._lock_send:
-            return self.__wrapped__.send(msg, timeout=timeout, *args, **kwargs)
+            return self.__wrapped__.send(msg=msg, timeout=timeout)
 
     # send_periodic does not need a lock, since the underlying
     # `send` method is already synchronized
 
     @property
-    def filters(self):
+    def filters(self) -> Optional[typechecking.CanFilters]:
         with self._lock_recv:
             return self.__wrapped__.filters
 
     @filters.setter
-    def filters(self, filters):
+    def filters(self, filters: Optional[typechecking.CanFilters]) -> None:
         with self._lock_recv:
             self.__wrapped__.filters = filters
 
-    def set_filters(
-        self, filters=None, *args, **kwargs
-    ):  # pylint: disable=keyword-arg-before-vararg
+    def set_filters(self, filters: Optional[typechecking.CanFilters] = None) -> None:
         with self._lock_recv:
-            return self.__wrapped__.set_filters(filters=filters, *args, **kwargs)
+            return self.__wrapped__.set_filters(filters=filters)
 
-    def flush_tx_buffer(self, *args, **kwargs):
+    def flush_tx_buffer(self) -> None:
         with self._lock_send:
-            return self.__wrapped__.flush_tx_buffer(*args, **kwargs)
+            return self.__wrapped__.flush_tx_buffer()
 
-    def shutdown(self, *args, **kwargs):
+    def shutdown(self) -> None:
         with self._lock_send, self._lock_recv:
-            return self.__wrapped__.shutdown(*args, **kwargs)
+            return self.__wrapped__.shutdown()
 
     @property
-    def state(self):
+    def state(self) -> BusState:
         with self._lock_send, self._lock_recv:
             return self.__wrapped__.state
 
     @state.setter
-    def state(self, new_state):
+    def state(self, new_state: BusState) -> None:
         with self._lock_send, self._lock_recv:
             self.__wrapped__.state = new_state
+
+    @property
+    def protocol(self) -> CanProtocol:
+        with self._lock_send, self._lock_recv:
+            return self.__wrapped__.protocol

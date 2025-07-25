@@ -7,7 +7,7 @@ CyclicSendTasks.
 import concurrent.futures.thread
 import importlib
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from typing import Any, Optional, Union, cast
 
 from . import util
@@ -142,7 +142,7 @@ def Bus(  # noqa: N802
 def detect_available_configs(
     interfaces: Union[None, str, Iterable[str]] = None,
     timeout: float = 5.0,
-) -> list[AutoDetectedConfig]:
+) -> Sequence[AutoDetectedConfig]:
     """Detect all configurations/channels that the interfaces could
     currently connect with.
 
@@ -175,7 +175,7 @@ def detect_available_configs(
     # otherwise assume iterable of strings
 
     # Collect detection callbacks
-    callbacks: dict[str, Callable[[], list[AutoDetectedConfig]]] = {}
+    callbacks: dict[str, Callable[[], Sequence[AutoDetectedConfig]]] = {}
     for interface_keyword in interfaces:
         try:
             bus_class = _get_class_for_interface(interface_keyword)

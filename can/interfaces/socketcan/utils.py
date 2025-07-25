@@ -9,7 +9,7 @@ import os
 import struct
 import subprocess
 import sys
-from typing import Optional, cast
+from typing import Optional
 
 from can import typechecking
 from can.interfaces.socketcan.constants import CAN_EFF_FLAG
@@ -28,7 +28,6 @@ def pack_filters(can_filters: Optional[typechecking.CanFilters] = None) -> bytes
         can_id = can_filter["can_id"]
         can_mask = can_filter["can_mask"]
         if "extended" in can_filter:
-            can_filter = cast("typechecking.CanFilterExtended", can_filter)
             # Match on either 11-bit OR 29-bit messages instead of both
             can_mask |= CAN_EFF_FLAG
             if can_filter["extended"]:

@@ -130,11 +130,8 @@ disallow_incomplete_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 exclude = [
-    "venv",
     "^doc/conf.py$",
-    "^build",
     "^test",
-    "^can/interfaces/__init__.py",
     "^can/interfaces/etas",
     "^can/interfaces/gs_usb",
     "^can/interfaces/ics_neovi",
@@ -144,12 +141,9 @@ exclude = [
     "^can/interfaces/nican",
     "^can/interfaces/neousys",
     "^can/interfaces/pcan",
-    "^can/interfaces/serial",
     "^can/interfaces/socketcan",
     "^can/interfaces/systec",
-    "^can/interfaces/udp_multicast",
     "^can/interfaces/usb2can",
-    "^can/interfaces/virtual",
 ]
 
 [tool.ruff]

@@ -10,7 +10,8 @@ See the interface documentation for the format being used.
 import io
 import logging
 import struct
-from typing import Any, Optional
+from collections.abc import Sequence
+from typing import Any, Optional, cast
 
 from can import (
     BusABC,
@@ -26,20 +27,13 @@ from can.typechecking import AutoDetectedConfig
 logger = logging.getLogger("can.serial")
 
 try:
-    import serial
+    import serial.tools.list_ports
 except ImportError:
     logger.warning(
         "You won't be able to use the serial can backend without "
-        "the serial module installed!"
+        "the `pyserial` package installed!"
     )
     serial = None
-
-try:
-    from serial.tools.list_ports import comports as list_comports
-except ImportError:
-    # If unavailable on some platform, just return nothing
-    def list_comports() -> list[Any]:
-        return []
 
 
 CAN_ERR_FLAG = 0x20000000
@@ -63,8 +57,7 @@ class SerialBus(BusABC):
         baudrate: int = 115200,
         timeout: float = 0.1,
         rtscts: bool = False,
-        *args,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """
         :param channel:
@@ -107,7 +100,7 @@ class SerialBus(BusABC):
                 "could not create the serial device"
             ) from error
 
-        super().__init__(channel, *args, **kwargs)
+        super().__init__(channel, **kwargs)
 
     def shutdown(self) -> None:
         """
@@ -232,7 +225,7 @@ class SerialBus(BusABC):
 
     def fileno(self) -> int:
         try:
-            return self._ser.fileno()
+            return cast("int", self._ser.fileno())
         except io.UnsupportedOperation:
             raise NotImplementedError(
                 "fileno is not implemented using current CAN bus on this platform"
@@ -241,7 +234,11 @@ class SerialBus(BusABC):
             raise CanOperationError("Cannot fetch fileno") from exception
 
     @staticmethod
-    def _detect_available_configs() -> list[AutoDetectedConfig]:
-        return [
-            {"interface": "serial", "channel": port.device} for port in list_comports()
-        ]
+    def _detect_available_configs() -> Sequence[AutoDetectedConfig]:
+        configs: list[AutoDetectedConfig] = []
+        if serial is None:
+            return configs
+
+        for port in serial.tools.list_ports.comports():
+            configs.append({"interface": "serial", "channel": port.device})
+        return configs

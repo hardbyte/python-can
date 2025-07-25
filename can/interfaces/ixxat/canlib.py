@@ -9,7 +9,6 @@ from can import (
     CyclicSendTaskABC,
     Message,
 )
-from can.typechecking import AutoDetectedConfig
 
 
 class IXXATBus(BusABC):
@@ -175,5 +174,5 @@ class IXXATBus(BusABC):
         return self.bus.state
 
     @staticmethod
-    def _detect_available_configs() -> list[AutoDetectedConfig]:
+    def _detect_available_configs() -> Sequence[vcinpl.AutoDetectedIxxatConfig]:
         return vcinpl._detect_available_configs()

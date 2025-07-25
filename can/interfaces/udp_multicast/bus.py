@@ -6,10 +6,10 @@ import socket
 import struct
 import time
 import warnings
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import can
-from can import BusABC, CanProtocol
+from can import BusABC, CanProtocol, Message
 from can.typechecking import AutoDetectedConfig
 
 from .utils import is_msgpack_installed, pack_message, unpack_message
@@ -98,7 +98,7 @@ class UdpMulticastBus(BusABC):
         hop_limit: int = 1,
         receive_own_messages: bool = False,
         fd: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         is_msgpack_installed()
 
@@ -126,7 +126,9 @@ class UdpMulticastBus(BusABC):
         )
         return self._can_protocol is CanProtocol.CAN_FD
 
-    def _recv_internal(self, timeout: Optional[float]):
+    def _recv_internal(
+        self, timeout: Optional[float]
+    ) -> tuple[Optional[Message], bool]:
         result = self._multicast.recv(timeout)
         if not result:
             return None, False
@@ -204,7 +206,7 @@ class GeneralPurposeUdpMulticastBus:
 
         # Look up multicast group address in name server and find out IP version of the first suitable target
         # and then get the address family of it (socket.AF_INET or socket.AF_INET6)
-        connection_candidates = socket.getaddrinfo(  # type: ignore
+        connection_candidates = socket.getaddrinfo(
             group, self.port, type=socket.SOCK_DGRAM
         )
         sock = None

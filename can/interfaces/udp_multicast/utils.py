@@ -2,7 +2,7 @@
 Defines common functions.
 """
 
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from can import CanInterfaceNotImplementedError, Message
 from can.typechecking import ReadableBytesLike
@@ -51,7 +51,7 @@ def pack_message(message: Message) -> bytes:
         "bitrate_switch": message.bitrate_switch,
         "error_state_indicator": message.error_state_indicator,
     }
-    return msgpack.packb(as_dict, use_bin_type=True)
+    return cast("bytes", msgpack.packb(as_dict, use_bin_type=True))
 
 
 def unpack_message(
