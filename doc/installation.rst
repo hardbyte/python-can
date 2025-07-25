@@ -21,6 +21,13 @@ Install the ``can`` package from PyPi with ``pip`` or similar::
        $ pip install python-can[serial]
 
 
+Pre-releases
+------------
+
+The latest pre-release can be installed with::
+
+    pip install --upgrade --pre python-can
+
 
 GNU/Linux dependencies
 ----------------------
