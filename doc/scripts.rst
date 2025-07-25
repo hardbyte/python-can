@@ -57,6 +57,15 @@ The full usage page can be seen below:
     :shell:
 
 
+can.bridge
+----------
+
+A small application that can be used to connect two can buses:
+
+.. command-output:: python -m can.bridge -h
+    :shell:
+
+
 can.logconvert
 --------------
 

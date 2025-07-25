@@ -49,6 +49,7 @@ can_logconvert = "can.logconvert:main"
 can_logger = "can.logger:main"
 can_player = "can.player:main"
 can_viewer = "can.viewer:main"
+can_bridge = "can.bridge:main"
 
 [project.urls]
 homepage = "https://github.com/hardbyte/python-can"
@@ -186,6 +187,7 @@ ignore = [
 "can/cli.py" = ["T20"]  # flake8-print
 "can/logger.py" = ["T20"]  # flake8-print
 "can/player.py" = ["T20"]  # flake8-print
+"can/bridge.py" = ["T20"]  # flake8-print
 "can/viewer.py" = ["T20"]  # flake8-print
 "examples/*" = ["T20"]  # flake8-print
 
