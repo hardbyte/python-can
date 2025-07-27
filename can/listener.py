@@ -5,7 +5,7 @@ This module contains the implementation of `can.Listener` and some readers.
 import asyncio
 import sys
 import warnings
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from queue import Empty, SimpleQueue
 from typing import Any, Optional
@@ -14,7 +14,7 @@ from can.bus import BusABC
 from can.message import Message
 
 
-class Listener(metaclass=ABCMeta):
+class Listener(ABC):
     """The basic listener that can be called directly to handle some
     CAN message::
 

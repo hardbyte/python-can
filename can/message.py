@@ -8,7 +8,7 @@ This module contains the implementation of :class:`can.Message`.
 
 from copy import deepcopy
 from math import isinf, isnan
-from typing import Optional
+from typing import Any, Optional
 
 from . import typechecking
 
@@ -210,7 +210,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
             error_state_indicator=self.error_state_indicator,
         )
 
-    def __deepcopy__(self, memo: dict) -> "Message":
+    def __deepcopy__(self, memo: Optional[dict[int, Any]]) -> "Message":
         return Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,

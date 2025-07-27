@@ -103,7 +103,7 @@ class _NotifierRegistry:
         return tuple(instance_list)
 
 
-class Notifier(AbstractContextManager):
+class Notifier(AbstractContextManager["Notifier"]):
 
     _registry: Final = _NotifierRegistry()
 

@@ -976,8 +976,8 @@ def get_ixxat_hwids():
     return hwids
 
 
-def _detect_available_configs() -> list[AutoDetectedConfig]:
-    config_list = []  # list in wich to store the resulting bus kwargs
+def _detect_available_configs() -> Sequence["AutoDetectedIxxatConfig"]:
+    config_list = []  # list in which to store the resulting bus kwargs
 
     # used to detect HWID
     device_handle = HANDLE()
@@ -1026,3 +1026,7 @@ def _detect_available_configs() -> list[AutoDetectedConfig]:
         pass  # _canlib is None in the CI tests -> return a blank list
 
     return config_list
+
+
+class AutoDetectedIxxatConfig(AutoDetectedConfig):
+    unique_hardware_id: int

@@ -982,8 +982,8 @@ class VectorBus(BusABC):
         )
 
     @staticmethod
-    def _detect_available_configs() -> list[AutoDetectedConfig]:
-        configs = []
+    def _detect_available_configs() -> Sequence["AutoDetectedVectorConfig"]:
+        configs: list[AutoDetectedVectorConfig] = []
         channel_configs = get_channel_configs()
         LOG.info("Found %d channels", len(channel_configs))
         for channel_config in channel_configs:
@@ -999,16 +999,13 @@ class VectorBus(BusABC):
             )
             configs.append(
                 {
-                    # data for use in VectorBus.__init__():
                     "interface": "vector",
                     "channel": channel_config.hw_channel,
                     "serial": channel_config.serial_number,
                     "channel_index": channel_config.channel_index,
-                    # data for use in VectorBus.set_application_config():
                     "hw_type": channel_config.hw_type,
                     "hw_index": channel_config.hw_index,
                     "hw_channel": channel_config.hw_channel,
-                    # additional information:
                     "supports_fd": bool(
                         channel_config.channel_capabilities
                         & xldefine.XL_ChannelCapabilities.XL_CHANNEL_FLAG_CANFD_ISO_SUPPORT
@@ -1016,7 +1013,7 @@ class VectorBus(BusABC):
                     "vector_channel_config": channel_config,
                 }
             )
-        return configs  # type: ignore
+        return configs
 
     @staticmethod
     def popup_vector_hw_configuration(wait_for_finish: int = 0) -> None:
@@ -1186,6 +1183,19 @@ class VectorChannelConfig(NamedTuple):
     serial_number: int
     article_number: int
     transceiver_name: str
+
+
+class AutoDetectedVectorConfig(AutoDetectedConfig):
+    # data for use in VectorBus.__init__():
+    serial: int
+    channel_index: int
+    # data for use in VectorBus.set_application_config():
+    hw_type: int
+    hw_index: int
+    hw_channel: int
+    # additional information:
+    supports_fd: bool
+    vector_channel_config: VectorChannelConfig
 
 
 def _get_xl_driver_config() -> xlclass.XLdriverConfig:

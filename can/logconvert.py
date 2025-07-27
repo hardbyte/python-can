@@ -5,17 +5,21 @@ Convert a log file from one format to another.
 import argparse
 import errno
 import sys
+from typing import TYPE_CHECKING, NoReturn
 
 from can import Logger, LogReader, SizedRotatingLogger
 
+if TYPE_CHECKING:
+    from can.io.generic import MessageWriter
+
 
 class ArgumentParser(argparse.ArgumentParser):
-    def error(self, message):
+    def error(self, message: str) -> NoReturn:
         self.print_help(sys.stderr)
         self.exit(errno.EINVAL, f"{self.prog}: error: {message}\n")
 
 
-def main():
+def main() -> None:
     parser = ArgumentParser(
         description="Convert a log file from one format to another.",
     )
@@ -47,7 +51,7 @@ def main():
 
     with LogReader(args.input) as reader:
         if args.file_size:
-            logger = SizedRotatingLogger(
+            logger: MessageWriter = SizedRotatingLogger(
                 base_filename=args.output, max_bytes=args.file_size
             )
         else:
