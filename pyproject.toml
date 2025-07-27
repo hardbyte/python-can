@@ -88,18 +88,19 @@ docs = [
 ]
 lint = [
     "pylint==3.3.*",
-    "ruff==0.11.12",
+    "ruff==0.12.5",
     "black==25.1.*",
-    "mypy==1.16.*",
+    "mypy==1.17.*",
 ]
 test = [
-    "pytest==8.3.*",
-    "pytest-timeout==2.1.*",
-    "coveralls==3.3.1",
-    "pytest-cov==4.0.0",
-    "coverage==6.5.0",
-    "hypothesis~=6.35.0",
-    "parameterized~=0.8",
+    "pytest==8.4.*",
+    "pytest-timeout==2.4.*",
+    "pytest-modern==0.7.*;platform_system!='Windows'",
+    "coveralls==4.0.*",
+    "pytest-cov==6.2.*",
+    "coverage==7.10.*",
+    "hypothesis==6.136.*",
+    "parameterized==0.9.*",
 ]
 dev = [
     {include-group = "docs"},

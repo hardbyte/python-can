@@ -51,6 +51,7 @@ class CanMsg(Structure):
             DWORD,
         ),  # Receive time stamp in ms (for transmit messages no meaning)
     ]
+    __hash__ = Structure.__hash__
 
     def __init__(
         self, id_=0, frame_format=MsgFrameFormat.MSG_FF_STD, data=None, dlc=None
@@ -116,6 +117,7 @@ class Status(Structure):
         ("m_wCanStatus", WORD),  # CAN error status (see enum :class:`CanStatus`)
         ("m_wUsbStatus", WORD),  # USB error status (see enum :class:`UsbStatus`)
     ]
+    __hash__ = Structure.__hash__
 
     def __eq__(self, other):
         if not isinstance(other, Status):
@@ -171,6 +173,7 @@ class InitCanParam(Structure):
             WORD,
         ),  # number of transmit buffer entries (default is 4096)
     ]
+    __hash__ = Structure.__hash__
 
     def __init__(
         self, mode, BTR, OCR, AMR, ACR, baudrate, rx_buffer_entries, tx_buffer_entries
@@ -277,6 +280,7 @@ class HardwareInfoEx(Structure):
         ("m_dwUniqueId3", DWORD),
         ("m_dwFlags", DWORD),  # additional flags
     ]
+    __hash__ = Structure.__hash__
 
     def __init__(self):
         super().__init__(sizeof(HardwareInfoEx))
@@ -389,6 +393,7 @@ class ChannelInfo(Structure):
             WORD,
         ),  # CAN status (same as received by method :meth:`UcanServer.get_status`)
     ]
+    __hash__ = Structure.__hash__
 
     def __init__(self):
         super().__init__(sizeof(ChannelInfo))

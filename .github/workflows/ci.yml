@@ -51,7 +51,7 @@ jobs:
       uses: coverallsapp/github-action@v2
       with:
         github-token: ${{ secrets.github_token }}
-        flag-name: Unittests-${{ matrix.os }}-${{ matrix.python-version }}
+        flag-name: Unittests-${{ matrix.os }}-${{ matrix.env }}
         parallel: true
         path-to-lcov: ./coverage.lcov
 
@@ -59,6 +59,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
     - name: Coveralls Finished
       uses: coverallsapp/github-action@v2
       with:
