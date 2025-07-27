@@ -138,7 +138,7 @@ nitpick_ignore = [
     ("py:class", "~P1"),
     # intersphinx fails to reference some builtins
     ("py:class", "asyncio.events.AbstractEventLoop"),
-    ("py:class", "_thread.allocate_lock"),
+    ("py:class", "_thread.lock"),
 ]
 
 # mock windows specific attributes
