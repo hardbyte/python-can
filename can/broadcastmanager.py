@@ -39,8 +39,8 @@ class _Pywin32Event:
 
 class _Pywin32:
     def __init__(self) -> None:
-        import pywintypes  # pylint: disable=import-outside-toplevel,import-error
-        import win32event  # pylint: disable=import-outside-toplevel,import-error
+        import pywintypes  # noqa: PLC0415 # pylint: disable=import-outside-toplevel,import-error
+        import win32event  # noqa: PLC0415 # pylint: disable=import-outside-toplevel,import-error
 
         self.pywintypes = pywintypes
         self.win32event = win32event
