@@ -11,6 +11,8 @@ import unittest
 from unittest import mock
 from unittest.mock import Mock
 
+from parameterized import parameterized
+
 import can
 import can.player
 
@@ -38,7 +40,7 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.mock_virtual_bus.__exit__.assert_called_once()
 
     def test_play_virtual(self):
-        sys.argv = self.baseargs + [self.logfile]
+        sys.argv = [*self.baseargs, self.logfile]
         can.player.main()
         msg1 = can.Message(
             timestamp=2.501,
@@ -65,8 +67,8 @@ class TestPlayerScriptModule(unittest.TestCase):
         self.assertSuccessfulCleanup()
 
     def test_play_virtual_verbose(self):
-        sys.argv = self.baseargs + ["-v", self.logfile]
-        with unittest.mock.patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+        sys.argv = [*self.baseargs, "-v", self.logfile]
+        with mock.patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
             can.player.main()
         self.assertIn("09 08 07 06 05 04 03 02", mock_stdout.getvalue())
         self.assertIn("05 0c 00 00 00 00 00 00", mock_stdout.getvalue())
@@ -76,7 +78,7 @@ class TestPlayerScriptModule(unittest.TestCase):
     def test_play_virtual_exit(self):
         self.MockSleep.side_effect = [None, KeyboardInterrupt]
 
-        sys.argv = self.baseargs + [self.logfile]
+        sys.argv = [*self.baseargs, self.logfile]
         can.player.main()
         assert self.mock_virtual_bus.send.call_count <= 2
         self.assertSuccessfulCleanup()
@@ -85,7 +87,7 @@ class TestPlayerScriptModule(unittest.TestCase):
         logfile = os.path.join(
             os.path.dirname(__file__), "data", "logfile_errorframes.asc"
         )
-        sys.argv = self.baseargs + ["-v", logfile]
+        sys.argv = [*self.baseargs, "-v", logfile]
         can.player.main()
         self.assertEqual(self.mock_virtual_bus.send.call_count, 9)
         self.assertSuccessfulCleanup()
@@ -94,9 +96,50 @@ class TestPlayerScriptModule(unittest.TestCase):
         logfile = os.path.join(
             os.path.dirname(__file__), "data", "logfile_errorframes.asc"
         )
-        sys.argv = self.baseargs + ["-v", "--error-frames", logfile]
+        sys.argv = [*self.baseargs, "-v", "--error-frames", logfile]
         can.player.main()
         self.assertEqual(self.mock_virtual_bus.send.call_count, 12)
+        self.assertSuccessfulCleanup()
+
+    @parameterized.expand([0, 1, 2, 3])
+    def test_play_loop(self, loop_val):
+        sys.argv = [*self.baseargs, "--loop", str(loop_val), self.logfile]
+        can.player.main()
+        msg1 = can.Message(
+            timestamp=2.501,
+            arbitration_id=0xC8,
+            is_extended_id=False,
+            is_fd=False,
+            is_rx=False,
+            channel=1,
+            dlc=8,
+            data=[0x9, 0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2],
+        )
+        msg2 = can.Message(
+            timestamp=17.876708,
+            arbitration_id=0x6F9,
+            is_extended_id=False,
+            is_fd=False,
+            is_rx=True,
+            channel=0,
+            dlc=8,
+            data=[0x5, 0xC, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0],
+        )
+        for i in range(loop_val):
+            self.assertTrue(
+                msg1.equals(self.mock_virtual_bus.send.mock_calls[2 * i + 0].args[0])
+            )
+            self.assertTrue(
+                msg2.equals(self.mock_virtual_bus.send.mock_calls[2 * i + 1].args[0])
+            )
+        self.assertEqual(self.mock_virtual_bus.send.call_count, 2 * loop_val)
+        self.assertSuccessfulCleanup()
+
+    def test_play_loop_infinite(self):
+        self.mock_virtual_bus.send.side_effect = [None] * 99 + [KeyboardInterrupt]
+        sys.argv = [*self.baseargs, "-l", "i", self.logfile]
+        can.player.main()
+        self.assertEqual(self.mock_virtual_bus.send.call_count, 100)
         self.assertSuccessfulCleanup()
 
 
