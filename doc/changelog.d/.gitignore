@@ -1,0 +1,11 @@
+# Ignore everything...
+*
+!.gitignore
+
+# ...except markdown news fragments
+!*.security.md
+!*.removed.md
+!*.deprecated.md
+!*.added.md
+!*.changed.md
+!*.fixed.md

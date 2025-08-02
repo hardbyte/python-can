@@ -88,7 +88,7 @@ docs = [
 ]
 lint = [
     "pylint==3.3.*",
-    "ruff==0.12.5",
+    "ruff==0.12.7",
     "black==25.1.*",
     "mypy==1.17.*",
 ]
@@ -213,3 +213,41 @@ disable = [
     "too-many-public-methods",
     "too-many-statements",
 ]
+
+[tool.towncrier]
+directory = "doc/changelog.d"
+filename = "CHANGELOG.md"
+start_string = "<!-- towncrier release notes start -->\n"
+underlines = ["", "", ""]
+title_format = "## Version [{version}](https://github.com/hardbyte/python-can/tree/{version}) - {project_date}"
+issue_format = "[#{issue}](https://github.com/hardbyte/python-can/issues/{issue})"
+
+[[tool.towncrier.type]]
+directory = "security"
+name = "Security"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removed"
+name = "Removed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "deprecated"
+name = "Deprecated"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "added"
+name = "Added"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "changed"
+name = "Changed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "fixed"
+name = "Fixed"
+showcontent = true

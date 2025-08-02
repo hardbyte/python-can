@@ -164,7 +164,36 @@ Step-by-Step Contribution Guide
    Some environments require specific Python versions. 
    If you use `uv`, it will automatically download and manage these for you.
 
-5. **(Optional) Build Source Distribution and Wheels**
+
+
+5. **Add a News Fragment for the Changelog**
+
+   This project uses `towncrier <https://towncrier.readthedocs.io/>`__ to manage the changelog in
+   ``CHANGELOG.md``. For every user-facing change (new feature, bugfix, deprecation, etc.), you
+   must add a news fragment:
+   
+   * News fragments are short files describing your change, stored in ``doc/changelog.d``.
+   * Name each fragment ``<issue-or-description>.<type>.md``, where ``<type>`` is one of:
+     ``added``, ``changed``, ``deprecated``, ``removed``, ``fixed``, or ``security``.
+   * Example (for a feature added in PR #1234):
+   
+     .. code-block:: shell
+   
+        echo "Added support for CAN FD." > doc/changelog.d/1234.added.md
+   
+   * Or use the towncrier CLI:
+   
+     .. code-block:: shell
+   
+        uvx towncrier create --dir doc/changelog.d -c "Added support for CAN FD." 1234.added.md
+   
+   * For changes not tied to an issue/PR, the fragment name must start with a plus symbol
+     (e.g., ``+mychange.added.md``). Towncrier calls these "orphan fragments".
+   
+   .. note:: You do not need to manually update ``CHANGELOG.md``—maintainers will build the
+             changelog at release time.
+
+6. **(Optional) Build Source Distribution and Wheels**
 
    If you want to manually build the source distribution (sdist) and wheels for python-can,
    you can use `uvx` to run the build and twine tools:
@@ -174,7 +203,7 @@ Step-by-Step Contribution Guide
       uv build
       uvx twine check --strict dist/*
 
-6. **Push and Submit Your Contribution**
+7. **Push and Submit Your Contribution**
 
    * Push your branch:
 
@@ -218,13 +247,33 @@ These steps are a guideline on how to add a new backend to python-can.
 Creating a new Release
 ----------------------
 
-* Releases are automated via GitHub Actions. To create a new release:
+Releases are automated via GitHub Actions. To create a new release:
 
-  * Ensure all tests pass and documentation is up-to-date.
-  * Update ``CONTRIBUTORS.txt`` with any new contributors.
-  * For larger changes, update ``doc/history.rst``.
-  * Create a new tag and GitHub release (e.g., ``vX.Y.Z``) targeting the ``main`` branch. Add release notes and publish.
-  * The CI workflow will automatically build, check, and upload the release to PyPI and other platforms.
+* Build the changelog with towncrier:
+
+
+  * Collect all news fragments and update ``CHANGELOG.md`` by running:
+
+    .. code-block:: shell
+
+       uvx towncrier build --yes --version vX.Y.Z
+
+    (Replace ``vX.Y.Z`` with the new version number. **The version must exactly match the tag you will create for the release.**)
+    This will add all news fragments to the changelog and remove the fragments by default.
+
+    .. note:: You can generate the changelog for prereleases, but keep the news
+              fragments so they are included in the final release. To do this, replace ``--yes`` with ``--keep``.
+              This will update ``CHANGELOG.md`` but leave the fragments in place for future builds.
+   
+  * Review ``CHANGELOG.md`` for accuracy and completeness.
+
+* Ensure all tests pass and documentation is up-to-date.
+* Update ``CONTRIBUTORS.txt`` with any new contributors.
+* For larger changes, update ``doc/history.rst``.
+* Create a new tag and GitHub release (e.g., ``vX.Y.Z``) targeting the ``main``
+  branch. Add release notes and publish.
+* The CI workflow will automatically build, check, and upload the release to PyPI
+  and other platforms.
 
 * You can monitor the release status on:
   `PyPi <https://pypi.org/project/python-can/#history>`__,
