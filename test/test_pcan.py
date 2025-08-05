@@ -232,6 +232,7 @@ class TestPCANBus(unittest.TestCase):
         self.assertEqual(recv_msg.is_fd, False)
         self.assertSequenceEqual(recv_msg.data, msg.DATA)
         self.assertEqual(recv_msg.timestamp, 0)
+        self.assertEqual(recv_msg.channel, "PCAN_USBBUS1")
 
     def test_recv_fd(self):
         data = (ctypes.c_ubyte * 64)(*[x for x in range(64)])
@@ -255,6 +256,7 @@ class TestPCANBus(unittest.TestCase):
         self.assertEqual(recv_msg.is_fd, True)
         self.assertSequenceEqual(recv_msg.data, msg.DATA)
         self.assertEqual(recv_msg.timestamp, 0)
+        self.assertEqual(recv_msg.channel, "PCAN_USBBUS1")
 
     @pytest.mark.timeout(3.0)
     @patch("select.select", return_value=([], [], []))

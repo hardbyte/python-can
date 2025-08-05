@@ -590,6 +590,7 @@ class PcanBus(BusABC):
             )
 
         rx_msg = Message(
+            channel=self.channel_info,
             timestamp=timestamp,
             arbitration_id=pcan_msg.ID,
             is_extended_id=is_extended_id,
