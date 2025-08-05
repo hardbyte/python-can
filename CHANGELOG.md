@@ -8,6 +8,49 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## Version [v4.6.0](https://github.com/hardbyte/python-can/tree/v4.6.0) - 2025-08-05
+
+### Removed
+
+- Remove support for Python 3.8. ([#1931](https://github.com/hardbyte/python-can/issues/1931))
+- Unknown command line arguments ("extra args") are no longer passed down to `can.Bus()` instantiation. Use the `--bus-kwargs` argument instead. ([#1949](https://github.com/hardbyte/python-can/issues/1949))
+- Remove `can.io.generic.BaseIOHandler` class. Improve `can.io.*` type annotations by using `typing.Generic`. ([#1951](https://github.com/hardbyte/python-can/issues/1951))
+
+### Added
+
+- Support 11-bit identifiers in the `serial` interface. ([#1758](https://github.com/hardbyte/python-can/issues/1758))
+- Keep track of active Notifiers and make Notifier usable as a context manager. Add function `Notifier.find_instances(bus)` to find the active Notifier for a given bus instance. ([#1890](https://github.com/hardbyte/python-can/issues/1890))
+- Add Windows support to `udp_multicast` interface. ([#1914](https://github.com/hardbyte/python-can/issues/1914))
+- Add FD support to `slcan` according to CANable 2.0 implementation. ([#1920](https://github.com/hardbyte/python-can/issues/1920))
+- Add support for error messages to the `socketcand` interface. ([#1941](https://github.com/hardbyte/python-can/issues/1941))
+- Add support for remote and error frames in the `serial` interface. ([#1948](https://github.com/hardbyte/python-can/issues/1948))
+- Add public functions `can.cli.add_bus_arguments` and `can.cli.create_bus_from_namespace` for creating bus command line options. Currently downstream packages need to implement their own logic to configure *python-can* buses. Now *python-can* can create and parse bus options for third party packages. ([#1949](https://github.com/hardbyte/python-can/issues/1949))
+- Add support for remote frames to `TRCReader`. ([#1953](https://github.com/hardbyte/python-can/issues/1953))
+- Mention the `python-can-candle` package in the plugin interface section of the documentation. ([#1954](https://github.com/hardbyte/python-can/issues/1954))
+- Add new CLI tool `python -m can.bridge` (or just `can_bridge`) to create a software bridge between two physical buses. ([#1961](https://github.com/hardbyte/python-can/issues/1961))
+
+### Changed
+
+- Allow sending Classic CAN frames with a DLC value larger than 8 using the `socketcan` interface. ([#1851](https://github.com/hardbyte/python-can/issues/1851))
+- The `gs_usb` extra dependency was renamed to `gs-usb`.
+  The `lint` extra dependency was removed and replaced with new PEP 735 dependency groups `lint`, `docs` and `test`. ([#1945](https://github.com/hardbyte/python-can/issues/1945))
+- Update dependency name from `zlgcan-driver-py` to `zlgcan`. ([#1946](https://github.com/hardbyte/python-can/issues/1946))
+- Use ThreadPoolExecutor in `detect_available_configs()` to reduce runtime and add `timeout` parameter. ([#1947](https://github.com/hardbyte/python-can/issues/1947))
+- Update contribution guide. ([#1960](https://github.com/hardbyte/python-can/issues/1960))
+
+### Fixed
+
+- Fix a bug in `slcanBus.get_version()` and `slcanBus.get_serial_number()`: If any other data was received during the function call, then `None` was returned. ([#1904](https://github.com/hardbyte/python-can/issues/1904))
+- Fix incorrect padding of CAN FD payload in `BlfReader`. ([#1906](https://github.com/hardbyte/python-can/issues/1906))
+- Set correct message direction for messages received with `kvaser` interface and `receive_own_messages=True`. ([#1908](https://github.com/hardbyte/python-can/issues/1908))
+- Fix timestamp rounding error in `BlfWriter`. ([#1921](https://github.com/hardbyte/python-can/issues/1921))
+- Fix timestamp rounding error in `BlfReader`. ([#1927](https://github.com/hardbyte/python-can/issues/1927))
+- Handle timer overflow message and build timestamp according to the epoch in the `ixxat` interface. ([#1934](https://github.com/hardbyte/python-can/issues/1934))
+- Avoid unsupported `ioctl` function call to allow usage of the `udp_multicast` interface on MacOS. ([#1940](https://github.com/hardbyte/python-can/issues/1940))
+- Fix configuration file parsing for the `state` bus parameter. ([#1957](https://github.com/hardbyte/python-can/issues/1957))
+- Mf4Reader: support non-standard `CAN_DataFrame.Dir` values in mf4 files created by [ihedvall/mdflib](https://github.com/ihedvall/mdflib). ([#1967](https://github.com/hardbyte/python-can/issues/1967))
+- PcanBus: Set `Message.channel` attribute in `PcanBus.recv()`. ([#1969](https://github.com/hardbyte/python-can/issues/1969))
+
 
 ## Version 4.5.0
 
