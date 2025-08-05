@@ -352,7 +352,10 @@ class MF4Reader(BinaryIOMessageReader):
                     if "CAN_DataFrame.BusChannel" in names:
                         kv["channel"] = int(data["CAN_DataFrame.BusChannel"][i])
                     if "CAN_DataFrame.Dir" in names:
-                        kv["is_rx"] = int(data["CAN_DataFrame.Dir"][i]) == 0
+                        if data["CAN_DataFrame.Dir"][i].dtype.kind == "S":
+                            kv["is_rx"] = data["CAN_DataFrame.Dir"][i] == b"Rx"
+                        else:
+                            kv["is_rx"] = int(data["CAN_DataFrame.Dir"][i]) == 0
                     if "CAN_DataFrame.IDE" in names:
                         kv["is_extended_id"] = bool(data["CAN_DataFrame.IDE"][i])
                     if "CAN_DataFrame.EDL" in names:
@@ -387,7 +390,10 @@ class MF4Reader(BinaryIOMessageReader):
                     if "CAN_ErrorFrame.BusChannel" in names:
                         kv["channel"] = int(data["CAN_ErrorFrame.BusChannel"][i])
                     if "CAN_ErrorFrame.Dir" in names:
-                        kv["is_rx"] = int(data["CAN_ErrorFrame.Dir"][i]) == 0
+                        if data["CAN_ErrorFrame.Dir"][i].dtype.kind == "S":
+                            kv["is_rx"] = data["CAN_ErrorFrame.Dir"][i] == b"Rx"
+                        else:
+                            kv["is_rx"] = int(data["CAN_ErrorFrame.Dir"][i]) == 0
                     if "CAN_ErrorFrame.ID" in names:
                         kv["arbitration_id"] = (
                             int(data["CAN_ErrorFrame.ID"][i]) & 0x1FFFFFFF
@@ -441,7 +447,10 @@ class MF4Reader(BinaryIOMessageReader):
                     if "CAN_RemoteFrame.BusChannel" in names:
                         kv["channel"] = int(data["CAN_RemoteFrame.BusChannel"][i])
                     if "CAN_RemoteFrame.Dir" in names:
-                        kv["is_rx"] = int(data["CAN_RemoteFrame.Dir"][i]) == 0
+                        if data["CAN_RemoteFrame.Dir"][i].dtype.kind == "S":
+                            kv["is_rx"] = data["CAN_RemoteFrame.Dir"][i] == b"Rx"
+                        else:
+                            kv["is_rx"] = int(data["CAN_RemoteFrame.Dir"][i]) == 0
                     if "CAN_RemoteFrame.IDE" in names:
                         kv["is_extended_id"] = bool(data["CAN_RemoteFrame.IDE"][i])
 
