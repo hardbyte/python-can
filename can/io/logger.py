@@ -290,7 +290,8 @@ class BaseRotatingLogger(MessageWriter, ABC):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> Literal[False]:
-        return self.writer.__exit__(exc_type, exc_val, exc_tb)
+        self.stop()
+        return False
 
     @abstractmethod
     def should_rollover(self, msg: Message) -> bool:
