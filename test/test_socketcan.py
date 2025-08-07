@@ -377,7 +377,7 @@ class SocketCANTest(unittest.TestCase):
 
         This test shall document raw CAN socket support under PyPy. Once this test fails, it is likely that PyPy
         either implemented raw CAN socket support or at least changed the error that is thrown.
-        https://foss.heptapod.net/pypy/pypy/-/issues/3809
+        https://github.com/pypy/pypy/issues/3808
         https://github.com/hardbyte/python-can/issues/1479
         """
         try:
@@ -386,7 +386,7 @@ class SocketCANTest(unittest.TestCase):
             if "unknown address family" not in str(e):
                 warnings.warn(
                     "Please check if PyPy has implemented raw CAN socket support! "
-                    "See: https://foss.heptapod.net/pypy/pypy/-/issues/3809"
+                    "See: https://github.com/pypy/pypy/issues/3808"
                 )
 
 
