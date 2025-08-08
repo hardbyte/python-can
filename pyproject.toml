@@ -88,7 +88,7 @@ docs = [
 ]
 lint = [
     "pylint==3.3.*",
-    "ruff==0.12.7",
+    "ruff==0.12.8",
     "black==25.1.*",
     "mypy==1.17.*",
 ]
@@ -99,7 +99,7 @@ test = [
     "coveralls==4.0.*",
     "pytest-cov==6.2.*",
     "coverage==7.10.*",
-    "hypothesis==6.136.*",
+    "hypothesis>=6.136,<6.138",
     "parameterized==0.9.*",
 ]
 dev = [
