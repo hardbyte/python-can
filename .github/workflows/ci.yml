@@ -9,6 +9,9 @@ on:
 env:
   PY_COLORS: "1"
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -29,9 +32,12 @@ jobs:
         ]
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # 4.2.2
+      with:
+        fetch-depth: 0
+        persist-credentials: false
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
+      uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc  # 6.4.3
     - name: Install tox
       run: uv tool install tox --with tox-uv
     - name: Setup SocketCAN
@@ -45,10 +51,10 @@ jobs:
         tox -e ${{ matrix.env }}
       env:
         # SocketCAN tests currently fail with PyPy because it does not support raw CAN sockets
-        # See: https://foss.heptapod.net/pypy/pypy/-/issues/3809
+        # See: https://github.com/pypy/pypy/issues/3808
         TEST_SOCKETCAN: "${{ matrix.os == 'ubuntu-latest' && ! startsWith(matrix.env, 'pypy' ) }}"
     - name: Coveralls Parallel
-      uses: coverallsapp/github-action@v2
+      uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b  # 2.3.6
       with:
         github-token: ${{ secrets.github_token }}
         flag-name: Unittests-${{ matrix.os }}-${{ matrix.env }}
@@ -59,9 +65,12 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # 4.2.2
+      with:
+        fetch-depth: 0
+        persist-credentials: false
     - name: Coveralls Finished
-      uses: coverallsapp/github-action@v2
+      uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b  # 2.3.6
       with:
         github-token: ${{ secrets.github_token }}
         parallel-finished: true
@@ -69,9 +78,12 @@ jobs:
   static-code-analysis:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # 4.2.2
+      with:
+        fetch-depth: 0
+        persist-credentials: false
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
+      uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc  # 6.4.3
     - name: Install tox
       run: uv tool install tox --with tox-uv
     - name: Run linters
@@ -84,9 +96,12 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # 4.2.2
+      with:
+        fetch-depth: 0
+        persist-credentials: false
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
+      uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc  # 6.4.3
     - name: Install tox
       run: uv tool install tox --with tox-uv
     - name: Build documentation
@@ -97,17 +112,18 @@ jobs:
     name: Packaging
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # 4.2.2
         with:
-          fetch-depth: 0  # fetch tags for setuptools-scm
+          fetch-depth: 0
+          persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc  # 6.4.3
       - name: Build wheel and sdist
-        run: uvx --from build pyproject-build --installer uv
+        run: uv build
       - name: Check build artifacts
         run: uvx twine check --strict dist/*
       - name: Save artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # 4.6.2
         with:
           name: release
           path: ./dist
@@ -123,10 +139,15 @@ jobs:
     # upload to PyPI only on release
     if: github.event.release && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # 4.3.0
         with:
           path: dist
           merge-multiple: true
 
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # 2.4.0
+        with:
+          subject-path: 'dist/*'
+
       - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # 1.12.4
