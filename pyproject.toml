@@ -99,7 +99,7 @@ test = [
     "coveralls==4.0.*",
     "pytest-cov==6.2.*",
     "coverage==7.10.*",
-    "hypothesis==6.136.*",
+    "hypothesis>=6.136,<6.138",
     "parameterized==0.9.*",
 ]
 dev = [
