@@ -5,6 +5,8 @@ on:
     types: [ published ]
   pull_request:
   push:
+    branches-ignore:
+      - 'dependabot/**'
 
 env:
   PY_COLORS: "1"
