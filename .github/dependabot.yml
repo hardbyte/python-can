@@ -6,6 +6,21 @@
 version: 2
 updates:
   - package-ecosystem: "uv"
+    # Enable version updates for development dependencies
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      dev-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    # Enable version updates for GitHub Actions
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
