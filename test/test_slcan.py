@@ -74,7 +74,13 @@ class slcanTestCase(unittest.TestCase):
     def setUp(self):
         self.bus = cast(
             can.interfaces.slcan.slcanBus,
-            can.Bus("loop://", interface="slcan", sleep_after_open=0, timeout=TIMEOUT),
+            can.Bus(
+                "loop://",
+                interface="slcan",
+                sleep_after_open=0,
+                timeout=TIMEOUT,
+                bitrate=500000,
+            ),
         )
         self.serial = cast(SerialMock, self.bus.serialPortOrig)
         self.serial.reset_input_buffer()
