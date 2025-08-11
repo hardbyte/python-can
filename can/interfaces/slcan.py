@@ -166,7 +166,7 @@ class slcanBus(BusABC):
 
         super().__init__(channel, **kwargs)
 
-    def set_bitrate(self, bitrate: int, data_bitrate: Optional[int] = None) -> None:
+    def set_bitrate(self, bitrate: int, data_bitrate: Optional[int] = 0) -> None:
         """
         :param bitrate:
             Bitrate in bit/s
