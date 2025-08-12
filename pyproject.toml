@@ -8,7 +8,7 @@ dynamic = ["readme", "version"]
 description = "Controller Area Network interface module for Python"
 authors = [{ name = "python-can contributors" }]
 dependencies = [
-    "wrapt~=1.10",
+    "wrapt >= 1.10, < 3",
     "packaging >= 23.1",
     "typing_extensions>=3.10.0.0",
 ]
