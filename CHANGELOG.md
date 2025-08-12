@@ -8,6 +8,13 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## Version [v4.6.1](https://github.com/hardbyte/python-can/tree/v4.6.1) - 2025-08-12
+
+### Fixed
+
+- Fix initialisation of an slcan bus, when setting a bitrate. When using CAN 2.0 (not FD), the default setting for `data_bitrate` was invalid, causing an exception. ([#1978](https://github.com/hardbyte/python-can/issues/1978))
+
+
 ## Version [v4.6.0](https://github.com/hardbyte/python-can/tree/v4.6.0) - 2025-08-05
 
 ### Removed
