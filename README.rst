@@ -37,8 +37,8 @@ python-can
    :target: https://github.com/hardbyte/python-can/actions/workflows/ci.yml
    :alt: Github Actions workflow status
 
-.. |coverage| image:: https://coveralls.io/repos/github/hardbyte/python-can/badge.svg?branch=develop
-   :target: https://coveralls.io/github/hardbyte/python-can?branch=develop
+.. |coverage| image:: https://coveralls.io/repos/github/hardbyte/python-can/badge.svg?branch=main
+   :target: https://coveralls.io/github/hardbyte/python-can?branch=main
    :alt: Test coverage reports on Coveralls.io
 
 The **C**\ ontroller **A**\ rea **N**\ etwork is a bus standard designed
