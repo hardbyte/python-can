@@ -148,6 +148,7 @@ class Notifier(AbstractContextManager["Notifier"]):
         self._lock = threading.Lock()
 
         self._readers: list[Union[int, threading.Thread]] = []
+        self._tasks: set[asyncio.Task] = set()
         _bus_list: list[BusABC] = bus if isinstance(bus, list) else [bus]
         for each_bus in _bus_list:
             self.add_bus(each_bus)
@@ -256,8 +257,10 @@ class Notifier(AbstractContextManager["Notifier"]):
         for callback in self.listeners:
             res = callback(msg)
             if res and self._loop and asyncio.iscoroutine(res):
-                # Schedule coroutine
-                self._loop.create_task(res)
+                # Schedule coroutine and keep a reference to the task
+                task = self._loop.create_task(res)
+                self._tasks.add(task)
+                task.add_done_callback(self._tasks.discard)
 
     def _on_error(self, exc: Exception) -> bool:
         """Calls ``on_error()`` for all listeners if they implement it.
