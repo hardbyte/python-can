@@ -36,123 +36,120 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
             is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7]
         )
 
-        with can.interface.Bus(interface="virtual") as bus1:
-            with can.interface.Bus(interface="virtual") as bus2:
-                # disabling the garbage collector makes the time readings more reliable
-                gc.disable()
+        with (
+            can.interface.Bus(interface="virtual") as bus1,
+            can.interface.Bus(interface="virtual") as bus2,
+        ):
+            # disabling the garbage collector makes the time readings more reliable
+            gc.disable()
 
-                task = bus1.send_periodic(msg, 0.01, 1)
-                self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
+            task = bus1.send_periodic(msg, 0.01, 1)
+            self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
 
-                sleep(2)
-                size = bus2.queue.qsize()
-                # About 100 messages should have been transmitted
-                self.assertTrue(
-                    80 <= size <= 120,
-                    "100 +/- 20 messages should have been transmitted. But queue contained {}".format(
-                        size
-                    ),
-                )
-                last_msg = bus2.recv()
-                next_last_msg = bus2.recv()
+            sleep(2)
+            size = bus2.queue.qsize()
+            # About 100 messages should have been transmitted
+            self.assertTrue(
+                80 <= size <= 120,
+                "100 +/- 20 messages should have been transmitted. But queue contained {}".format(
+                    size
+                ),
+            )
+            last_msg = bus2.recv()
+            next_last_msg = bus2.recv()
 
-                # we need to reenable the garbage collector again
-                gc.enable()
+            # we need to reenable the garbage collector again
+            gc.enable()
 
-                # Check consecutive messages are spaced properly in time and have
-                # the same id/data
-                self.assertMessageEqual(last_msg, next_last_msg)
+            # Check consecutive messages are spaced properly in time and have
+            # the same id/data
+            self.assertMessageEqual(last_msg, next_last_msg)
 
-                # Check the message id/data sent is the same as message received
-                # Set timestamp and channel to match recv'd because we don't care
-                # and they are not initialized by the can.Message constructor.
-                msg.timestamp = last_msg.timestamp
-                msg.channel = last_msg.channel
-                self.assertMessageEqual(msg, last_msg)
+            # Check the message id/data sent is the same as message received
+            # Set timestamp and channel to match recv'd because we don't care
+            # and they are not initialized by the can.Message constructor.
+            msg.timestamp = last_msg.timestamp
+            msg.channel = last_msg.channel
+            self.assertMessageEqual(msg, last_msg)
 
     def test_removing_bus_tasks(self):
-        bus = can.interface.Bus(interface="virtual")
-        tasks = []
-        for task_i in range(10):
-            msg = can.Message(
-                is_extended_id=False,
-                arbitration_id=0x123,
-                data=[0, 1, 2, 3, 4, 5, 6, 7],
-            )
-            msg.arbitration_id = task_i
-            task = bus.send_periodic(msg, 0.1, 1)
-            tasks.append(task)
-            self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
+        with can.interface.Bus(interface="virtual") as bus:
+            tasks = []
+            for task_i in range(10):
+                msg = can.Message(
+                    is_extended_id=False,
+                    arbitration_id=0x123,
+                    data=[0, 1, 2, 3, 4, 5, 6, 7],
+                )
+                msg.arbitration_id = task_i
+                task = bus.send_periodic(msg, 0.1, 1)
+                tasks.append(task)
+                self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
 
-        assert len(bus._periodic_tasks) == 10
+            assert len(bus._periodic_tasks) == 10
 
-        for task in tasks:
-            # Note calling task.stop will remove the task from the Bus's internal task management list
-            task.stop()
+            for task in tasks:
+                # Note calling task.stop will remove the task from the Bus's internal task management list
+                task.stop()
 
-        self.join_threads([task.thread for task in tasks], 5.0)
+            self.join_threads([task.thread for task in tasks], 5.0)
 
-        assert len(bus._periodic_tasks) == 0
-        bus.shutdown()
+            assert len(bus._periodic_tasks) == 0
 
     def test_managed_tasks(self):
-        bus = can.interface.Bus(interface="virtual", receive_own_messages=True)
-        tasks = []
-        for task_i in range(3):
-            msg = can.Message(
-                is_extended_id=False,
-                arbitration_id=0x123,
-                data=[0, 1, 2, 3, 4, 5, 6, 7],
-            )
-            msg.arbitration_id = task_i
-            task = bus.send_periodic(msg, 0.1, 10, store_task=False)
-            tasks.append(task)
-            self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
+        with can.interface.Bus(interface="virtual", receive_own_messages=True) as bus:
+            tasks = []
+            for task_i in range(3):
+                msg = can.Message(
+                    is_extended_id=False,
+                    arbitration_id=0x123,
+                    data=[0, 1, 2, 3, 4, 5, 6, 7],
+                )
+                msg.arbitration_id = task_i
+                task = bus.send_periodic(msg, 0.1, 10, store_task=False)
+                tasks.append(task)
+                self.assertIsInstance(task, can.broadcastmanager.CyclicSendTaskABC)
 
-        assert len(bus._periodic_tasks) == 0
+            assert len(bus._periodic_tasks) == 0
 
-        # Self managed tasks should still be sending messages
-        for _ in range(50):
-            received_msg = bus.recv(timeout=5.0)
-            assert received_msg is not None
-            assert received_msg.arbitration_id in {0, 1, 2}
+            # Self managed tasks should still be sending messages
+            for _ in range(50):
+                received_msg = bus.recv(timeout=5.0)
+                assert received_msg is not None
+                assert received_msg.arbitration_id in {0, 1, 2}
 
-        for task in tasks:
-            task.stop()
+            for task in tasks:
+                task.stop()
 
-        self.join_threads([task.thread for task in tasks], 5.0)
-
-        bus.shutdown()
+            self.join_threads([task.thread for task in tasks], 5.0)
 
     def test_stopping_perodic_tasks(self):
-        bus = can.interface.Bus(interface="virtual")
-        tasks = []
-        for task_i in range(10):
-            msg = can.Message(
-                is_extended_id=False,
-                arbitration_id=0x123,
-                data=[0, 1, 2, 3, 4, 5, 6, 7],
-            )
-            msg.arbitration_id = task_i
-            task = bus.send_periodic(msg, 0.1, 1)
-            tasks.append(task)
+        with can.interface.Bus(interface="virtual") as bus:
+            tasks = []
+            for task_i in range(10):
+                msg = can.Message(
+                    is_extended_id=False,
+                    arbitration_id=0x123,
+                    data=[0, 1, 2, 3, 4, 5, 6, 7],
+                )
+                msg.arbitration_id = task_i
+                task = bus.send_periodic(msg, 0.1, 1)
+                tasks.append(task)
 
-        assert len(bus._periodic_tasks) == 10
-        # stop half the tasks using the task object
-        for task in tasks[::2]:
-            task.stop()
+            assert len(bus._periodic_tasks) == 10
+            # stop half the tasks using the task object
+            for task in tasks[::2]:
+                task.stop()
 
-        assert len(bus._periodic_tasks) == 5
+            assert len(bus._periodic_tasks) == 5
 
-        # stop the other half using the bus api
-        bus.stop_all_periodic_tasks(remove_tasks=False)
-        self.join_threads([task.thread for task in tasks], 5.0)
+            # stop the other half using the bus api
+            bus.stop_all_periodic_tasks(remove_tasks=False)
+            self.join_threads([task.thread for task in tasks], 5.0)
 
-        # Tasks stopped via `stop_all_periodic_tasks` with remove_tasks=False should
-        # still be associated with the bus (e.g. for restarting)
-        assert len(bus._periodic_tasks) == 5
-
-        bus.shutdown()
+            # Tasks stopped via `stop_all_periodic_tasks` with remove_tasks=False should
+            # still be associated with the bus (e.g. for restarting)
+            assert len(bus._periodic_tasks) == 5
 
     def test_restart_perodic_tasks(self):
         period = 0.01
@@ -214,25 +211,26 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
 
     @unittest.skipIf(IS_CI, "fails randomly when run on CI server")
     def test_thread_based_cyclic_send_task(self):
-        bus = can.ThreadSafeBus(interface="virtual")
-        msg = can.Message(
-            is_extended_id=False, arbitration_id=0x123, data=[0, 1, 2, 3, 4, 5, 6, 7]
-        )
+        with can.ThreadSafeBus(interface="virtual") as bus:
+            msg = can.Message(
+                is_extended_id=False,
+                arbitration_id=0x123,
+                data=[0, 1, 2, 3, 4, 5, 6, 7],
+            )
 
-        # good case, bus is up
-        on_error_mock = MagicMock(return_value=False)
-        task = can.broadcastmanager.ThreadBasedCyclicSendTask(
-            bus=bus,
-            lock=bus._lock_send_periodic,
-            messages=msg,
-            period=0.1,
-            duration=3,
-            on_error=on_error_mock,
-        )
-        sleep(1)
-        on_error_mock.assert_not_called()
-        task.stop()
-        bus.shutdown()
+            # good case, bus is up
+            on_error_mock = MagicMock(return_value=False)
+            task = can.broadcastmanager.ThreadBasedCyclicSendTask(
+                bus=bus,
+                lock=bus._lock_send_periodic,
+                messages=msg,
+                period=0.1,
+                duration=3,
+                on_error=on_error_mock,
+            )
+            sleep(1)
+            on_error_mock.assert_not_called()
+            task.stop()
 
         # bus has been shut down
         on_error_mock = MagicMock(return_value=False)

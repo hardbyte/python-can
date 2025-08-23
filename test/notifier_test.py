@@ -20,23 +20,25 @@ class NotifierTest(unittest.TestCase):
             self.assertTrue(notifier.stopped)
 
     def test_multiple_bus(self):
-        with can.Bus(0, interface="virtual", receive_own_messages=True) as bus1:
-            with can.Bus(1, interface="virtual", receive_own_messages=True) as bus2:
-                reader = can.BufferedReader()
-                notifier = can.Notifier([bus1, bus2], [reader], 0.1)
-                self.assertFalse(notifier.stopped)
-                msg = can.Message()
-                bus1.send(msg)
-                time.sleep(0.1)
-                bus2.send(msg)
-                recv_msg = reader.get_message(1)
-                self.assertIsNotNone(recv_msg)
-                self.assertEqual(recv_msg.channel, 0)
-                recv_msg = reader.get_message(1)
-                self.assertIsNotNone(recv_msg)
-                self.assertEqual(recv_msg.channel, 1)
-                notifier.stop()
-                self.assertTrue(notifier.stopped)
+        with (
+            can.Bus(0, interface="virtual", receive_own_messages=True) as bus1,
+            can.Bus(1, interface="virtual", receive_own_messages=True) as bus2,
+        ):
+            reader = can.BufferedReader()
+            notifier = can.Notifier([bus1, bus2], [reader], 0.1)
+            self.assertFalse(notifier.stopped)
+            msg = can.Message()
+            bus1.send(msg)
+            time.sleep(0.1)
+            bus2.send(msg)
+            recv_msg = reader.get_message(1)
+            self.assertIsNotNone(recv_msg)
+            self.assertEqual(recv_msg.channel, 0)
+            recv_msg = reader.get_message(1)
+            self.assertIsNotNone(recv_msg)
+            self.assertEqual(recv_msg.channel, 1)
+            notifier.stop()
+            self.assertTrue(notifier.stopped)
 
     def test_context_manager(self):
         with can.Bus("test", interface="virtual", receive_own_messages=True) as bus:
