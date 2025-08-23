@@ -5,18 +5,18 @@ This module tests cyclic send tasks.
 """
 
 import gc
+import platform
 import sys
 import time
 import traceback
 import unittest
 from threading import Thread
 from time import sleep
-from typing import List
 from unittest.mock import MagicMock
 
 import can
 
-from .config import *
+from .config import IS_CI, IS_PYPY
 from .message_helper import ComparingMessagesTestCase
 
 
@@ -133,7 +133,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
                     data=[0, 1, 2, 3, 4, 5, 6, 7],
                 )
                 msg.arbitration_id = task_i
-                task = bus.send_periodic(msg, 0.1, 1)
+                task = bus.send_periodic(msg, period=0.1)
                 tasks.append(task)
 
             assert len(bus._periodic_tasks) == 10
@@ -261,7 +261,7 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         task.stop()
 
     def test_modifier_callback(self) -> None:
-        msg_list: List[can.Message] = []
+        msg_list: list[can.Message] = []
 
         def increment_first_byte(msg: can.Message) -> None:
             msg.data[0] = (msg.data[0] + 1) % 256
@@ -288,8 +288,8 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
         self.assertEqual(b"\x07\x00\x00\x00\x00\x00\x00\x00", bytes(msg_list[6].data))
 
     @staticmethod
-    def join_threads(threads: List[Thread], timeout: float) -> None:
-        stuck_threads: List[Thread] = []
+    def join_threads(threads: list[Thread], timeout: float) -> None:
+        stuck_threads: list[Thread] = []
         t0 = time.perf_counter()
         for thread in threads:
             time_left = timeout - (time.perf_counter() - t0)

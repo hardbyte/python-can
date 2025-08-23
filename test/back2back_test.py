@@ -33,7 +33,7 @@ class Back2BackTestCase(unittest.TestCase):
     """
 
     BITRATE = 500000
-    TIMEOUT = 0.1
+    TIMEOUT = 1.0 if IS_PYPY else 0.1
 
     INTERFACE_1 = "virtual"
     CHANNEL_1 = "virtual_channel_0"
