@@ -164,37 +164,33 @@ class Back2BackTestCase(unittest.TestCase):
     )
     def test_message_is_rx_receive_own_messages(self):
         """The same as `test_message_direction` but testing with `receive_own_messages=True`."""
-        bus3 = can.Bus(
+        with can.Bus(
             channel=self.CHANNEL_2,
             interface=self.INTERFACE_2,
             bitrate=self.BITRATE,
             fd=TEST_CAN_FD,
             single_handle=True,
             receive_own_messages=True,
-        )
-        try:
+        ) as bus3:
             msg = can.Message(
                 is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3], is_rx=False
             )
             bus3.send(msg)
             self_recv_msg_bus3 = bus3.recv(self.TIMEOUT)
             self.assertTrue(self_recv_msg_bus3.is_rx)
-        finally:
-            bus3.shutdown()
 
     def test_unique_message_instances(self):
         """Verify that we have a different instances of message for each bus even with
         `receive_own_messages=True`.
         """
-        bus3 = can.Bus(
+        with can.Bus(
             channel=self.CHANNEL_2,
             interface=self.INTERFACE_2,
             bitrate=self.BITRATE,
             fd=TEST_CAN_FD,
             single_handle=True,
             receive_own_messages=True,
-        )
-        try:
+        ) as bus3:
             msg = can.Message(
                 is_extended_id=False, arbitration_id=0x300, data=[2, 1, 3]
             )
@@ -209,8 +205,6 @@ class Back2BackTestCase(unittest.TestCase):
             recv_msg_bus1.data[0] = 4
             self.assertNotEqual(recv_msg_bus1.data, recv_msg_bus2.data)
             self.assertEqual(recv_msg_bus2.data, self_recv_msg_bus3.data)
-        finally:
-            bus3.shutdown()
 
     def test_fd_message(self):
         msg = can.Message(
