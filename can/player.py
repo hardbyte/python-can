@@ -96,7 +96,11 @@ def main() -> None:
         "--skip",
         type=float,
         default=60 * 60 * 24,
-        help="<s> skip gaps greater than 's' seconds",
+        help="Skip gaps greater than 's' seconds between messages. "
+        "Default is 86400 (24 hours), meaning only very large gaps are skipped. "
+        "Set to 0 to never skip any gaps (all delays are preserved). "
+        "Set to a very small value (e.g., 1e-4) "
+        "to skip all gaps and send messages as fast as possible.",
     )
     player_group.add_argument(
         "-l",
