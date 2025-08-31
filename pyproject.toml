@@ -89,7 +89,7 @@ docs = [
 ]
 lint = [
     "pylint==3.3.*",
-    "ruff==0.12.8",
+    "ruff==0.12.*",
     "black==25.1.*",
     "mypy==1.17.*",
 ]
@@ -132,6 +132,7 @@ disallow_incomplete_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 exclude = [
+    "^build",
     "^doc/conf.py$",
     "^test",
     "^can/interfaces/etas",
