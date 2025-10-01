@@ -89,16 +89,16 @@ docs = [
 ]
 lint = [
     "pylint==3.3.*",
-    "ruff==0.12.11",
-    "black==25.1.*",
-    "mypy==1.17.*",
+    "ruff==0.13.2",
+    "black>=25.1,<25.10",
+    "mypy>=1.17,<1.19",
 ]
 test = [
     "pytest==8.4.*",
     "pytest-timeout==2.4.*",
     "pytest-modern==0.7.*;platform_system!='Windows'",
     "coveralls==4.0.*",
-    "pytest-cov==6.2.*",
+    "pytest-cov>=6.2,<7.1",
     "coverage==7.10.*",
     "hypothesis>=6.136,<6.138",
     "parameterized==0.9.*",
