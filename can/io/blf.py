@@ -19,7 +19,7 @@ import time
 import zlib
 from collections.abc import Generator, Iterator
 from decimal import Decimal
-from typing import Any, BinaryIO, Optional, Union, cast
+from typing import Any, BinaryIO, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -104,7 +104,7 @@ TIME_TEN_MICS_FACTOR = Decimal("1e-5")
 TIME_ONE_NANS_FACTOR = Decimal("1e-9")
 
 
-def timestamp_to_systemtime(timestamp: Optional[float]) -> TSystemTime:
+def timestamp_to_systemtime(timestamp: float | None) -> TSystemTime:
     if timestamp is None or timestamp < 631152000:
         # Probably not a Unix timestamp
         return 0, 0, 0, 0, 0, 0, 0, 0
@@ -148,7 +148,7 @@ class BLFReader(BinaryIOMessageReader):
 
     def __init__(
         self,
-        file: Union[StringPathLike, BinaryIO],
+        file: StringPathLike | BinaryIO,
         **kwargs: Any,
     ) -> None:
         """
@@ -386,7 +386,7 @@ class BLFWriter(BinaryIOMessageWriter):
 
     def __init__(
         self,
-        file: Union[StringPathLike, BinaryIO],
+        file: StringPathLike | BinaryIO,
         append: bool = False,
         channel: int = 1,
         compression_level: int = -1,
@@ -430,10 +430,10 @@ class BLFWriter(BinaryIOMessageWriter):
                 raise BLFParseError("Unexpected file format")
             self.uncompressed_size = header[11]
             self.object_count = header[12]
-            self.start_timestamp: Optional[float] = systemtime_to_timestamp(
+            self.start_timestamp: float | None = systemtime_to_timestamp(
                 cast("TSystemTime", header[14:22])
             )
-            self.stop_timestamp: Optional[float] = systemtime_to_timestamp(
+            self.stop_timestamp: float | None = systemtime_to_timestamp(
                 cast("TSystemTime", header[22:30])
             )
             # Jump to the end of the file
@@ -508,7 +508,7 @@ class BLFWriter(BinaryIOMessageWriter):
             data = CAN_MSG_STRUCT.pack(channel, flags, msg.dlc, arb_id, can_data)
             self._add_object(CAN_MESSAGE, data, msg.timestamp)
 
-    def log_event(self, text: str, timestamp: Optional[float] = None) -> None:
+    def log_event(self, text: str, timestamp: float | None = None) -> None:
         """Add an arbitrary message to the log file as a global marker.
 
         :param str text:
@@ -530,7 +530,7 @@ class BLFWriter(BinaryIOMessageWriter):
         self._add_object(GLOBAL_MARKER, data + encoded + marker + comment, timestamp)
 
     def _add_object(
-        self, obj_type: int, data: bytes, timestamp: Optional[float] = None
+        self, obj_type: int, data: bytes, timestamp: float | None = None
     ) -> None:
         if timestamp is None:
             timestamp = self.stop_timestamp or time.time()
@@ -574,7 +574,7 @@ class BLFWriter(BinaryIOMessageWriter):
         self._buffer = [tail]
         self._buffer_size = len(tail)
         if not self.compression_level:
-            data: "Union[bytes, memoryview[int]]" = uncompressed_data  # noqa: UP037
+            data: "bytes | memoryview[int]" = uncompressed_data  # noqa: UP037
             method = NO_COMPRESSION
         else:
             data = zlib.compress(uncompressed_data, self.compression_level)

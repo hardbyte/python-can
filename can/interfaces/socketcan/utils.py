@@ -9,7 +9,6 @@ import os
 import struct
 import subprocess
 import sys
-from typing import Optional
 
 from can import typechecking
 from can.interfaces.socketcan.constants import CAN_EFF_FLAG
@@ -17,7 +16,7 @@ from can.interfaces.socketcan.constants import CAN_EFF_FLAG
 log = logging.getLogger(__name__)
 
 
-def pack_filters(can_filters: Optional[typechecking.CanFilters] = None) -> bytes:
+def pack_filters(can_filters: typechecking.CanFilters | None = None) -> bytes:
     if can_filters is None:
         # Pass all messages
         can_filters = [{"can_id": 0, "can_mask": 0}]
@@ -72,7 +71,7 @@ def find_available_interfaces() -> list[str]:
     return interfaces
 
 
-def error_code_to_str(code: Optional[int]) -> str:
+def error_code_to_str(code: int | None) -> str:
     """
     Converts a given error code (errno) to a useful and human readable string.
 

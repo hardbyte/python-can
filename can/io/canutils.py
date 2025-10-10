@@ -6,7 +6,7 @@ It is is compatible with "candump -L" from the canutils program
 
 import logging
 from collections.abc import Generator
-from typing import Any, Optional, TextIO, Union
+from typing import Any, TextIO
 
 from can.message import Message
 
@@ -36,7 +36,7 @@ class CanutilsLogReader(TextIOMessageReader):
 
     def __init__(
         self,
-        file: Union[StringPathLike, TextIO],
+        file: StringPathLike | TextIO,
         **kwargs: Any,
     ) -> None:
         """
@@ -63,7 +63,7 @@ class CanutilsLogReader(TextIOMessageReader):
             timestamp = float(timestamp_string[1:-1])
             can_id_string, data = frame.split("#", maxsplit=1)
 
-            channel: Union[int, str]
+            channel: int | str
             if channel_string.isdigit():
                 channel = int(channel_string)
             else:
@@ -132,7 +132,7 @@ class CanutilsLogWriter(TextIOMessageWriter):
 
     def __init__(
         self,
-        file: Union[StringPathLike, TextIO],
+        file: StringPathLike | TextIO,
         channel: str = "vcan0",
         append: bool = False,
         **kwargs: Any,
@@ -149,7 +149,7 @@ class CanutilsLogWriter(TextIOMessageWriter):
         super().__init__(file, mode="a" if append else "w")
 
         self.channel = channel
-        self.last_timestamp: Optional[float] = None
+        self.last_timestamp: float | None = None
 
     def on_message_received(self, msg: Message) -> None:
         # this is the case for the very first message:

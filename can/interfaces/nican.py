@@ -16,7 +16,6 @@ TODO: We could implement this interface such that setting other filters
 import ctypes
 import logging
 import sys
-from typing import Optional
 
 import can.typechecking
 from can import (
@@ -187,8 +186,8 @@ class NicanBus(BusABC):
     def __init__(
         self,
         channel: str,
-        can_filters: Optional[can.typechecking.CanFilters] = None,
-        bitrate: Optional[int] = None,
+        can_filters: can.typechecking.CanFilters | None = None,
+        bitrate: int | None = None,
         log_errors: bool = True,
         **kwargs,
     ) -> None:
@@ -279,9 +278,7 @@ class NicanBus(BusABC):
             **kwargs,
         )
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         """
         Read a message from a NI-CAN bus.
 
@@ -330,7 +327,7 @@ class NicanBus(BusABC):
         )
         return msg, True
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         """
         Send a message to NI-CAN.
 

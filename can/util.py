@@ -12,15 +12,12 @@ import os.path
 import platform
 import re
 import warnings
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from configparser import ConfigParser
 from time import get_clock_info, perf_counter, time
 from typing import (
     Any,
-    Callable,
-    Optional,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -50,7 +47,7 @@ elif platform.system() == "Windows" or platform.python_implementation() == "Iron
 
 
 def load_file_config(
-    path: Optional[typechecking.StringPathLike] = None, section: str = "default"
+    path: typechecking.StringPathLike | None = None, section: str = "default"
 ) -> dict[str, str]:
     """
     Loads configuration from file with following content::
@@ -83,7 +80,7 @@ def load_file_config(
     return _config
 
 
-def load_environment_config(context: Optional[str] = None) -> dict[str, str]:
+def load_environment_config(context: str | None = None) -> dict[str, str]:
     """
     Loads config dict from environmental variables (if set):
 
@@ -120,9 +117,9 @@ def load_environment_config(context: Optional[str] = None) -> dict[str, str]:
 
 
 def load_config(
-    path: Optional[typechecking.StringPathLike] = None,
-    config: Optional[dict[str, Any]] = None,
-    context: Optional[str] = None,
+    path: typechecking.StringPathLike | None = None,
+    config: dict[str, Any] | None = None,
+    context: str | None = None,
 ) -> typechecking.BusConfig:
     """
     Returns a dict with configuration details which is loaded from (in this order):
@@ -176,7 +173,7 @@ def load_config(
 
     # Use the given dict for default values
     config_sources = cast(
-        "Iterable[Union[dict[str, Any], Callable[[Any], dict[str, Any]]]]",
+        "Iterable[dict[str, Any] | Callable[[Any], dict[str, Any]]]",
         [
             given_config,
             can.rc,
@@ -258,7 +255,7 @@ def _create_bus_config(config: dict[str, Any]) -> typechecking.BusConfig:
     return cast("typechecking.BusConfig", config)
 
 
-def _dict2timing(data: dict[str, Any]) -> Union[BitTiming, BitTimingFd, None]:
+def _dict2timing(data: dict[str, Any]) -> BitTiming | BitTimingFd | None:
     """Try to instantiate a :class:`~can.BitTiming` or :class:`~can.BitTimingFd` from
     a dictionary. Return `None` if not possible."""
 
@@ -325,7 +322,7 @@ def dlc2len(dlc: int) -> int:
     return CAN_FD_DLC[dlc] if dlc <= 15 else 64
 
 
-def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
+def channel2int(channel: typechecking.Channel | None) -> int | None:
     """Try to convert the channel to an integer.
 
     :param channel:
@@ -348,8 +345,8 @@ T1 = TypeVar("T1")
 
 def deprecated_args_alias(
     deprecation_start: str,
-    deprecation_end: Optional[str] = None,
-    **aliases: Optional[str],
+    deprecation_end: str | None = None,
+    **aliases: str | None,
 ) -> Callable[[Callable[P1, T1]], Callable[P1, T1]]:
     """Allows to rename/deprecate a function kwarg(s) and optionally
     have the deprecated kwarg(s) set as alias(es)
@@ -399,9 +396,9 @@ def deprecated_args_alias(
 def _rename_kwargs(
     func_name: str,
     start: str,
-    end: Optional[str],
+    end: str | None,
     kwargs: dict[str, Any],
-    aliases: dict[str, Optional[str]],
+    aliases: dict[str, str | None],
 ) -> None:
     """Helper function for `deprecated_args_alias`"""
     for alias, new in aliases.items():
@@ -501,7 +498,7 @@ def time_perfcounter_correlation() -> tuple[float, float]:
     return t1, performance_counter
 
 
-def cast_from_string(string_val: str) -> Union[str, int, float, bool]:
+def cast_from_string(string_val: str) -> str | int | float | bool:
     """Perform trivial type conversion from :class:`str` values.
 
     :param string_val:

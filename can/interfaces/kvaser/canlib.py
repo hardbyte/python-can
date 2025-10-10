@@ -10,7 +10,6 @@ import ctypes
 import logging
 import sys
 import time
-from typing import Optional, Union
 
 from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
 from can.exceptions import CanError, CanInitializationError, CanOperationError
@@ -375,8 +374,8 @@ class KvaserBus(BusABC):
     def __init__(
         self,
         channel: int,
-        can_filters: Optional[CanFilters] = None,
-        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
+        can_filters: CanFilters | None = None,
+        timing: BitTiming | BitTimingFd | None = None,
         **kwargs,
     ):
         """

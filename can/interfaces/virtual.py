@@ -12,7 +12,7 @@ import time
 from copy import deepcopy
 from random import randint
 from threading import RLock
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from can import CanOperationError
 from can.bus import BusABC, CanProtocol
@@ -118,9 +118,7 @@ class VirtualBus(BusABC):
         if not self._open:
             raise CanOperationError("Cannot operate on a closed bus")
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         self._check_if_open()
         try:
             msg = self.queue.get(block=True, timeout=timeout)
@@ -129,7 +127,7 @@ class VirtualBus(BusABC):
         else:
             return msg, False
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         self._check_if_open()
 
         timestamp = msg.timestamp if self.preserve_timestamps else time.time()

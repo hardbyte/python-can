@@ -7,7 +7,7 @@ import logging
 import time
 import warnings
 from queue import SimpleQueue
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
 from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message, typechecking
 from can.exceptions import (
@@ -75,8 +75,8 @@ class slcanBus(BusABC):
         self,
         channel: typechecking.ChannelStr,
         tty_baudrate: int = 115200,
-        bitrate: Optional[int] = None,
-        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
+        bitrate: int | None = None,
+        timing: BitTiming | BitTimingFd | None = None,
         sleep_after_open: float = _SLEEP_AFTER_SERIAL_OPEN,
         rtscts: bool = False,
         listen_only: bool = False,
@@ -119,7 +119,7 @@ class slcanBus(BusABC):
         if serial is None:
             raise CanInterfaceNotImplementedError("The serial module is not installed")
 
-        btr: Optional[str] = kwargs.get("btr", None)
+        btr: str | None = kwargs.get("btr", None)
         if btr is not None:
             warnings.warn(
                 "The 'btr' argument is deprecated since python-can v4.5.0 "
@@ -166,7 +166,7 @@ class slcanBus(BusABC):
 
         super().__init__(channel, **kwargs)
 
-    def set_bitrate(self, bitrate: int, data_bitrate: Optional[int] = None) -> None:
+    def set_bitrate(self, bitrate: int, data_bitrate: int | None = None) -> None:
         """
         :param bitrate:
             Bitrate in bit/s
@@ -211,7 +211,7 @@ class slcanBus(BusABC):
             self.serialPortOrig.write(string.encode() + self.LINE_TERMINATOR)
             self.serialPortOrig.flush()
 
-    def _read(self, timeout: Optional[float]) -> Optional[str]:
+    def _read(self, timeout: float | None) -> str | None:
         _timeout = serial.Timeout(timeout)
 
         with error_check("Could not read from serial device"):
@@ -250,9 +250,7 @@ class slcanBus(BusABC):
     def close(self) -> None:
         self._write("C")
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         canId = None
         remote = False
         extended = False
@@ -261,7 +259,7 @@ class slcanBus(BusABC):
         fdBrs = False
 
         if self._queue.qsize():
-            string: Optional[str] = self._queue.get_nowait()
+            string: str | None = self._queue.get_nowait()
         else:
             string = self._read(timeout)
 
@@ -335,7 +333,7 @@ class slcanBus(BusABC):
             return msg, False
         return None, False
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         if timeout != self.serialPortOrig.write_timeout:
             self.serialPortOrig.write_timeout = timeout
         if msg.is_remote_frame:
@@ -381,9 +379,7 @@ class slcanBus(BusABC):
         except Exception as exception:
             raise CanOperationError("Cannot fetch fileno") from exception
 
-    def get_version(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[int], Optional[int]]:
+    def get_version(self, timeout: float | None) -> tuple[int | None, int | None]:
         """Get HW and SW version of the slcan interface.
 
         :param timeout:
@@ -411,7 +407,7 @@ class slcanBus(BusABC):
                 break
         return None, None
 
-    def get_serial_number(self, timeout: Optional[float]) -> Optional[str]:
+    def get_serial_number(self, timeout: float | None) -> str | None:
         """Get serial number of the slcan interface.
 
         :param timeout:

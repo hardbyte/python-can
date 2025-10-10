@@ -11,7 +11,7 @@ TODO: This module could use https://docs.python.org/2/library/csv.html#module-cs
 
 from base64 import b64decode, b64encode
 from collections.abc import Generator
-from typing import Any, TextIO, Union
+from typing import Any, TextIO
 
 from can.message import Message
 
@@ -30,7 +30,7 @@ class CSVReader(TextIOMessageReader):
 
     def __init__(
         self,
-        file: Union[StringPathLike, TextIO],
+        file: StringPathLike | TextIO,
         **kwargs: Any,
     ) -> None:
         """
@@ -89,7 +89,7 @@ class CSVWriter(TextIOMessageWriter):
 
     def __init__(
         self,
-        file: Union[StringPathLike, TextIO],
+        file: StringPathLike | TextIO,
         append: bool = False,
         **kwargs: Any,
     ) -> None:

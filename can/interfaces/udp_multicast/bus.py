@@ -6,7 +6,7 @@ import socket
 import struct
 import time
 import warnings
-from typing import Any, Optional, Union
+from typing import Any
 
 import can
 from can import BusABC, CanProtocol, Message
@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 # see socket.getaddrinfo()
 IPv4_ADDRESS_INFO = tuple[str, int]  # address, port
 IPv6_ADDRESS_INFO = tuple[str, int, int, int]  # address, port, flowinfo, scope_id
-IP_ADDRESS_INFO = Union[IPv4_ADDRESS_INFO, IPv6_ADDRESS_INFO]
+IP_ADDRESS_INFO = IPv4_ADDRESS_INFO | IPv6_ADDRESS_INFO
 
 # Additional constants for the interaction with Unix kernels
 SO_TIMESTAMPNS = 35
@@ -126,9 +126,7 @@ class UdpMulticastBus(BusABC):
         )
         return self._can_protocol is CanProtocol.CAN_FD
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         result = self._multicast.recv(timeout)
         if not result:
             return None, False
@@ -148,7 +146,7 @@ class UdpMulticastBus(BusABC):
 
         return can_message, False
 
-    def send(self, msg: can.Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: can.Message, timeout: float | None = None) -> None:
         if self._can_protocol is not CanProtocol.CAN_FD and msg.is_fd:
             raise can.CanOperationError(
                 "cannot send FD message over bus with CAN FD disabled"
@@ -242,7 +240,7 @@ class GeneralPurposeUdpMulticastBus:
 
         # used by send()
         self._send_destination = (self.group, self.port)
-        self._last_send_timeout: Optional[float] = None
+        self._last_send_timeout: float | None = None
 
     def _create_socket(self, address_family: socket.AddressFamily) -> socket.socket:
         """Creates a new socket. This might fail and raise an exception!
@@ -319,7 +317,7 @@ class GeneralPurposeUdpMulticastBus:
                 "could not create or configure socket"
             ) from error
 
-    def send(self, data: bytes, timeout: Optional[float] = None) -> None:
+    def send(self, data: bytes, timeout: float | None = None) -> None:
         """Send data to all group members. This call blocks.
 
         :param timeout: the timeout in seconds after which an Exception is raised is sending has failed
@@ -342,8 +340,8 @@ class GeneralPurposeUdpMulticastBus:
             raise can.CanOperationError("failed to send via socket") from error
 
     def recv(
-        self, timeout: Optional[float] = None
-    ) -> Optional[tuple[bytes, IP_ADDRESS_INFO, float]]:
+        self, timeout: float | None = None
+    ) -> tuple[bytes, IP_ADDRESS_INFO, float] | None:
         """
         Receive up to **max_buffer** bytes.
 

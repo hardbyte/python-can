@@ -7,16 +7,13 @@ import functools
 import logging
 import threading
 import time
-from collections.abc import Awaitable, Iterable
+from collections.abc import Awaitable, Callable, Iterable
 from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import (
     Any,
-    Callable,
     Final,
     NamedTuple,
-    Optional,
-    Union,
 )
 
 from can.bus import BusABC
@@ -25,7 +22,7 @@ from can.message import Message
 
 logger = logging.getLogger("can.Notifier")
 
-MessageRecipient = Union[Listener, Callable[[Message], Union[Awaitable[None], None]]]
+MessageRecipient = Listener | Callable[[Message], Awaitable[None] | None]
 
 
 class _BusNotifierPair(NamedTuple):
@@ -109,10 +106,10 @@ class Notifier(AbstractContextManager["Notifier"]):
 
     def __init__(
         self,
-        bus: Union[BusABC, list[BusABC]],
+        bus: BusABC | list[BusABC],
         listeners: Iterable[MessageRecipient],
         timeout: float = 1.0,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
     ) -> None:
         """Manages the distribution of :class:`~can.Message` instances to listeners.
 
@@ -142,19 +139,19 @@ class Notifier(AbstractContextManager["Notifier"]):
         self._loop = loop
 
         #: Exception raised in thread
-        self.exception: Optional[Exception] = None
+        self.exception: Exception | None = None
 
         self._stopped = False
         self._lock = threading.Lock()
 
-        self._readers: list[Union[int, threading.Thread]] = []
+        self._readers: list[int | threading.Thread] = []
         self._tasks: set[asyncio.Task] = set()
         _bus_list: list[BusABC] = bus if isinstance(bus, list) else [bus]
         for each_bus in _bus_list:
             self.add_bus(each_bus)
 
     @property
-    def bus(self) -> Union[BusABC, tuple["BusABC", ...]]:
+    def bus(self) -> BusABC | tuple["BusABC", ...]:
         """Return the associated bus or a tuple of buses."""
         if len(self._bus_list) == 1:
             return self._bus_list[0]
@@ -322,9 +319,9 @@ class Notifier(AbstractContextManager["Notifier"]):
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         if not self._stopped:
             self.stop()

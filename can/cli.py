@@ -1,7 +1,7 @@
 import argparse
 import re
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 import can
 from can.typechecking import CanFilter, TAdditionalCliArgs
@@ -12,8 +12,8 @@ def add_bus_arguments(
     parser: argparse.ArgumentParser,
     *,
     filter_arg: bool = False,
-    prefix: Optional[str] = None,
-    group_title: Optional[str] = None,
+    prefix: str | None = None,
+    group_title: str | None = None,
 ) -> None:
     """Adds CAN bus configuration options to an argument parser.
 
@@ -144,7 +144,7 @@ def add_bus_arguments(
 def create_bus_from_namespace(
     namespace: argparse.Namespace,
     *,
-    prefix: Optional[str] = None,
+    prefix: str | None = None,
     **kwargs: Any,
 ) -> can.BusABC:
     """Creates and returns a CAN bus instance based on the provided namespace and arguments.
@@ -192,8 +192,8 @@ class _CanFilterAction(argparse.Action):
         self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
-        values: Union[str, Sequence[Any], None],
-        option_string: Optional[str] = None,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
     ) -> None:
         if not isinstance(values, list):
             raise argparse.ArgumentError(self, "Invalid filter argument")
@@ -222,8 +222,8 @@ class _BitTimingAction(argparse.Action):
         self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
-        values: Union[str, Sequence[Any], None],
-        option_string: Optional[str] = None,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
     ) -> None:
         if not isinstance(values, list):
             raise argparse.ArgumentError(self, "Invalid --timing argument")
@@ -252,13 +252,13 @@ class _BusKwargsAction(argparse.Action):
         self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
-        values: Union[str, Sequence[Any], None],
-        option_string: Optional[str] = None,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
     ) -> None:
         if not isinstance(values, list):
             raise argparse.ArgumentError(self, "Invalid --bus-kwargs argument")
 
-        bus_kwargs: dict[str, Union[str, int, float, bool]] = {}
+        bus_kwargs: dict[str, str | int | float | bool] = {}
 
         for arg in values:
             try:
@@ -281,7 +281,7 @@ class _BusKwargsAction(argparse.Action):
 
 
 def _add_extra_args(
-    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup],
+    parser: argparse.ArgumentParser | argparse._ArgumentGroup,
 ) -> None:
     parser.add_argument(
         "extra_args",
@@ -301,7 +301,7 @@ def _parse_additional_config(unknown_args: Sequence[str]) -> TAdditionalCliArgs:
         left, right = _arg.split("=", 1)
         return left.lstrip("-").replace("-", "_"), right
 
-    args: dict[str, Union[str, int, float, bool]] = {}
+    args: dict[str, str | int | float | bool] = {}
     for key, string_val in map(_split_arg, unknown_args):
         args[key] = cast_from_string(string_val)
     return args

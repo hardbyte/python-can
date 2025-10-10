@@ -5,7 +5,7 @@ Interface for CANtact devices from Linklayer Labs
 import logging
 import time
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Any
 from unittest.mock import Mock
 
 from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
@@ -56,7 +56,7 @@ class CantactBus(BusABC):
         bitrate: int = 500_000,
         poll_interval: float = 0.01,
         monitor: bool = False,
-        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
+        timing: BitTiming | BitTimingFd | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -123,9 +123,7 @@ class CantactBus(BusABC):
             **kwargs,
         )
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         if timeout is None:
             raise TypeError(
                 f"{self.__class__.__name__} expects a numeric `timeout` value."
@@ -149,7 +147,7 @@ class CantactBus(BusABC):
         )
         return msg, False
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         with error_check("Cannot send message"):
             self.interface.send(
                 self.channel,
@@ -166,7 +164,7 @@ class CantactBus(BusABC):
             self.interface.stop()
 
 
-def mock_recv(timeout: int) -> Optional[dict[str, Any]]:
+def mock_recv(timeout: int) -> dict[str, Any] | None:
     if timeout > 0:
         return {
             "id": 0x123,

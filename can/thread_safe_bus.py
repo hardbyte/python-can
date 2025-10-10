@@ -1,6 +1,6 @@
 from contextlib import nullcontext
 from threading import RLock
-from typing import Any, Optional
+from typing import Any
 
 from can import typechecking
 from can.bus import BusABC, BusState, CanProtocol
@@ -40,9 +40,9 @@ class ThreadSafeBus(ObjectProxy):  # pylint: disable=abstract-method
 
     def __init__(
         self,
-        channel: Optional[typechecking.Channel] = None,
-        interface: Optional[str] = None,
-        config_context: Optional[str] = None,
+        channel: typechecking.Channel | None = None,
+        interface: str | None = None,
+        config_context: str | None = None,
         ignore_config: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -67,11 +67,11 @@ class ThreadSafeBus(ObjectProxy):  # pylint: disable=abstract-method
         self._lock_send = RLock()
         self._lock_recv = RLock()
 
-    def recv(self, timeout: Optional[float] = None) -> Optional[Message]:
+    def recv(self, timeout: float | None = None) -> Message | None:
         with self._lock_recv:
             return self.__wrapped__.recv(timeout=timeout)
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         with self._lock_send:
             return self.__wrapped__.send(msg=msg, timeout=timeout)
 
@@ -79,16 +79,16 @@ class ThreadSafeBus(ObjectProxy):  # pylint: disable=abstract-method
     # `send` method is already synchronized
 
     @property
-    def filters(self) -> Optional[typechecking.CanFilters]:
+    def filters(self) -> typechecking.CanFilters | None:
         with self._lock_recv:
             return self.__wrapped__.filters
 
     @filters.setter
-    def filters(self, filters: Optional[typechecking.CanFilters]) -> None:
+    def filters(self, filters: typechecking.CanFilters | None) -> None:
         with self._lock_recv:
             self.__wrapped__.filters = filters
 
-    def set_filters(self, filters: Optional[typechecking.CanFilters] = None) -> None:
+    def set_filters(self, filters: typechecking.CanFilters | None = None) -> None:
         with self._lock_recv:
             return self.__wrapped__.set_filters(filters=filters)
 

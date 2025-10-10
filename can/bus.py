@@ -6,14 +6,11 @@ import contextlib
 import logging
 import threading
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from enum import Enum, auto
 from time import time
 from types import TracebackType
 from typing import (
-    Callable,
-    Optional,
-    Union,
     cast,
 )
 
@@ -68,7 +65,7 @@ class BusABC(ABC):
     def __init__(
         self,
         channel: can.typechecking.Channel,
-        can_filters: Optional[can.typechecking.CanFilters] = None,
+        can_filters: can.typechecking.CanFilters | None = None,
         **kwargs: object,
     ):
         """Construct and open a CAN bus instance of the specified type.
@@ -101,7 +98,7 @@ class BusABC(ABC):
     def __str__(self) -> str:
         return self.channel_info
 
-    def recv(self, timeout: Optional[float] = None) -> Optional[Message]:
+    def recv(self, timeout: float | None = None) -> Message | None:
         """Block waiting for a message from the Bus.
 
         :param timeout:
@@ -139,9 +136,7 @@ class BusABC(ABC):
 
                 return None
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         """
         Read a message from the bus and tell whether it was filtered.
         This methods may be called by :meth:`~can.BusABC.recv`
@@ -184,7 +179,7 @@ class BusABC(ABC):
         raise NotImplementedError("Trying to read from a write only bus?")
 
     @abstractmethod
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         """Transmit a message to the CAN bus.
 
         Override this method to enable the transmit path.
@@ -205,12 +200,12 @@ class BusABC(ABC):
 
     def send_periodic(
         self,
-        msgs: Union[Message, Sequence[Message]],
+        msgs: Message | Sequence[Message],
         period: float,
-        duration: Optional[float] = None,
+        duration: float | None = None,
         store_task: bool = True,
         autostart: bool = True,
-        modifier_callback: Optional[Callable[[Message], None]] = None,
+        modifier_callback: Callable[[Message], None] | None = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
@@ -297,11 +292,11 @@ class BusABC(ABC):
 
     def _send_periodic_internal(
         self,
-        msgs: Union[Sequence[Message], Message],
+        msgs: Sequence[Message] | Message,
         period: float,
-        duration: Optional[float] = None,
+        duration: float | None = None,
         autostart: bool = True,
-        modifier_callback: Optional[Callable[[Message], None]] = None,
+        modifier_callback: Callable[[Message], None] | None = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Default implementation of periodic message sending using threading.
 
@@ -378,7 +373,7 @@ class BusABC(ABC):
                 yield msg
 
     @property
-    def filters(self) -> Optional[can.typechecking.CanFilters]:
+    def filters(self) -> can.typechecking.CanFilters | None:
         """
         Modify the filters of this bus. See :meth:`~can.BusABC.set_filters`
         for details.
@@ -386,12 +381,10 @@ class BusABC(ABC):
         return self._filters
 
     @filters.setter
-    def filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
+    def filters(self, filters: can.typechecking.CanFilters | None) -> None:
         self.set_filters(filters)
 
-    def set_filters(
-        self, filters: Optional[can.typechecking.CanFilters] = None
-    ) -> None:
+    def set_filters(self, filters: can.typechecking.CanFilters | None = None) -> None:
         """Apply filtering to all messages received by this Bus.
 
         All messages that match at least one filter are returned.
@@ -417,7 +410,7 @@ class BusABC(ABC):
         with contextlib.suppress(NotImplementedError):
             self._apply_filters(self._filters)
 
-    def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
+    def _apply_filters(self, filters: can.typechecking.CanFilters | None) -> None:
         """
         Hook for applying the filters to the underlying kernel or
         hardware if supported/implemented by the interface.
@@ -484,9 +477,9 @@ class BusABC(ABC):
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         self.shutdown()
 

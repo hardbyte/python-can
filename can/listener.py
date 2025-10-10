@@ -3,12 +3,11 @@ This module contains the implementation of `can.Listener` and some readers.
 """
 
 import asyncio
-import sys
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from queue import Empty, SimpleQueue
-from typing import Any, Optional
+from typing import Any
 
 from can.bus import BusABC
 from can.message import Message
@@ -99,7 +98,7 @@ class BufferedReader(Listener):  # pylint: disable=abstract-method
         else:
             self.buffer.put(msg)
 
-    def get_message(self, timeout: float = 0.5) -> Optional[Message]:
+    def get_message(self, timeout: float = 0.5) -> Message | None:
         """
         Attempts to retrieve the message that has been in the queue for the longest amount
         of time (FIFO). If no message is available, it blocks for given timeout or until a
@@ -146,12 +145,6 @@ class AsyncBufferedReader(
                 DeprecationWarning,
                 stacklevel=2,
             )
-            if sys.version_info < (3, 10):
-                self.buffer = asyncio.Queue(  # pylint: disable=unexpected-keyword-arg
-                    loop=kwargs["loop"]
-                )
-                return
-
         self.buffer = asyncio.Queue()
 
     def on_message_received(self, msg: Message) -> None:

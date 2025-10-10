@@ -21,7 +21,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         env: [
-          "py39",
           "py310",
           "py311",
           "py312",

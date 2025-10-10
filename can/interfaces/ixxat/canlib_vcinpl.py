@@ -15,8 +15,7 @@ import logging
 import sys
 import time
 import warnings
-from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from collections.abc import Callable, Sequence
 
 from can import (
     BusABC,
@@ -436,7 +435,7 @@ class IXXATBus(BusABC):
         channel: int,
         can_filters=None,
         receive_own_messages: bool = False,
-        unique_hardware_id: Optional[int] = None,
+        unique_hardware_id: int | None = None,
         extended: bool = True,
         rx_fifo_size: int = 16,
         tx_fifo_size: int = 16,
@@ -770,7 +769,7 @@ class IXXATBus(BusABC):
 
         return rx_msg, True
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         """
         Sends a message on the bus. The interface may buffer the message.
 
@@ -805,11 +804,11 @@ class IXXATBus(BusABC):
 
     def _send_periodic_internal(
         self,
-        msgs: Union[Sequence[Message], Message],
+        msgs: Sequence[Message] | Message,
         period: float,
-        duration: Optional[float] = None,
+        duration: float | None = None,
         autostart: bool = True,
-        modifier_callback: Optional[Callable[[Message], None]] = None,
+        modifier_callback: Callable[[Message], None] | None = None,
     ) -> CyclicSendTaskABC:
         """Send a message using built-in cyclic transmit list functionality."""
         if modifier_callback is None:

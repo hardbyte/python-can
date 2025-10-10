@@ -4,7 +4,6 @@ This interface is for Windows only, otherwise use SocketCAN.
 
 import logging
 from ctypes import byref
-from typing import Optional, Union
 
 from can import (
     BitTiming,
@@ -110,12 +109,12 @@ class Usb2canBus(BusABC):
 
     def __init__(
         self,
-        channel: Optional[str] = None,
+        channel: str | None = None,
         dll: str = "usb2can.dll",
         flags: int = 0x00000008,
         bitrate: int = 500000,
-        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
-        serial: Optional[str] = None,
+        timing: BitTiming | BitTimingFd | None = None,
+        serial: str | None = None,
         **kwargs,
     ):
         self.can = Usb2CanAbstractionLayer(dll)
@@ -207,7 +206,7 @@ class Usb2canBus(BusABC):
         return Usb2canBus.detect_available_configs()
 
     @staticmethod
-    def detect_available_configs(serial_matcher: Optional[str] = None):
+    def detect_available_configs(serial_matcher: str | None = None):
         """
         Uses the *Windows Management Instrumentation* to identify serial devices.
 

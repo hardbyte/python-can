@@ -17,7 +17,6 @@ For example, validating typical arguments and parameters might result in a
 
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Optional
 
 
 class CanError(Exception):
@@ -51,7 +50,7 @@ class CanError(Exception):
     def __init__(
         self,
         message: str = "",
-        error_code: Optional[int] = None,
+        error_code: int | None = None,
     ) -> None:
         self.error_code = error_code
         super().__init__(
@@ -108,7 +107,7 @@ class CanTimeoutError(CanError, TimeoutError):
 
 @contextmanager
 def error_check(
-    error_message: Optional[str] = None,
+    error_message: str | None = None,
     exception_type: type[CanError] = CanOperationError,
 ) -> Generator[None, None, None]:
     """Catches any exceptions and turns them into the new type while preserving the stack trace."""

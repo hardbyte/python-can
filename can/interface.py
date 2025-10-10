@@ -8,7 +8,7 @@ import concurrent.futures.thread
 import importlib
 import logging
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
 from . import util
 from .bus import BusABC
@@ -64,9 +64,9 @@ def _get_class_for_interface(interface: str) -> type[BusABC]:
     context="config_context",
 )
 def Bus(  # noqa: N802
-    channel: Optional[Channel] = None,
-    interface: Optional[str] = None,
-    config_context: Optional[str] = None,
+    channel: Channel | None = None,
+    interface: str | None = None,
+    config_context: str | None = None,
     ignore_config: bool = False,
     **kwargs: Any,
 ) -> BusABC:
@@ -140,7 +140,7 @@ def Bus(  # noqa: N802
 
 
 def detect_available_configs(
-    interfaces: Union[None, str, Iterable[str]] = None,
+    interfaces: None | str | Iterable[str] = None,
     timeout: float = 5.0,
 ) -> Sequence[AutoDetectedConfig]:
     """Detect all configurations/channels that the interfaces could
