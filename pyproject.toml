@@ -12,7 +12,7 @@ dependencies = [
     "packaging >= 23.1",
     "typing_extensions>=3.10.0.0",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "LGPL-3.0-only"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -27,7 +27,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -89,9 +88,9 @@ docs = [
 ]
 lint = [
     "pylint==3.3.*",
-    "ruff==0.12.11",
-    "black==25.1.*",
-    "mypy==1.17.*",
+    "ruff==0.14.*",
+    "black==25.9.*",
+    "mypy==1.18.*",
 ]
 test = [
     "pytest==8.4.*",
@@ -100,7 +99,7 @@ test = [
     "coveralls==4.0.*",
     "pytest-cov==6.2.*",
     "coverage==7.10.*",
-    "hypothesis>=6.136,<6.138",
+    "hypothesis==6.*",
     "parameterized==0.9.*",
 ]
 dev = [
@@ -132,6 +131,7 @@ disallow_incomplete_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 exclude = [
+    "^build",
     "^doc/conf.py$",
     "^test",
     "^can/interfaces/etas",

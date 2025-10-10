@@ -4,7 +4,6 @@ import sys
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
-    Union,
 )
 
 from can import BusState, Logger, SizedRotatingLogger
@@ -110,7 +109,7 @@ def main() -> None:
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now()})")
 
-    logger: Union[MessageWriter, BaseRotatingLogger]
+    logger: MessageWriter | BaseRotatingLogger
     if results.file_size:
         logger = SizedRotatingLogger(
             base_filename=results.log_file,

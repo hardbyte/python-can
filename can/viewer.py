@@ -173,7 +173,9 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
                     # The conversion from raw values to SI-units are given in the rest of the tuple
                     values = [
                         d // val if isinstance(val, int) else float(d) / val
-                        for d, val in zip(struct_t.unpack(data), value[1:])
+                        for d, val in zip(
+                            struct_t.unpack(data), value[1:], strict=False
+                        )
                     ]
                 else:
                     # No conversion from SI-units is needed

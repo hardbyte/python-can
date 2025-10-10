@@ -1,13 +1,13 @@
 """Exception/error declarations for the vector interface."""
 
-from typing import Any, Optional, Union
+from typing import Any
 
 from can import CanError, CanInitializationError, CanOperationError
 
 
 class VectorError(CanError):
     def __init__(
-        self, error_code: Optional[int], error_string: str, function: str
+        self, error_code: int | None, error_string: str, function: str
     ) -> None:
         super().__init__(
             message=f"{function} failed ({error_string})", error_code=error_code
@@ -16,7 +16,7 @@ class VectorError(CanError):
         # keep reference to args for pickling
         self._args = error_code, error_string, function
 
-    def __reduce__(self) -> Union[str, tuple[Any, ...]]:
+    def __reduce__(self) -> str | tuple[Any, ...]:
         return type(self), self._args, {}
 
 

@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Any
 
 import can
 from can.exceptions import CanInitializationError
@@ -11,12 +11,12 @@ class EtasBus(can.BusABC):
     def __init__(
         self,
         channel: str,
-        can_filters: Optional[can.typechecking.CanFilters] = None,
+        can_filters: can.typechecking.CanFilters | None = None,
         receive_own_messages: bool = False,
         bitrate: int = 1000000,
         fd: bool = True,
         data_bitrate: int = 2000000,
-        **kwargs: dict[str, any],
+        **kwargs: dict[str, Any],
     ):
         self.receive_own_messages = receive_own_messages
         self._can_protocol = can.CanProtocol.CAN_FD if fd else can.CanProtocol.CAN_20
@@ -120,9 +120,7 @@ class EtasBus(can.BusABC):
         # Super call must be after child init since super calls set_filters
         super().__init__(channel=channel, **kwargs)
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[can.Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[can.Message | None, bool]:
         ociMsgs = (ctypes.POINTER(OCI_CANMessageEx) * 1)()
         ociMsg = OCI_CANMessageEx()
         ociMsgs[0] = ctypes.pointer(ociMsg)
@@ -189,7 +187,7 @@ class EtasBus(can.BusABC):
 
         return (msg, True)
 
-    def send(self, msg: can.Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: can.Message, timeout: float | None = None) -> None:
         ociMsgs = (ctypes.POINTER(OCI_CANMessageEx) * 1)()
         ociMsg = OCI_CANMessageEx()
         ociMsgs[0] = ctypes.pointer(ociMsg)
@@ -219,7 +217,7 @@ class EtasBus(can.BusABC):
 
         OCI_WriteCANDataEx(self.txQueue, OCI_NO_TIME, ociMsgs, 1, None)
 
-    def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
+    def _apply_filters(self, filters: can.typechecking.CanFilters | None) -> None:
         if self._oci_filters:
             OCI_RemoveCANFrameFilterEx(self.rxQueue, self._oci_filters, 1)
 

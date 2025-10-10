@@ -15,8 +15,7 @@ import struct
 import threading
 import time
 import warnings
-from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from collections.abc import Callable, Sequence
 
 import can
 from can import BusABC, CanProtocol, Message
@@ -51,14 +50,12 @@ RECEIVED_ANCILLARY_BUFFER_SIZE = (
 
 # Setup BCM struct
 def bcm_header_factory(
-    fields: list[tuple[str, Union[type[ctypes.c_uint32], type[ctypes.c_long]]]],
+    fields: list[tuple[str, type[ctypes.c_uint32] | type[ctypes.c_long]]],
     alignment: int = 8,
 ):
     curr_stride = 0
     results: list[
-        tuple[
-            str, Union[type[ctypes.c_uint8], type[ctypes.c_uint32], type[ctypes.c_long]]
-        ]
+        tuple[str, type[ctypes.c_uint8] | type[ctypes.c_uint32] | type[ctypes.c_long]]
     ] = []
     pad_index = 0
     for field in fields:
@@ -405,9 +402,9 @@ class CyclicSendTask(
         self,
         bcm_socket: socket.socket,
         task_id: int,
-        messages: Union[Sequence[Message], Message],
+        messages: Sequence[Message] | Message,
         period: float,
-        duration: Optional[float] = None,
+        duration: float | None = None,
         autostart: bool = True,
     ) -> None:
         """Construct and :meth:`~start` a task.
@@ -507,7 +504,7 @@ class CyclicSendTask(
         stopframe = build_bcm_tx_delete_header(self.task_id, self.flags)
         send_bcm(self.bcm_socket, stopframe)
 
-    def modify_data(self, messages: Union[Sequence[Message], Message]) -> None:
+    def modify_data(self, messages: Sequence[Message] | Message) -> None:
         """Update the contents of the periodically sent CAN messages by
         sending TX_SETUP message to Linux kernel.
 
@@ -605,9 +602,7 @@ def bind_socket(sock: socket.socket, channel: str = "can0") -> None:
     log.debug("Bound socket.")
 
 
-def capture_message(
-    sock: socket.socket, get_channel: bool = False
-) -> Optional[Message]:
+def capture_message(sock: socket.socket, get_channel: bool = False) -> Message | None:
     """
     Captures a message from given socket.
 
@@ -702,7 +697,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         receive_own_messages: bool = False,
         local_loopback: bool = True,
         fd: bool = False,
-        can_filters: Optional[CanFilters] = None,
+        can_filters: CanFilters | None = None,
         ignore_rx_error_frames=False,
         **kwargs,
     ) -> None:
@@ -818,9 +813,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         log.debug("Closing raw can socket")
         self.socket.close()
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         try:
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
@@ -842,7 +835,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         # socket wasn't readable or timeout occurred
         return None, self._is_filtered
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         """Transmit a message to the CAN bus.
 
         :param msg: A message object.
@@ -880,7 +873,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
 
         raise can.CanOperationError("Transmit buffer full")
 
-    def _send_once(self, data: bytes, channel: Optional[str] = None) -> int:
+    def _send_once(self, data: bytes, channel: str | None = None) -> int:
         try:
             if self.channel == "" and channel:
                 # Message must be addressed to a specific channel
@@ -895,11 +888,11 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
 
     def _send_periodic_internal(
         self,
-        msgs: Union[Sequence[Message], Message],
+        msgs: Sequence[Message] | Message,
         period: float,
-        duration: Optional[float] = None,
+        duration: float | None = None,
         autostart: bool = True,
-        modifier_callback: Optional[Callable[[Message], None]] = None,
+        modifier_callback: Callable[[Message], None] | None = None,
     ) -> can.broadcastmanager.CyclicSendTaskABC:
         """Start sending messages at a given period on this bus.
 
@@ -974,7 +967,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             self._bcm_sockets[channel] = create_bcm_socket(self.channel)
         return self._bcm_sockets[channel]
 
-    def _apply_filters(self, filters: Optional[can.typechecking.CanFilters]) -> None:
+    def _apply_filters(self, filters: can.typechecking.CanFilters | None) -> None:
         try:
             self.socket.setsockopt(
                 constants.SOL_CAN_RAW, constants.CAN_RAW_FILTER, pack_filters(filters)

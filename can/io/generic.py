@@ -20,10 +20,8 @@ from typing import (
     BinaryIO,
     Generic,
     Literal,
-    Optional,
     TextIO,
     TypeVar,
-    Union,
 )
 
 from typing_extensions import Self
@@ -71,9 +69,9 @@ class MessageWriter(AbstractContextManager["MessageWriter"], Listener, ABC):
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> Literal[False]:
         """Exit the context manager and ensure proper cleanup."""
         self.stop()
@@ -110,7 +108,7 @@ class FileIOMessageWriter(SizedMessageWriter, Generic[_IoTypeVar]):
     file: _IoTypeVar
 
     @abstractmethod
-    def __init__(self, file: Union[StringPathLike, _IoTypeVar], **kwargs: Any) -> None:
+    def __init__(self, file: StringPathLike | _IoTypeVar, **kwargs: Any) -> None:
         pass
 
     def stop(self) -> None:
@@ -122,7 +120,7 @@ class FileIOMessageWriter(SizedMessageWriter, Generic[_IoTypeVar]):
         return self.file.tell()
 
 
-class TextIOMessageWriter(FileIOMessageWriter[Union[TextIO, TextIOWrapper]], ABC):
+class TextIOMessageWriter(FileIOMessageWriter[TextIO | TextIOWrapper], ABC):
     """Text-based message writer implementation.
 
     :param file: Text file to write to
@@ -132,8 +130,8 @@ class TextIOMessageWriter(FileIOMessageWriter[Union[TextIO, TextIOWrapper]], ABC
 
     def __init__(
         self,
-        file: Union[StringPathLike, TextIO, TextIOWrapper],
-        mode: "Union[OpenTextModeUpdating, OpenTextModeWriting]" = "w",
+        file: StringPathLike | TextIO | TextIOWrapper,
+        mode: "OpenTextModeUpdating | OpenTextModeWriting" = "w",
         **kwargs: Any,
     ) -> None:
         if isinstance(file, (str, os.PathLike)):
@@ -144,7 +142,7 @@ class TextIOMessageWriter(FileIOMessageWriter[Union[TextIO, TextIOWrapper]], ABC
             self.file = file
 
 
-class BinaryIOMessageWriter(FileIOMessageWriter[Union[BinaryIO, BufferedIOBase]], ABC):
+class BinaryIOMessageWriter(FileIOMessageWriter[BinaryIO | BufferedIOBase], ABC):
     """Binary file message writer implementation.
 
     :param file: Binary file to write to
@@ -152,10 +150,10 @@ class BinaryIOMessageWriter(FileIOMessageWriter[Union[BinaryIO, BufferedIOBase]]
     :param kwargs: Additional implementation specific arguments
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=unused-argument
         self,
-        file: Union[StringPathLike, BinaryIO, BufferedIOBase],
-        mode: "Union[OpenBinaryModeUpdating, OpenBinaryModeWriting]" = "wb",
+        file: StringPathLike | BinaryIO | BufferedIOBase,
+        mode: "OpenBinaryModeUpdating | OpenBinaryModeWriting" = "wb",
         **kwargs: Any,
     ) -> None:
         if isinstance(file, (str, os.PathLike)):
@@ -188,9 +186,9 @@ class MessageReader(AbstractContextManager["MessageReader"], Iterable[Message], 
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> Literal[False]:
         self.stop()
         return False
@@ -210,14 +208,14 @@ class FileIOMessageReader(MessageReader, Generic[_IoTypeVar]):
     file: _IoTypeVar
 
     @abstractmethod
-    def __init__(self, file: Union[StringPathLike, _IoTypeVar], **kwargs: Any) -> None:
+    def __init__(self, file: StringPathLike | _IoTypeVar, **kwargs: Any) -> None:
         pass
 
     def stop(self) -> None:
         self.file.close()
 
 
-class TextIOMessageReader(FileIOMessageReader[Union[TextIO, TextIOWrapper]], ABC):
+class TextIOMessageReader(FileIOMessageReader[TextIO | TextIOWrapper], ABC):
     """Text-based message reader implementation.
 
     :param file: Text file to read from
@@ -227,7 +225,7 @@ class TextIOMessageReader(FileIOMessageReader[Union[TextIO, TextIOWrapper]], ABC
 
     def __init__(
         self,
-        file: Union[StringPathLike, TextIO, TextIOWrapper],
+        file: StringPathLike | TextIO | TextIOWrapper,
         mode: "OpenTextModeReading" = "r",
         **kwargs: Any,
     ) -> None:
@@ -239,7 +237,7 @@ class TextIOMessageReader(FileIOMessageReader[Union[TextIO, TextIOWrapper]], ABC
             self.file = file
 
 
-class BinaryIOMessageReader(FileIOMessageReader[Union[BinaryIO, BufferedIOBase]], ABC):
+class BinaryIOMessageReader(FileIOMessageReader[BinaryIO | BufferedIOBase], ABC):
     """Binary file message reader implementation.
 
     :param file: Binary file to read from
@@ -247,9 +245,9 @@ class BinaryIOMessageReader(FileIOMessageReader[Union[BinaryIO, BufferedIOBase]]
     :param kwargs: Additional implementation specific arguments
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=unused-argument
         self,
-        file: Union[StringPathLike, BinaryIO, BufferedIOBase],
+        file: StringPathLike | BinaryIO | BufferedIOBase,
         mode: "OpenBinaryModeReading" = "rb",
         **kwargs: Any,
     ) -> None:

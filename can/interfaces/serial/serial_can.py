@@ -11,7 +11,7 @@ import io
 import logging
 import struct
 from collections.abc import Sequence
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from can import (
     BusABC,
@@ -109,7 +109,7 @@ class SerialBus(BusABC):
         super().shutdown()
         self._ser.close()
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         """
         Send a message over the serial device.
 
@@ -161,9 +161,7 @@ class SerialBus(BusABC):
         except serial.SerialTimeoutException as error:
             raise CanTimeoutError() from error
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         """
         Read a message from the serial device.
 
