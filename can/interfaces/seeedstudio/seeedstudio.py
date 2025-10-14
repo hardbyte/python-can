@@ -63,6 +63,7 @@ class SeeedBus(BusABC):
         frame_type="STD",
         operation_mode="normal",
         bitrate=500000,
+        can_filters = [{"can_id": 0x00, "can_mask": 0x00}],
         **kwargs,
     ):
         """
@@ -79,12 +80,18 @@ class SeeedBus(BusABC):
         :param str frame_type:
             STD or EXT, to select standard or extended messages
 
-        :param operation_mode
+        :param operation_mode:
             normal, loopback, silent or loopback_and_silent.
 
-        :param bitrate
+        :param bitrate:
             CAN bus bit rate, selected from available list.
 
+        :param can_filters:
+            A list of can filter dictionaries. For the SeeedBus interface,
+            this list must not contain more than one filter.
+            Each filter is a dict with 'can_id', 'can_mask'.
+            Defaults to No filter (i.e [{"can_id": 0x00, "can_mask": 0x00}]).
+        
         :raises can.CanInitializationError: If the given parameters are invalid.
         :raises can.CanInterfaceNotImplementedError: If the serial module is not installed.
         """
@@ -93,12 +100,21 @@ class SeeedBus(BusABC):
             raise can.CanInterfaceNotImplementedError(
                 "the serial module is not installed"
             )
+        
+        if len(can_filters) > 1:
+            raise can.CanInitializationError(
+                f"The SeeedBus interface only supports one hardware filter, "
+                f"but {len(can_filters)} were provided."
+            )
+        
+        # Get the first (and only) filter in can_filters
+        hw_filter = can_filters[0]
 
         self.bit_rate = bitrate
         self.frame_type = frame_type
         self.op_mode = operation_mode
-        self.filter_id = bytearray([0x00, 0x00, 0x00, 0x00])
-        self.mask_id = bytearray([0x00, 0x00, 0x00, 0x00])
+        self.filter_id = struct.pack('<I', hw_filter['can_id'])
+        self.mask_id = struct.pack('<I', hw_filter['can_mask'])
         self._can_protocol = CanProtocol.CAN_20
 
         if not channel:
