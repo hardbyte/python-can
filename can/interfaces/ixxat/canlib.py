@@ -1,5 +1,4 @@
-from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from collections.abc import Callable, Sequence
 
 import can.interfaces.ixxat.canlib_vcinpl as vcinpl
 import can.interfaces.ixxat.canlib_vcinpl2 as vcinpl2
@@ -26,20 +25,20 @@ class IXXATBus(BusABC):
         channel: int,
         can_filters=None,
         receive_own_messages: bool = False,
-        unique_hardware_id: Optional[int] = None,
+        unique_hardware_id: int | None = None,
         extended: bool = True,
         fd: bool = False,
-        rx_fifo_size: Optional[int] = None,
-        tx_fifo_size: Optional[int] = None,
+        rx_fifo_size: int | None = None,
+        tx_fifo_size: int | None = None,
         bitrate: int = 500000,
         data_bitrate: int = 2000000,
-        sjw_abr: Optional[int] = None,
-        tseg1_abr: Optional[int] = None,
-        tseg2_abr: Optional[int] = None,
-        sjw_dbr: Optional[int] = None,
-        tseg1_dbr: Optional[int] = None,
-        tseg2_dbr: Optional[int] = None,
-        ssp_dbr: Optional[int] = None,
+        sjw_abr: int | None = None,
+        tseg1_abr: int | None = None,
+        tseg2_abr: int | None = None,
+        sjw_dbr: int | None = None,
+        tseg1_dbr: int | None = None,
+        tseg2_dbr: int | None = None,
+        ssp_dbr: int | None = None,
         **kwargs,
     ):
         """
@@ -147,16 +146,16 @@ class IXXATBus(BusABC):
         """Read a message from IXXAT device."""
         return self.bus._recv_internal(timeout)
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         return self.bus.send(msg, timeout)
 
     def _send_periodic_internal(
         self,
-        msgs: Union[Sequence[Message], Message],
+        msgs: Sequence[Message] | Message,
         period: float,
-        duration: Optional[float] = None,
+        duration: float | None = None,
         autostart: bool = True,
-        modifier_callback: Optional[Callable[[Message], None]] = None,
+        modifier_callback: Callable[[Message], None] | None = None,
     ) -> CyclicSendTaskABC:
         return self.bus._send_periodic_internal(
             msgs, period, duration, autostart, modifier_callback

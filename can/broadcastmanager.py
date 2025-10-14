@@ -12,13 +12,10 @@ import sys
 import threading
 import time
 import warnings
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import (
     TYPE_CHECKING,
-    Callable,
     Final,
-    Optional,
-    Union,
     cast,
 )
 
@@ -78,7 +75,7 @@ class _Pywin32:
         )
 
 
-PYWIN32: Optional[_Pywin32] = None
+PYWIN32: _Pywin32 | None = None
 if sys.platform == "win32" and sys.version_info < (3, 11):
     try:
         PYWIN32 = _Pywin32()
@@ -105,9 +102,7 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
     Message send task with defined period
     """
 
-    def __init__(
-        self, messages: Union[Sequence[Message], Message], period: float
-    ) -> None:
+    def __init__(self, messages: Sequence[Message] | Message, period: float) -> None:
         """
         :param messages:
             The messages to be sent periodically.
@@ -125,7 +120,7 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
 
     @staticmethod
     def _check_and_convert_messages(
-        messages: Union[Sequence[Message], Message],
+        messages: Sequence[Message] | Message,
     ) -> tuple[Message, ...]:
         """Helper function to convert a Message or Sequence of messages into a
         tuple, and raises an error when the given value is invalid.
@@ -164,9 +159,9 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
 class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
     def __init__(
         self,
-        messages: Union[Sequence[Message], Message],
+        messages: Sequence[Message] | Message,
         period: float,
-        duration: Optional[float],
+        duration: float | None,
     ) -> None:
         """Message send task with a defined duration and period.
 
@@ -181,7 +176,7 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
         """
         super().__init__(messages, period)
         self.duration = duration
-        self.end_time: Optional[float] = None
+        self.end_time: float | None = None
 
 
 class RestartableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
@@ -215,7 +210,7 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
                 "from when the task was created"
             )
 
-    def modify_data(self, messages: Union[Sequence[Message], Message]) -> None:
+    def modify_data(self, messages: Sequence[Message] | Message) -> None:
         """Update the contents of the periodically sent messages, without
         altering the timing.
 
@@ -242,7 +237,7 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
     def __init__(
         self,
         channel: typechecking.Channel,
-        messages: Union[Sequence[Message], Message],
+        messages: Sequence[Message] | Message,
         count: int,  # pylint: disable=unused-argument
         initial_period: float,  # pylint: disable=unused-argument
         subsequent_period: float,
@@ -272,12 +267,12 @@ class ThreadBasedCyclicSendTask(
         self,
         bus: "BusABC",
         lock: threading.Lock,
-        messages: Union[Sequence[Message], Message],
+        messages: Sequence[Message] | Message,
         period: float,
-        duration: Optional[float] = None,
-        on_error: Optional[Callable[[Exception], bool]] = None,
+        duration: float | None = None,
+        on_error: Callable[[Exception], bool] | None = None,
         autostart: bool = True,
-        modifier_callback: Optional[Callable[[Message], None]] = None,
+        modifier_callback: Callable[[Message], None] | None = None,
     ) -> None:
         """Transmits `messages` with a `period` seconds for `duration` seconds on a `bus`.
 
@@ -298,13 +293,13 @@ class ThreadBasedCyclicSendTask(
         self.bus = bus
         self.send_lock = lock
         self.stopped = True
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.on_error = on_error
         self.modifier_callback = modifier_callback
 
         self.period_ms = int(round(period * 1000, 0))
 
-        self.event: Optional[_Pywin32Event] = None
+        self.event: _Pywin32Event | None = None
         if PYWIN32:
             if self.period_ms == 0:
                 # A period of 0 would mean that the timer is signaled only once
@@ -338,7 +333,7 @@ class ThreadBasedCyclicSendTask(
             self.thread = threading.Thread(target=self._run, name=name)
             self.thread.daemon = True
 
-            self.end_time: Optional[float] = (
+            self.end_time: float | None = (
                 time.perf_counter() + self.duration if self.duration else None
             )
 

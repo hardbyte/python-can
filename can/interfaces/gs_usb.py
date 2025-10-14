@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import usb
 from gs_usb.constants import CAN_EFF_FLAG, CAN_ERR_FLAG, CAN_MAX_DLC, CAN_RTR_FLAG
@@ -82,7 +81,7 @@ class GsUsbBus(can.BusABC):
             **kwargs,
         )
 
-    def send(self, msg: can.Message, timeout: Optional[float] = None):
+    def send(self, msg: can.Message, timeout: float | None = None):
         """Transmit a message to the CAN bus.
 
         :param Message msg: A message object.
@@ -117,9 +116,7 @@ class GsUsbBus(can.BusABC):
         except usb.core.USBError as exc:
             raise CanOperationError("The message could not be sent") from exc
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[can.Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[can.Message | None, bool]:
         """
         Read a message from the bus and tell whether it was filtered.
         This methods may be called by :meth:`~can.BusABC.recv`

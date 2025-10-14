@@ -7,6 +7,7 @@ Similar to canplayer in the can-utils package.
 
 import argparse
 import errno
+import math
 import sys
 from datetime import datetime
 from typing import TYPE_CHECKING, cast
@@ -26,18 +27,40 @@ if TYPE_CHECKING:
     from can import Message
 
 
+def _parse_loop(value: str) -> int | float:
+    """Parse the loop argument, allowing integer or 'i' for infinite."""
+    if value == "i":
+        return float("inf")
+    try:
+        return int(value)
+    except ValueError as exc:
+        err_msg = "Loop count must be an integer or 'i' for infinite."
+        raise argparse.ArgumentTypeError(err_msg) from exc
+
+
+def _format_player_start_message(iteration: int, loop_count: int | float) -> str:
+    """
+    Generate a status message indicating the start of a CAN log replay iteration.
+
+    :param iteration:
+        The current loop iteration (zero-based).
+    :param loop_count:
+        Total number of replay loops, or infinity for endless replay.
+    :return:
+        A formatted string describing the replay start and loop information.
+    """
+    if loop_count < 2:
+        loop_info = ""
+    else:
+        loop_val = "∞" if math.isinf(loop_count) else str(loop_count)
+        loop_info = f" [loop {iteration + 1}/{loop_val}]"
+    return f"Can LogReader (Started on {datetime.now()}){loop_info}"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Replay CAN traffic.")
 
     player_group = parser.add_argument_group("Player arguments")
-
-    player_group.add_argument(
-        "-f",
-        "--file_name",
-        dest="log_file",
-        help="Path and base log filename, for supported types see can.LogReader.",
-        default=None,
-    )
 
     player_group.add_argument(
         "-v",
@@ -73,9 +96,20 @@ def main() -> None:
         "--skip",
         type=float,
         default=60 * 60 * 24,
-        help="<s> skip gaps greater than 's' seconds",
+        help="Skip gaps greater than 's' seconds between messages. "
+        "Default is 86400 (24 hours), meaning only very large gaps are skipped. "
+        "Set to 0 to never skip any gaps (all delays are preserved). "
+        "Set to a very small value (e.g., 1e-4) "
+        "to skip all gaps and send messages as fast as possible.",
     )
-
+    player_group.add_argument(
+        "-l",
+        "--loop",
+        type=_parse_loop,
+        metavar="NUM",
+        default=1,
+        help="Replay file NUM times. Use 'i' for infinite loop (default: 1)",
+    )
     player_group.add_argument(
         "infile",
         metavar="input-file",
@@ -103,25 +137,28 @@ def main() -> None:
     error_frames = results.error_frames
 
     with create_bus_from_namespace(results) as bus:
-        with LogReader(results.infile, **additional_config) as reader:
-            in_sync = MessageSync(
-                cast("Iterable[Message]", reader),
-                timestamps=results.timestamps,
-                gap=results.gap,
-                skip=results.skip,
-            )
+        loop_count: int | float = results.loop
+        iteration = 0
+        try:
+            while iteration < loop_count:
+                with LogReader(results.infile, **additional_config) as reader:
+                    in_sync = MessageSync(
+                        cast("Iterable[Message]", reader),
+                        timestamps=results.timestamps,
+                        gap=results.gap,
+                        skip=results.skip,
+                    )
+                    print(_format_player_start_message(iteration, loop_count))
 
-            print(f"Can LogReader (Started on {datetime.now()})")
-
-            try:
-                for message in in_sync:
-                    if message.is_error_frame and not error_frames:
-                        continue
-                    if verbosity >= 3:
-                        print(message)
-                    bus.send(message)
-            except KeyboardInterrupt:
-                pass
+                    for message in in_sync:
+                        if message.is_error_frame and not error_frames:
+                            continue
+                        if verbosity >= 3:
+                            print(message)
+                        bus.send(message)
+                iteration += 1
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == "__main__":

@@ -6,15 +6,14 @@ import gzip
 import os
 import pathlib
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import datetime
 from types import TracebackType
 from typing import (
     Any,
-    Callable,
     ClassVar,
     Final,
     Literal,
-    Optional,
 )
 
 from typing_extensions import Self
@@ -107,7 +106,7 @@ def _compress(filename: StringPathLike, **kwargs: Any) -> FileIOMessageWriter[An
 
 
 def Logger(  # noqa: N802
-    filename: Optional[StringPathLike], **kwargs: Any
+    filename: StringPathLike | None, **kwargs: Any
 ) -> MessageWriter:
     """Find and return the appropriate :class:`~can.io.generic.MessageWriter` instance
     for a given file suffix.
@@ -177,12 +176,12 @@ class BaseRotatingLogger(MessageWriter, ABC):
     #: If this attribute is set to a callable, the :meth:`~BaseRotatingLogger.rotation_filename`
     #: method delegates to this callable. The parameters passed to the callable are
     #: those passed to :meth:`~BaseRotatingLogger.rotation_filename`.
-    namer: Optional[Callable[[StringPathLike], StringPathLike]] = None
+    namer: Callable[[StringPathLike], StringPathLike] | None = None
 
     #: If this attribute is set to a callable, the :meth:`~BaseRotatingLogger.rotate` method
     #: delegates to this callable. The parameters passed to the callable are those
     #: passed to :meth:`~BaseRotatingLogger.rotate`.
-    rotator: Optional[Callable[[StringPathLike, StringPathLike], None]] = None
+    rotator: Callable[[StringPathLike, StringPathLike], None] | None = None
 
     #: An integer counter to track the number of rollovers.
     rollover_count: int = 0
@@ -286,9 +285,9 @@ class BaseRotatingLogger(MessageWriter, ABC):
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> Literal[False]:
         self.stop()
         return False

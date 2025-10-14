@@ -13,7 +13,7 @@ from datetime import datetime
 from hashlib import md5
 from io import BufferedIOBase, BytesIO
 from pathlib import Path
-from typing import Any, BinaryIO, Optional, Union, cast
+from typing import Any, BinaryIO, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -93,8 +93,8 @@ class MF4Writer(BinaryIOMessageWriter):
 
     def __init__(
         self,
-        file: Union[StringPathLike, BinaryIO],
-        database: Optional[StringPathLike] = None,
+        file: StringPathLike | BinaryIO,
+        database: StringPathLike | None = None,
         compression_level: int = 2,
         **kwargs: Any,
     ) -> None:
@@ -458,7 +458,7 @@ class MF4Reader(BinaryIOMessageReader):
 
     def __init__(
         self,
-        file: Union[StringPathLike, BinaryIO],
+        file: StringPathLike | BinaryIO,
         **kwargs: Any,
     ) -> None:
         """
@@ -497,7 +497,7 @@ class MF4Reader(BinaryIOMessageReader):
                 # No data, skip
                 continue
 
-            acquisition_source: Optional[Source] = channel_group.acq_source
+            acquisition_source: Source | None = channel_group.acq_source
 
             if acquisition_source is None:
                 # No source information, skip

@@ -10,7 +10,7 @@ import logging
 import re
 from collections.abc import Generator
 from datetime import datetime
-from typing import Any, Final, Optional, TextIO, Union
+from typing import Any, Final, TextIO
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -41,7 +41,7 @@ class ASCReader(TextIOMessageReader):
 
     def __init__(
         self,
-        file: Union[StringPathLike, TextIO],
+        file: StringPathLike | TextIO,
         base: str = "hex",
         relative_timestamp: bool = True,
         **kwargs: Any,
@@ -64,10 +64,10 @@ class ASCReader(TextIOMessageReader):
         self.base = base
         self._converted_base = self._check_base(base)
         self.relative_timestamp = relative_timestamp
-        self.date: Optional[str] = None
+        self.date: str | None = None
         self.start_time = 0.0
         # TODO - what is this used for? The ASC Writer only prints `absolute`
-        self.timestamps_format: Optional[str] = None
+        self.timestamps_format: str | None = None
         self.internal_events_logged = False
 
     def _extract_header(self) -> None:
@@ -284,7 +284,7 @@ class ASCReader(TextIOMessageReader):
                 # J1939 message or some other unsupported event
                 continue
 
-            msg_kwargs: dict[str, Union[float, bool, int]] = {}
+            msg_kwargs: dict[str, float | bool | int] = {}
             try:
                 _timestamp, channel, rest_of_message = line.split(None, 2)
                 timestamp = float(_timestamp) + self.start_time
@@ -347,7 +347,7 @@ class ASCWriter(TextIOMessageWriter):
 
     def __init__(
         self,
-        file: Union[StringPathLike, TextIO],
+        file: StringPathLike | TextIO,
         channel: int = 1,
         **kwargs: Any,
     ) -> None:
@@ -393,7 +393,7 @@ class ASCWriter(TextIOMessageWriter):
             self.file.write("End TriggerBlock\n")
         super().stop()
 
-    def log_event(self, message: str, timestamp: Optional[float] = None) -> None:
+    def log_event(self, message: str, timestamp: float | None = None) -> None:
         """Add a message to the log file.
 
         :param message: an arbitrary message

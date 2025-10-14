@@ -14,7 +14,7 @@ import time
 import warnings
 from queue import SimpleQueue
 from types import ModuleType
-from typing import Any, Optional, Union
+from typing import Any
 
 import can.typechecking
 from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
@@ -27,7 +27,7 @@ from can.util import check_or_adjust_timing_clock, deprecated_args_alias
 
 logger = logging.getLogger(__name__)
 
-nixnet: Optional[ModuleType] = None
+nixnet: ModuleType | None = None
 try:
     import nixnet  # type: ignore
     import nixnet.constants  # type: ignore
@@ -52,12 +52,12 @@ class NiXNETcanBus(BusABC):
         self,
         channel: str = "CAN1",
         bitrate: int = 500_000,
-        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
-        can_filters: Optional[can.typechecking.CanFilters] = None,
+        timing: BitTiming | BitTimingFd | None = None,
+        can_filters: can.typechecking.CanFilters | None = None,
         receive_own_messages: bool = False,
         can_termination: bool = False,
         fd: bool = False,
-        fd_bitrate: Optional[int] = None,
+        fd_bitrate: int | None = None,
         poll_interval: float = 0.001,
         **kwargs: Any,
     ) -> None:
@@ -201,9 +201,7 @@ class NiXNETcanBus(BusABC):
         )
         return self._can_protocol is CanProtocol.CAN_FD
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         end_time = time.perf_counter() + timeout if timeout is not None else None
 
         while True:
@@ -256,7 +254,7 @@ class NiXNETcanBus(BusABC):
             )
         return msg, False
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         """
         Send a message using NI-XNET.
 

@@ -9,9 +9,7 @@ import sqlite3
 import threading
 import time
 from collections.abc import Generator, Iterator
-from typing import Any
-
-from typing_extensions import TypeAlias
+from typing import Any, TypeAlias
 
 from can.listener import BufferedReader
 from can.message import Message

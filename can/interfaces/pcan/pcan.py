@@ -6,7 +6,7 @@ import logging
 import platform
 import time
 import warnings
-from typing import Any, Optional, Union
+from typing import Any
 
 from packaging import version
 
@@ -120,9 +120,9 @@ class PcanBus(BusABC):
     def __init__(
         self,
         channel: str = "PCAN_USBBUS1",
-        device_id: Optional[int] = None,
+        device_id: int | None = None,
         state: BusState = BusState.ACTIVE,
-        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
+        timing: BitTiming | BitTimingFd | None = None,
         bitrate: int = 500000,
         receive_own_messages: bool = False,
         **kwargs: Any,
@@ -500,9 +500,7 @@ class PcanBus(BusABC):
             return False
         return True
 
-    def _recv_internal(
-        self, timeout: Optional[float]
-    ) -> tuple[Optional[Message], bool]:
+    def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         end_time = time.time() + timeout if timeout is not None else None
 
         while True:
@@ -523,7 +521,7 @@ class PcanBus(BusABC):
                 # receive queue is empty, wait or return on timeout
 
                 if end_time is None:
-                    time_left: Optional[float] = None
+                    time_left: float | None = None
                     timed_out = False
                 else:
                     time_left = max(0.0, end_time - time.time())
@@ -793,7 +791,7 @@ class PcanBus(BusABC):
                 pass
         return channels
 
-    def status_string(self) -> Optional[str]:
+    def status_string(self) -> str | None:
         """
         Query the PCAN bus status.
 

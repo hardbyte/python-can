@@ -3,7 +3,7 @@ import time
 from collections import deque
 from collections.abc import Sequence
 from ctypes import c_ubyte
-from typing import Any, Optional, Union
+from typing import Any
 
 import canalystii as driver
 
@@ -21,12 +21,12 @@ class CANalystIIBus(BusABC):
     )
     def __init__(
         self,
-        channel: Union[int, Sequence[int], str] = (0, 1),
+        channel: int | Sequence[int] | str = (0, 1),
         device: int = 0,
-        bitrate: Optional[int] = None,
-        timing: Optional[Union[BitTiming, BitTimingFd]] = None,
-        can_filters: Optional[CanFilters] = None,
-        rx_queue_size: Optional[int] = None,
+        bitrate: int | None = None,
+        timing: BitTiming | BitTimingFd | None = None,
+        can_filters: CanFilters | None = None,
+        rx_queue_size: int | None = None,
         **kwargs: dict[str, Any],
     ):
         """
@@ -94,7 +94,7 @@ class CANalystIIBus(BusABC):
     # system.
     RX_POLL_DELAY = 0.020
 
-    def send(self, msg: Message, timeout: Optional[float] = None) -> None:
+    def send(self, msg: Message, timeout: float | None = None) -> None:
         """Send a CAN message to the bus
 
         :param msg: message to send
@@ -166,8 +166,8 @@ class CANalystIIBus(BusABC):
             )
 
     def _recv_internal(
-        self, timeout: Optional[float] = None
-    ) -> tuple[Optional[Message], bool]:
+        self, timeout: float | None = None
+    ) -> tuple[Message | None, bool]:
         """
 
         :param timeout: float in seconds
@@ -194,7 +194,7 @@ class CANalystIIBus(BusABC):
 
         return (None, False)
 
-    def flush_tx_buffer(self, channel: Optional[int] = None) -> None:
+    def flush_tx_buffer(self, channel: int | None = None) -> None:
         """Flush the TX buffer of the device.
 
         :param channel:

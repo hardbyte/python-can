@@ -8,7 +8,7 @@ This module contains the implementation of :class:`can.Message`.
 
 from copy import deepcopy
 from math import isinf, isnan
-from typing import Any, Optional
+from typing import Any
 
 from . import typechecking
 
@@ -54,9 +54,9 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
         is_extended_id: bool = True,
         is_remote_frame: bool = False,
         is_error_frame: bool = False,
-        channel: Optional[typechecking.Channel] = None,
-        dlc: Optional[int] = None,
-        data: Optional[typechecking.CanData] = None,
+        channel: typechecking.Channel | None = None,
+        dlc: int | None = None,
+        data: typechecking.CanData | None = None,
         is_fd: bool = False,
         is_rx: bool = True,
         bitrate_switch: bool = False,
@@ -185,7 +185,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
 
         return f"can.Message({', '.join(args)})"
 
-    def __format__(self, format_spec: Optional[str]) -> str:
+    def __format__(self, format_spec: str | None) -> str:
         if not format_spec:
             return self.__str__()
         else:
@@ -210,7 +210,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
             error_state_indicator=self.error_state_indicator,
         )
 
-    def __deepcopy__(self, memo: Optional[dict[int, Any]]) -> "Message":
+    def __deepcopy__(self, memo: dict[int, Any] | None) -> "Message":
         return Message(
             timestamp=self.timestamp,
             arbitration_id=self.arbitration_id,
@@ -289,7 +289,7 @@ class Message:  # pylint: disable=too-many-instance-attributes; OK for a datacla
     def equals(
         self,
         other: "Message",
-        timestamp_delta: Optional[float] = 1.0e-6,
+        timestamp_delta: float | None = 1.0e-6,
         check_channel: bool = True,
         check_direction: bool = True,
     ) -> bool:

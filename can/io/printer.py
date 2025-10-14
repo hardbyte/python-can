@@ -5,7 +5,7 @@ This Listener simply prints to stdout / the terminal or a file.
 import logging
 import sys
 from io import TextIOWrapper
-from typing import Any, TextIO, Union
+from typing import Any, TextIO
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -26,7 +26,7 @@ class Printer(TextIOMessageWriter):
 
     def __init__(
         self,
-        file: Union[StringPathLike, TextIO, TextIOWrapper] = sys.stdout,
+        file: StringPathLike | TextIO | TextIOWrapper = sys.stdout,
         append: bool = False,
         **kwargs: Any,
     ) -> None:
