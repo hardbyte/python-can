@@ -85,9 +85,8 @@ CAN_FILTERS
 
   Example: ``[{"can_id": 0x11, "can_mask": 0x21},]``
 
-  **Hardware Limitation:** The Seeed Studio device only supports
-  a single hardware filter. This list must contain at most
-  one filter dictionary. A ``can.CanInitializationError`` will be
-  raised if more than one filter is provided.
+  If one filter is provided, it will be used by the high-performance 
+  hardware filter. If zero or more than one filter is provided, 
+  software-based filtering will be used.
 
 

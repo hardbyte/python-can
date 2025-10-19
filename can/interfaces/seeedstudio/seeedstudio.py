@@ -87,10 +87,10 @@ class SeeedBus(BusABC):
             CAN bus bit rate, selected from available list.
 
         :param can_filters:
-            A list of CAN filter dictionaries, where each dictionary contains
-            the keys 'can_id' and 'can_mask'. For the SeeedBus interface,
-            this list must not contain more than one filter. Defaults to None
-            (i.e., no filter).
+            A list of CAN filter dictionaries. If one filter is provided,
+            it will be used by the high-performance hardware filter. If
+            zero or more than one filter is provided, software-based
+            filtering will be used. Defaults to None (no filtering).
 
         :raises can.CanInitializationError: If the given parameters are invalid.
         :raises can.CanInterfaceNotImplementedError: If the serial module is not installed.
@@ -101,23 +101,19 @@ class SeeedBus(BusABC):
                 "the serial module is not installed"
             )
 
-        if can_filters is None:
-            can_filters = [{"can_id": 0x00, "can_mask": 0x00}]
+        can_id = 0x00
+        can_mask = 0x00
 
-        if len(can_filters) > 1:
-            raise can.CanInitializationError(
-                f"The SeeedBus interface only supports one hardware filter, "
-                f"but {len(can_filters)} were provided."
-            )
-
-        # Get the first (and only) filter in can_filters
-        hw_filter = can_filters[0]
+        if can_filters and len(can_filters) == 1:
+            hw_filter = can_filters[0]
+            can_id = hw_filter["can_id"]
+            can_mask = hw_filter["can_mask"]
 
         self.bit_rate = bitrate
         self.frame_type = frame_type
         self.op_mode = operation_mode
-        self.filter_id = struct.pack("<I", hw_filter["can_id"])
-        self.mask_id = struct.pack("<I", hw_filter["can_mask"])
+        self.filter_id = struct.pack("<I", can_id)
+        self.mask_id = struct.pack("<I", can_mask)
         self._can_protocol = CanProtocol.CAN_20
 
         if not channel:
@@ -133,7 +129,7 @@ class SeeedBus(BusABC):
                 "could not create the serial device"
             ) from error
 
-        super().__init__(channel=channel, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
         self.init_frame()
 
     def shutdown(self):
