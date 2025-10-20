@@ -103,8 +103,10 @@ class SeeedBus(BusABC):
 
         can_id = 0x00
         can_mask = 0x00
+        self._is_filtered = False
 
         if can_filters and len(can_filters) == 1:
+            self._is_filtered = True
             hw_filter = can_filters[0]
             can_id = hw_filter["can_id"]
             can_mask = hw_filter["can_mask"]
@@ -252,8 +254,9 @@ class SeeedBus(BusABC):
                 This parameter will be ignored. The timeout value of the
                 channel is used.
 
-        :returns:
-            Received message and False (because not filtering as taken place).
+        :return:
+            1.  a message that was read or None on timeout
+            2.  a bool that is True if hw_filter is enabled, else False
 
         :rtype:
             can.Message, bool
@@ -266,7 +269,7 @@ class SeeedBus(BusABC):
         except serial.PortNotOpenError as error:
             raise can.CanOperationError("reading from closed port") from error
         except serial.SerialException:
-            return None, False
+            return None, self._is_filtered
 
         if rx_byte_1 and ord(rx_byte_1) == 0xAA:
             try:
@@ -302,10 +305,10 @@ class SeeedBus(BusABC):
                             data=data,
                         )
                         logger.debug("recv message: %s", str(msg))
-                        return msg, False
+                        return msg, self._is_filtered
 
                     else:
-                        return None, False
+                        return None, self._is_filtered
 
             except serial.PortNotOpenError as error:
                 raise can.CanOperationError("reading from closed port") from error
@@ -314,7 +317,7 @@ class SeeedBus(BusABC):
                     "failed to read message information"
                 ) from error
 
-        return None, None
+        return None, self._is_filtered
 
     def fileno(self):
         try:
