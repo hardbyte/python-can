@@ -63,6 +63,7 @@ class SeeedBus(BusABC):
         frame_type="STD",
         operation_mode="normal",
         bitrate=500000,
+        can_filters=None,
         **kwargs,
     ):
         """
@@ -85,6 +86,12 @@ class SeeedBus(BusABC):
         :param bitrate
             CAN bus bit rate, selected from available list.
 
+        :param can_filters:
+            A list of CAN filter dictionaries. If one filter is provided,
+            it will be used by the high-performance hardware filter. If
+            zero or more than one filter is provided, software-based
+            filtering will be used. Defaults to None (no filtering).
+
         :raises can.CanInitializationError: If the given parameters are invalid.
         :raises can.CanInterfaceNotImplementedError: If the serial module is not installed.
         """
@@ -94,11 +101,21 @@ class SeeedBus(BusABC):
                 "the serial module is not installed"
             )
 
+        can_id = 0x00
+        can_mask = 0x00
+        self._is_filtered = False
+
+        if can_filters and len(can_filters) == 1:
+            self._is_filtered = True
+            hw_filter = can_filters[0]
+            can_id = hw_filter["can_id"]
+            can_mask = hw_filter["can_mask"]
+
         self.bit_rate = bitrate
         self.frame_type = frame_type
         self.op_mode = operation_mode
-        self.filter_id = bytearray([0x00, 0x00, 0x00, 0x00])
-        self.mask_id = bytearray([0x00, 0x00, 0x00, 0x00])
+        self.filter_id = struct.pack("<I", can_id)
+        self.mask_id = struct.pack("<I", can_mask)
         self._can_protocol = CanProtocol.CAN_20
 
         if not channel:
@@ -114,7 +131,7 @@ class SeeedBus(BusABC):
                 "could not create the serial device"
             ) from error
 
-        super().__init__(channel=channel, **kwargs)
+        super().__init__(channel=channel, can_filters=can_filters, **kwargs)
         self.init_frame()
 
     def shutdown(self):
@@ -237,8 +254,9 @@ class SeeedBus(BusABC):
                 This parameter will be ignored. The timeout value of the
                 channel is used.
 
-        :returns:
-            Received message and False (because not filtering as taken place).
+        :return:
+            1.  a message that was read or None on timeout
+            2.  a bool that is True if hw_filter is enabled, else False
 
         :rtype:
             can.Message, bool
@@ -251,7 +269,7 @@ class SeeedBus(BusABC):
         except serial.PortNotOpenError as error:
             raise can.CanOperationError("reading from closed port") from error
         except serial.SerialException:
-            return None, False
+            return None, self._is_filtered
 
         if rx_byte_1 and ord(rx_byte_1) == 0xAA:
             try:
@@ -287,10 +305,10 @@ class SeeedBus(BusABC):
                             data=data,
                         )
                         logger.debug("recv message: %s", str(msg))
-                        return msg, False
+                        return msg, self._is_filtered
 
                     else:
-                        return None, False
+                        return None, self._is_filtered
 
             except serial.PortNotOpenError as error:
                 raise can.CanOperationError("reading from closed port") from error
@@ -299,7 +317,7 @@ class SeeedBus(BusABC):
                     "failed to read message information"
                 ) from error
 
-        return None, None
+        return None, self._is_filtered
 
     def fileno(self):
         try:

@@ -44,7 +44,8 @@ Configuration
           timeout=0.1,
           frame_type='STD',
           operation_mode='normal',
-          bitrate=500000)
+          bitrate=500000,
+          can_filters=None)
 
 CHANNEL
  The serial port created by the USB device when connected.
@@ -75,3 +76,17 @@ BITRATE
  - 20000
  - 10000
  - 5000
+
+CAN_FILTERS
+  A list of can filter dictionaries. Defaults to None (i.e. no filtering).
+  Each filter dictionary should have the following keys:
+  - ``can_id``: The CAN ID to filter on.
+  - ``can_mask``: The mask to apply to the ID.
+
+  Example: ``[{"can_id": 0x11, "can_mask": 0x21},]``
+
+  If one filter is provided, it will be used by the high-performance 
+  hardware filter. If zero or more than one filter is provided, 
+  software-based filtering will be used.
+
+
