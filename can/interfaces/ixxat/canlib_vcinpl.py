@@ -519,15 +519,19 @@ class IXXATBus(BusABC):
                         f"Unique HW ID {unique_hardware_id} not connected or not available."
                     ) from None
             else:
-                if (unique_hardware_id is None) or (
-                    self._device_info.UniqueHardwareId.AsChar
-                    == bytes(unique_hardware_id, "ascii")
+                try:
+                    hwid = self._device_info.UniqueHardwareId.AsChar.decode("ascii")
+                except:
+                    guid = self._device_info.UniqueHardwareId.AsGuid
+                    hwid = '{{{0:x}-{1:x}-{2:x}-{3}}}'.format(guid.Data1,guid.Data2,guid.Data3,guid.Data4.hex())
+                    
+                if (unique_hardware_id is None) or ( bytes(hwid, "ascii") == bytes(unique_hardware_id, "ascii") 
                 ):
                     break
 
                 log.debug(
                     "Ignoring IXXAT with hardware id '%s'.",
-                    self._device_info.UniqueHardwareId.AsChar.decode("ascii"),
+                    hwid,
                 )
         _canlib.vciEnumDeviceClose(self._device_handle)
 
@@ -541,7 +545,7 @@ class IXXATBus(BusABC):
                 f"Could not open device: {exception}"
             ) from exception
 
-        log.info("Using unique HW ID %s", self._device_info.UniqueHardwareId.AsChar)
+        log.info("Using unique HW ID %s", hwid)
 
         log.info(
             "Initializing channel %d in shared mode, %d rx buffers, %d tx buffers",
@@ -969,7 +973,11 @@ def get_ixxat_hwids():
         except StopIteration:
             break
         else:
-            hwids.append(device_info.UniqueHardwareId.AsChar.decode("ascii"))
+            try:
+                hwids.append(device_info.UniqueHardwareId.AsChar.decode("ascii"))
+            except:
+                guid = device_info.UniqueHardwareId.AsGuid
+                hwids.append('{{{0:x}-{1:x}-{2:x}-{3}}}'.format(guid.Data1,guid.Data2,guid.Data3,guid.Data4.hex()))
     _canlib.vciEnumDeviceClose(device_handle)
 
     return hwids
@@ -994,7 +1002,11 @@ def _detect_available_configs() -> Sequence["AutoDetectedIxxatConfig"]:
             except StopIteration:
                 break
             else:
-                hwid = device_info.UniqueHardwareId.AsChar.decode("ascii")
+                try:
+                    hwid = device_info.UniqueHardwareId.AsChar.decode("ascii")
+                except:
+                    guid = device_info.UniqueHardwareId.AsGuid
+                    hwid = '{{{0:x}-{1:x}-{2:x}-{3}}}'.format(guid.Data1,guid.Data2,guid.Data3,guid.Data4.hex())
                 _canlib.vciDeviceOpen(
                     ctypes.byref(device_info.VciObjectId),
                     ctypes.byref(device_handle2),
