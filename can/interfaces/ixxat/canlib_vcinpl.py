@@ -523,9 +523,12 @@ class IXXATBus(BusABC):
                     hwid = self._device_info.UniqueHardwareId.AsChar.decode("ascii")
                 except:
                     guid = self._device_info.UniqueHardwareId.AsGuid
-                    hwid = '{{{0:x}-{1:x}-{2:x}-{3}}}'.format(guid.Data1,guid.Data2,guid.Data3,guid.Data4.hex())
+                    hwid = '{{{0:x}-{1:x}-{2:x}-{3}}}'.format(
+                        guid.Data1,guid.Data2,guid.Data3,guid.Data4.hex()
+                    )
                     
-                if (unique_hardware_id is None) or ( bytes(hwid, "ascii") == bytes(unique_hardware_id, "ascii") 
+                if (unique_hardware_id is None) or ( 
+                    bytes(hwid, "ascii") == bytes(unique_hardware_id, "ascii") 
                 ):
                     break
 
@@ -977,7 +980,9 @@ def get_ixxat_hwids():
                 hwids.append(device_info.UniqueHardwareId.AsChar.decode("ascii"))
             except:
                 guid = device_info.UniqueHardwareId.AsGuid
-                hwids.append('{{{0:x}-{1:x}-{2:x}-{3}}}'.format(guid.Data1,guid.Data2,guid.Data3,guid.Data4.hex()))
+                hwids.append('{{{0:x}-{1:x}-{2:x}-{3}}}'.format(
+                    guid.Data1,guid.Data2,guid.Data3,guid.Data4.hex())
+                )
     _canlib.vciEnumDeviceClose(device_handle)
 
     return hwids
@@ -1006,7 +1011,9 @@ def _detect_available_configs() -> Sequence["AutoDetectedIxxatConfig"]:
                     hwid = device_info.UniqueHardwareId.AsChar.decode("ascii")
                 except:
                     guid = device_info.UniqueHardwareId.AsGuid
-                    hwid = '{{{0:x}-{1:x}-{2:x}-{3}}}'.format(guid.Data1,guid.Data2,guid.Data3,guid.Data4.hex())
+                    hwid = '{{{0:x}-{1:x}-{2:x}-{3}}}'.format(
+                        guid.Data1,guid.Data2,guid.Data3,guid.Data4.hex()
+                    )
                 _canlib.vciDeviceOpen(
                     ctypes.byref(device_info.VciObjectId),
                     ctypes.byref(device_handle2),
