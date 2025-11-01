@@ -87,7 +87,7 @@ docs = [
     "furo",
 ]
 lint = [
-    "pylint==3.3.*",
+    "pylint==4.0.*",
     "ruff==0.14.*",
     "black==25.9.*",
     "mypy==1.18.*",
@@ -98,7 +98,7 @@ test = [
     "pytest-modern==0.7.*;platform_system!='Windows'",
     "coveralls==4.0.*",
     "pytest-cov==7.0.*",
-    "coverage==7.10.*",
+    "coverage==7.11.*",
     "hypothesis==6.*",
     "parameterized==0.9.*",
 ]
