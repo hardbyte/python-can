@@ -78,9 +78,13 @@ CAN_ERROR_EXT_STRUCT = struct.Struct("<HHLBBBxLLH2x8s")
 # group name length, marker name length, description length
 GLOBAL_MARKER_STRUCT = struct.Struct("<LLL3xBLLL12x")
 
+# APP_TEXT object type, 4 reserved bytes, text length, 4 more
+# reserved bytes
+APP_TEXT_HEADER_STRUCT = struct.Struct("<I4sI4s")
 
 CAN_MESSAGE = 1
 LOG_CONTAINER = 10
+APP_TEXT = 65
 CAN_ERROR_EXT = 73
 CAN_MESSAGE2 = 86
 GLOBAL_MARKER = 96
@@ -143,7 +147,12 @@ class BLFReader(BinaryIOMessageReader):
     Iterator of CAN messages from a Binary Logging File.
 
     Only CAN messages and error frames are supported. Other object types are
-    silently ignored.
+    silently ignored. APP_TEXT objects are parsed into `self.app_text` when
+    they are encountered while iterating.
+
+    self.app_text is a list of tuples containing the parsed app_text objects. The
+    interpretation of this data is context-specific and out of scope of the
+    BLFReader class.
     """
 
     def __init__(
@@ -172,6 +181,11 @@ class BLFReader(BinaryIOMessageReader):
         )
         # Read rest of header
         self.file.read(header[1] - FILE_HEADER_STRUCT.size)
+
+        # APP_TEXT objects are appended when type 65 is encountered
+        # while iterating
+        self.app_text: List[Tuple] = []
+
         self._tail = b""
         self._pos = 0
 
@@ -229,6 +243,8 @@ class BLFReader(BinaryIOMessageReader):
         unpack_can_fd_64_msg = CAN_FD_MSG_64_STRUCT.unpack_from
         can_fd_64_msg_size = CAN_FD_MSG_64_STRUCT.size
         unpack_can_error_ext = CAN_ERROR_EXT_STRUCT.unpack_from
+        app_text_header = APP_TEXT_HEADER_STRUCT.unpack_from
+        app_text_header_size = APP_TEXT_HEADER_STRUCT.size
 
         start_timestamp = self.start_timestamp
         max_pos = len(data)
@@ -369,6 +385,17 @@ class BLFReader(BinaryIOMessageReader):
                     data=msg_data,
                     channel=channel - 1,
                 )
+            elif obj_type == APP_TEXT:
+                # When we encounter an app_text object, parse it and save it in
+                # self.app_text and continue looping for a message to return
+                source, reserved1, text_size, reserved2 = app_text_header(data, pos)
+                # Read until the end of the block rather than using the
+                # untrusted size bytes
+                text = data[pos + app_text_header_size : next_pos]
+                # Append the app_text block, including the size bytes read
+                # from the header. Caller may determine what to do if there's
+                # a mismatch in the actual text length
+                self.app_text.append((source, reserved1, text_size, reserved2, text))
 
             pos = next_pos
 
