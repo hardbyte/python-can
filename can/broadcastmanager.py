@@ -429,7 +429,8 @@ class ScheduledExecutorCyclicSendTask(
         with ScheduledExecutorCyclicSendTask._executor_lock:
             if ScheduledExecutorCyclicSendTask._executor is None:
                 # 为所有任务使用一个共享的执行器
-                ScheduledExecutorCyclicSendTask._executor = ScheduledExecutor()
+                # 实测单线程比多线程周期发送更稳定
+                ScheduledExecutorCyclicSendTask._executor = ScheduledExecutor(1)
 
         if autostart:
             self.start()
