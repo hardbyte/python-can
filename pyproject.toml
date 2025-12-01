@@ -91,7 +91,7 @@ lint = [
     "pylint==4.0.*",
     "ruff==0.14.*",
     "black==25.11.*",
-    "mypy==1.18.*",
+    "mypy==1.19.*",
 ]
 test = [
     "pytest==9.0.*",
@@ -99,7 +99,7 @@ test = [
     "pytest-modern==0.7.*;platform_system!='Windows'",
     "coveralls==4.0.*",
     "pytest-cov==7.0.*",
-    "coverage==7.11.*",
+    "coverage==7.12.*",
     "hypothesis==6.*",
     "parameterized==0.9.*",
 ]
