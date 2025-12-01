@@ -141,7 +141,7 @@ class ASCReader(TextIOMessageReader):
             "%m %d %H:%M:%S.%f %Y",
             "%m %d %H:%M:%S %Y",
             "%m %d %H:%M:%S.%f %p %Y",
-            "%m %d %H:%M:%S %p %Y"
+            "%m %d %H:%M:%S %p %Y",
         )
 
         datetime_string_parts = datetime_string.split(" ", 1)
@@ -152,7 +152,6 @@ class ASCReader(TextIOMessageReader):
         except KeyError:
             raise ValueError(f"Unsupported month abbreviation: {month}") from None
         datetime_string = " ".join(datetime_string_parts)
-
 
         for format_str in DATETIME_FORMATS:
             try:
