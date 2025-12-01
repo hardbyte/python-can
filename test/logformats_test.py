@@ -690,9 +690,12 @@ class TestAscFileFormat(ReaderWriterTest):
             ("Sep 30 15:06:13.191 am 2017", 1506776773.191),
         ]
     )
-    def test_datetime_to_timestamp(self, datetime_string: str, expected_timestamp: float):
+    def test_datetime_to_timestamp(
+        self, datetime_string: str, expected_timestamp: float
+    ):
         timestamp = can.ASCReader._datetime_to_timestamp(datetime_string)
         self.assertAlmostEqual(timestamp, expected_timestamp)
+
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
