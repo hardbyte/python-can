@@ -116,7 +116,7 @@ class ASCReader(TextIOMessageReader):
 
     @staticmethod
     def _datetime_to_timestamp(datetime_string: str) -> float:
-        MONTH_MAP = {
+        month_map = {
             "jan": 1,
             "feb": 2,
             "mar": 3,
@@ -135,7 +135,7 @@ class ASCReader(TextIOMessageReader):
             "dez": 12,
         }
 
-        DATETIME_FORMATS = (
+        datetime_formats = (
             "%m %d %I:%M:%S.%f %p %Y",
             "%m %d %I:%M:%S %p %Y",
             "%m %d %H:%M:%S.%f %Y",
@@ -148,12 +148,12 @@ class ASCReader(TextIOMessageReader):
         month = datetime_string_parts[0].strip().lower()
 
         try:
-            datetime_string_parts[0] = f"{MONTH_MAP[month]:02d}"
+            datetime_string_parts[0] = f"{month_map[month]:02d}"
         except KeyError:
             raise ValueError(f"Unsupported month abbreviation: {month}") from None
         datetime_string = " ".join(datetime_string_parts)
 
-        for format_str in DATETIME_FORMATS:
+        for format_str in datetime_formats:
             try:
                 return datetime.strptime(datetime_string, format_str).timestamp()
             except ValueError:
