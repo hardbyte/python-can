@@ -692,19 +692,19 @@ class TestAscFileFormat(ReaderWriterTest):
             ),
             (
                 "Apr 28 10:44:52.480 2022",
-                datetime(2022, 4, 28, 10, 44, 52, 480).timestamp(),
+                datetime(2022, 4, 28, 10, 44, 52, 480000).timestamp(),
             ),
             (
                 "Sep 30 15:06:13.191 2017",
-                datetime(2017, 9, 30, 15, 6, 13, 191).timestamp(),
+                datetime(2017, 9, 30, 15, 6, 13, 191000).timestamp(),
             ),
             (
                 "Sep 30 15:06:13.191 pm 2017",
-                datetime(2017, 9, 30, 15, 6, 13, 191).timestamp(),
+                datetime(2017, 9, 30, 15, 6, 13, 191000).timestamp(),
             ),
             (
                 "Sep 30 15:06:13.191 am 2017",
-                datetime(2017, 9, 30, 15, 6, 13, 191).timestamp(),
+                datetime(2017, 9, 30, 15, 6, 13, 191000).timestamp(),
             ),
         ]
     )
