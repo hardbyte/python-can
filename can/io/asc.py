@@ -116,41 +116,50 @@ class ASCReader(TextIOMessageReader):
 
     @staticmethod
     def _datetime_to_timestamp(datetime_string: str) -> float:
-        # ugly locale independent solution
         month_map = {
-            "Jan": 1,
-            "Feb": 2,
-            "Mar": 3,
-            "Apr": 4,
-            "May": 5,
-            "Jun": 6,
-            "Jul": 7,
-            "Aug": 8,
-            "Sep": 9,
-            "Oct": 10,
-            "Nov": 11,
-            "Dec": 12,
-            "Mär": 3,
-            "Mai": 5,
-            "Okt": 10,
-            "Dez": 12,
+            "jan": 1,
+            "feb": 2,
+            "mar": 3,
+            "apr": 4,
+            "may": 5,
+            "jun": 6,
+            "jul": 7,
+            "aug": 8,
+            "sep": 9,
+            "oct": 10,
+            "nov": 11,
+            "dec": 12,
+            "mär": 3,
+            "mai": 5,
+            "okt": 10,
+            "dez": 12,
         }
-        for name, number in month_map.items():
-            datetime_string = datetime_string.replace(name, str(number).zfill(2))
 
         datetime_formats = (
             "%m %d %I:%M:%S.%f %p %Y",
             "%m %d %I:%M:%S %p %Y",
             "%m %d %H:%M:%S.%f %Y",
             "%m %d %H:%M:%S %Y",
+            "%m %d %H:%M:%S.%f %p %Y",
+            "%m %d %H:%M:%S %p %Y",
         )
+
+        datetime_string_parts = datetime_string.split(" ", 1)
+        month = datetime_string_parts[0].strip().lower()
+
+        try:
+            datetime_string_parts[0] = f"{month_map[month]:02d}"
+        except KeyError:
+            raise ValueError(f"Unsupported month abbreviation: {month}") from None
+        datetime_string = " ".join(datetime_string_parts)
+
         for format_str in datetime_formats:
             try:
                 return datetime.strptime(datetime_string, format_str).timestamp()
             except ValueError:
                 continue
 
-        raise ValueError(f"Incompatible datetime string {datetime_string}")
+        raise ValueError(f"Unsupported datetime format: '{datetime_string}'")
 
     def _extract_can_id(self, str_can_id: str, msg_kwargs: dict[str, Any]) -> None:
         if str_can_id[-1:].lower() == "x":

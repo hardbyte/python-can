@@ -680,6 +680,40 @@ class TestAscFileFormat(ReaderWriterTest):
 
         self.assertEqual(expected_file.read_text(), actual_file.read_text())
 
+    @parameterized.expand(
+        [
+            (
+                "May 27 04:09:35.000 pm 2014",
+                datetime(2014, 5, 27, 16, 9, 35, 0).timestamp(),
+            ),
+            (
+                "Mai 27 04:09:35.000 pm 2014",
+                datetime(2014, 5, 27, 16, 9, 35, 0).timestamp(),
+            ),
+            (
+                "Apr 28 10:44:52.480 2022",
+                datetime(2022, 4, 28, 10, 44, 52, 480000).timestamp(),
+            ),
+            (
+                "Sep 30 15:06:13.191 2017",
+                datetime(2017, 9, 30, 15, 6, 13, 191000).timestamp(),
+            ),
+            (
+                "Sep 30 15:06:13.191 pm 2017",
+                datetime(2017, 9, 30, 15, 6, 13, 191000).timestamp(),
+            ),
+            (
+                "Sep 30 15:06:13.191 am 2017",
+                datetime(2017, 9, 30, 15, 6, 13, 191000).timestamp(),
+            ),
+        ]
+    )
+    def test_datetime_to_timestamp(
+        self, datetime_string: str, expected_timestamp: float
+    ):
+        timestamp = can.ASCReader._datetime_to_timestamp(datetime_string)
+        self.assertAlmostEqual(timestamp, expected_timestamp)
+
 
 class TestBlfFileFormat(ReaderWriterTest):
     """Tests can.BLFWriter and can.BLFReader.
