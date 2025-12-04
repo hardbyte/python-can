@@ -4,6 +4,7 @@ Contains the ABC bus implementation and its documentation.
 
 import contextlib
 import logging
+import sys
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Sequence
@@ -17,8 +18,15 @@ from typing import (
 from typing_extensions import Self
 
 import can.typechecking
-from can.broadcastmanager import CyclicSendTaskABC, ThreadBasedCyclicSendTask
+from can.broadcastmanager import (
+    CyclicSendTaskABC,
+    ThreadBasedCyclicSendTask,
+    _has_precision_tools,
+)
 from can.message import Message
+
+if _has_precision_tools:
+    from can.broadcastmanager import ScheduledExecutorCyclicSendTask
 
 LOG = logging.getLogger(__name__)
 
@@ -319,11 +327,17 @@ class BusABC(ABC):
             :meth:`~can.broadcastmanager.CyclicTask.stop` method.
         """
         if not hasattr(self, "_lock_send_periodic"):
-            # Create a send lock for this bus, but not for buses which override this method
-            self._lock_send_periodic = (  # pylint: disable=attribute-defined-outside-init
-                threading.Lock()
-            )
-        task = ThreadBasedCyclicSendTask(
+            # Create a lock for each bus instance to prevent issues with sharing the bus
+            # via multiple threads.
+            self._lock_send_periodic = threading.Lock()
+
+        task_class: type[ThreadBasedCyclicSendTask]
+        if sys.platform == "win32" and _has_precision_tools:
+            task_class = ScheduledExecutorCyclicSendTask
+        else:
+            task_class = ThreadBasedCyclicSendTask
+
+        task = task_class(
             bus=self,
             lock=self._lock_send_periodic,
             messages=msgs,
