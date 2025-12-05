@@ -83,6 +83,8 @@ The table below lists interface drivers that can be added by installing addition
 +----------------------------+----------------------------------------------------------+
 | `RP1210`_                  | CAN channels in RP1210 Vehicle Diagnostic Adapters       |
 +----------------------------+----------------------------------------------------------+
+| `python-can-damiao`_       | Interface for Damiao USB-CAN adapters                    |
++----------------------------+----------------------------------------------------------+
 
 .. _python-can-canine: https://github.com/tinymovr/python-can-canine
 .. _python-can-cvector: https://github.com/zariiii9003/python-can-cvector
@@ -93,4 +95,5 @@ The table below lists interface drivers that can be added by installing addition
 .. _python-can-candle: https://github.com/BIRLab/python-can-candle
 .. _python-can-coe: https://c0d3.sh/smarthome/python-can-coe
 .. _RP1210: https://github.com/dfieschko/RP1210
+.. _python-can-damiao: https://github.com/gaoyichuan/python-can-damiao
 
