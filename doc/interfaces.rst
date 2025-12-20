@@ -37,6 +37,7 @@ The following hardware interfaces are included in python-can:
    interfaces/socketcand
    interfaces/systec
    interfaces/usb2can
+   interfaces/usb2can_libusb
    interfaces/vector
 
 
