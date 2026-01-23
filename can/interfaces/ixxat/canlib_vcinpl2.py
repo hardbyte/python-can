@@ -857,7 +857,7 @@ class IXXATBus(BusABC):
                     ):
                         log.info(_format_can_status(self._message.abData[0]))
                         if self._message.abData[0] & constants.CAN_STATUS_BUSOFF:
-                            raise VCIBusOffError()
+                            raise VCIBusOffError("Controller is in BUSOFF state")
 
                     elif (
                         self._message.uMsgInfo.Bits.type

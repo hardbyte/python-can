@@ -12,9 +12,12 @@ from can import (
 )
 
 __all__ = [
+    "VCIBusCouplingError",
     "VCIBusOffError",
+    "VCIDataOverrunError",
     "VCIDeviceNotFoundError",
     "VCIError",
+    "VCIErrorLimitExceededError",
     "VCIRxQueueEmptyError",
     "VCITimeout",
 ]
@@ -36,8 +39,19 @@ class VCIRxQueueEmptyError(VCIError):
 
 
 class VCIBusOffError(VCIError):
-    def __init__(self):
-        super().__init__("Controller is in BUSOFF state")
+    """Controller is in BUSOFF state"""
+
+
+class VCIErrorLimitExceededError(VCIError):
+    """overrun of error counter occurred"""
+
+
+class VCIDataOverrunError(VCIError):
+    """data overrun in receive buffer occurred"""
+
+
+class VCIBusCouplingError(VCIError):
+    """Bus coupling error occurred"""
 
 
 class VCIDeviceNotFoundError(CanInitializationError):
