@@ -706,7 +706,7 @@ class IXXATBus(BusABC):
                     self._starttickoffset = self._message.dwTime
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
                 if self._message.uMsgInfo.Bytes.bFlags & constants.CAN_MSGFLAGS_OVR:
-                    log.warning("CAN error: data overrun")
+                    raise VCIDataOverrunError("Data overrun occurred")
                 else:
                     log.warning(
                         CAN_ERROR_MESSAGES.get(
@@ -735,19 +735,17 @@ class IXXATBus(BusABC):
                 error_byte_1 = status.dwStatus & 0x0F
                 error_byte_2 = status.dwStatus & 0xF0
                 if error_byte_1 > constants.CAN_STATUS_TXPEND:
-                    # CAN_STATUS_OVRRUN   = 0x02  # data overrun occurred
-                    # CAN_STATUS_ERRLIM   = 0x04  # error warning limit exceeded
-                    # CAN_STATUS_BUSOFF = 0x08  # bus off status
-                    if error_byte_1 & constants.CAN_STATUS_OVRRUN:
-                        raise VCIError("Data overrun occurred")
+                    # check CAN_STATUS_BUSOFF first because it is more severe than the other ones
+                    if error_byte_1 & constants.CAN_STATUS_BUSOFF:
+                        raise VCIBusOffError("Bus off status")
                     elif error_byte_1 & constants.CAN_STATUS_ERRLIM:
-                        raise VCIError("Error warning limit exceeded")
-                    elif error_byte_1 & constants.CAN_STATUS_BUSOFF:
-                        raise VCIError("Bus off status")
+                        raise VCIErrorLimitExceededError("Error warning limit exceeded")
+                    # Not checking CAN_STATUS_OVRRUN here because it is handled above and would be
+                    # raised every time as the flag is never cleared until a reset.
                 elif error_byte_2 > constants.CAN_STATUS_ININIT:
                     # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
                     if error_byte_2 & constants.CAN_STATUS_BUSCERR:
-                        raise VCIError("Bus coupling error")
+                        raise VCIBusCouplingError("Bus coupling error")
 
         if not data_received:
             # Timed out / can message type is not DATA
