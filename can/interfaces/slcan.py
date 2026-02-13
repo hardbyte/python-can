@@ -219,16 +219,17 @@ class slcanBus(BusABC):
                 # Due to accessing `serialPortOrig.in_waiting` too often will reduce the performance.
                 # We read the `serialPortOrig.in_waiting` only once here.
                 in_waiting = self.serialPortOrig.in_waiting
-                for _ in range(max(1, in_waiting)):
-                    new_byte = self.serialPortOrig.read(1)
-                    if new_byte:
-                        self._buffer.extend(new_byte)
-                    else:
-                        break
+                if in_waiting > 0:
+                    self._buffer.extend(self.serialPortOrig.read(in_waiting))
+                else:
+                    byte = self.serialPortOrig.read(1)
+                    if byte:
+                        self._buffer.extend(byte)
 
-                    if new_byte in (self._ERROR, self._OK):
-                        string = self._buffer.decode()
-                        self._buffer.clear()
+                for i in range(len(self._buffer)):
+                    if self._buffer[i] in (self._OK[0], self._ERROR[0]):
+                        string = self._buffer[: i + 1].decode()
+                        del self._buffer[: i + 1]
                         return string
 
                 if _timeout.expired():
