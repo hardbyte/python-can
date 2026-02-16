@@ -218,7 +218,7 @@ class slcanBus(BusABC):
             while True:
                 # Due to accessing `serialPortOrig.in_waiting` too often will reduce the performance.
                 # We read the `serialPortOrig.in_waiting` only once here.
-                in_waiting = self.serialPortOrig.in_waiting
+                size = self.serialPortOrig.in_waiting or 1
                 if in_waiting > 0:
                     self._buffer.extend(self.serialPortOrig.read(in_waiting))
                 else:
