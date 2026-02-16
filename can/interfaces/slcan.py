@@ -226,7 +226,7 @@ class slcanBus(BusABC):
                     if byte:
                         self._buffer.extend(byte)
 
-                for i in range(len(self._buffer)):
+                for i, byte in enumerate(self._buffer):
                     if self._buffer[i] in (self._OK[0], self._ERROR[0]):
                         string = self._buffer[: i + 1].decode()
                         del self._buffer[: i + 1]
