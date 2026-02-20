@@ -125,9 +125,7 @@ class CantactBus(BusABC):
 
     def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         if timeout is None:
-            raise TypeError(
-                f"{self.__class__.__name__} expects a numeric `timeout` value."
-            )
+            timeout = 0
 
         with error_check("Cannot receive message"):
             frame = self.interface.recv(int(timeout * 1000))
