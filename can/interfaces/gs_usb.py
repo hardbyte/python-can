@@ -68,7 +68,6 @@ class GsUsbBus(can.BusABC):
         :param can_filters: not supported
         :param bitrate: CAN network bandwidth (bits/s)
         """
-        self._is_shutdown = False
         if (index is not None) and ((bus or address) is not None):
             raise CanInitializationError(
                 "index and bus/address cannot be used simultaneously"
@@ -194,10 +193,11 @@ class GsUsbBus(can.BusABC):
         return msg, False
 
     def shutdown(self):
-        if self._is_shutdown:
+        already_shutdown = self._is_shutdown
+        super().shutdown()
+        if already_shutdown:
             return
 
-        super().shutdown()
         self.gs_usb.stop()
         if self._index is not None:
             # Avoid errors on subsequent __init() by repeating the .scan() and .start() that would otherwise fail
@@ -211,4 +211,3 @@ class GsUsbBus(can.BusABC):
                     gs_usb.stop()
                 except usb.core.USBError:
                     pass
-        self._is_shutdown = True
