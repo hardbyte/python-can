@@ -12,6 +12,42 @@ from ..exceptions import CanInitializationError, CanOperationError
 logger = logging.getLogger(__name__)
 
 
+def _scan_gs_usb_devices() -> list[GsUsb]:
+    """Scan for gs_usb devices using auto-detected backend.
+
+    Unlike :meth:`GsUsb.scan`, this does not force the ``libusb1`` backend,
+    allowing ``pyusb`` to auto-detect the best available backend. This enables
+    support for WinUSB on Windows in addition to libusbK.
+    """
+    return [
+        GsUsb(dev)
+        for dev in (
+            usb.core.find(
+                find_all=True,
+                custom_match=GsUsb.is_gs_usb_device,
+            )
+            or []
+        )
+    ]
+
+
+def _find_gs_usb_device(bus: int, address: int) -> GsUsb | None:
+    """Find a specific gs_usb device using auto-detected backend.
+
+    Unlike :meth:`GsUsb.find`, this does not force the ``libusb1`` backend,
+    allowing ``pyusb`` to auto-detect the best available backend. This enables
+    support for WinUSB on Windows in addition to libusbK.
+    """
+    dev = usb.core.find(
+        custom_match=GsUsb.is_gs_usb_device,
+        bus=bus,
+        address=address,
+    )
+    if dev:
+        return GsUsb(dev)
+    return None
+
+
 class GsUsbBus(can.BusABC):
     def __init__(
         self,
@@ -43,7 +79,7 @@ class GsUsbBus(can.BusABC):
 
         self._index = None
         if index is not None:
-            devs = GsUsb.scan()
+            devs = _scan_gs_usb_devices()
             if len(devs) <= index:
                 raise CanInitializationError(
                     f"Cannot find device {index}. Devices found: {len(devs)}"
@@ -51,7 +87,7 @@ class GsUsbBus(can.BusABC):
             gs_usb = devs[index]
             self._index = index
         else:
-            gs_usb = GsUsb.find(bus=bus, address=address)
+            gs_usb = _find_gs_usb_device(bus=bus, address=address)
             if not gs_usb:
                 raise CanInitializationError(f"Cannot find device {channel}")
 
@@ -166,7 +202,7 @@ class GsUsbBus(can.BusABC):
         if self._index is not None:
             # Avoid errors on subsequent __init() by repeating the .scan() and .start() that would otherwise fail
             # the next time the device is opened in __init__()
-            devs = GsUsb.scan()
+            devs = _scan_gs_usb_devices()
             if self._index < len(devs):
                 gs_usb = devs[self._index]
                 try:
