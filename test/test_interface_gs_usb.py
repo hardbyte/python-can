@@ -21,9 +21,9 @@ def test_scan_does_not_force_backend(mock_find):
 
     mock_find.assert_called_once()
     call_kwargs = mock_find.call_args[1]
-    assert "backend" not in call_kwargs, (
-        "backend should not be specified so pyusb can auto-detect"
-    )
+    assert (
+        "backend" not in call_kwargs
+    ), "backend should not be specified so pyusb can auto-detect"
     assert call_kwargs["find_all"] is True
 
 
@@ -37,9 +37,9 @@ def test_find_does_not_force_backend(mock_find):
 
     mock_find.assert_called_once()
     call_kwargs = mock_find.call_args[1]
-    assert "backend" not in call_kwargs, (
-        "backend should not be specified so pyusb can auto-detect"
-    )
+    assert (
+        "backend" not in call_kwargs
+    ), "backend should not be specified so pyusb can auto-detect"
     assert call_kwargs["bus"] == 1
     assert call_kwargs["address"] == 2
 
