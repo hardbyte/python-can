@@ -175,7 +175,7 @@ class GsUsbBus(can.BusABC):
         frame = GsUsbFrame()
 
         # Do not set timeout as None or zero here to avoid blocking
-        timeout_ms = round(timeout * 1000) if timeout else 1
+        timeout_ms = round(timeout * 1000) if timeout else 0
         if not self.gs_usb.read(frame=frame, timeout_ms=timeout_ms):
             return None, False
 
