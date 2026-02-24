@@ -11,6 +11,7 @@ comments.
 
 TODO: correctly set preserves_channel and adds_default_channel
 """
+
 import locale
 import logging
 import os
@@ -716,9 +717,7 @@ class TestAscFileFormat(ReaderWriterTest):
             can.Message(timestamp=100.5, arbitration_id=0x2, data=b"\x02"),
         ]
 
-        with can.ASCWriter(
-            self.test_file_name, timestamps_format="relative"
-        ) as writer:
+        with can.ASCWriter(self.test_file_name, timestamps_format="relative") as writer:
             for m in msgs:
                 writer.on_message_received(m)
 
