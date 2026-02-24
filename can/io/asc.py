@@ -10,7 +10,7 @@ import logging
 import re
 from collections.abc import Generator
 from datetime import datetime, timezone, tzinfo
-from typing import Any, Final, TextIO
+from typing import Any, Final, Literal, TextIO
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -372,6 +372,7 @@ class ASCWriter(TextIOMessageWriter):
         file: StringPathLike | TextIO,
         channel: int = 1,
         tz: tzinfo | None = _LOCAL_TZ,
+        timestamps_format: Literal["absolute", "relative"] = "absolute",
         **kwargs: Any,
     ) -> None:
         """
@@ -384,7 +385,22 @@ class ASCWriter(TextIOMessageWriter):
             have a channel set. Default is 1.
         :param tz:
             Timezone for timestamps in the log file. Defaults to local timezone.
+        :param timestamps_format:
+            the format of timestamps in the header.
+            Use ``"absolute"`` (default) so that readers can recover
+            the original wall-clock timestamps by combining the
+            per-message offset with the trigger-block start time.
+            Use ``"relative"`` when only the elapsed time from the
+            start of the recording matters and no absolute time
+            recovery is needed.
+        :raises ValueError: if *timestamps_format* is not ``"absolute"`` or
+                            ``"relative"``
         """
+        if timestamps_format not in ("absolute", "relative"):
+            raise ValueError(
+                f"timestamps_format must be 'absolute' or 'relative', "
+                f"got {timestamps_format!r}"
+            )
         if kwargs.get("append", False):
             raise ValueError(
                 f"{self.__class__.__name__} is currently not equipped to "
@@ -394,11 +410,12 @@ class ASCWriter(TextIOMessageWriter):
 
         self._timezone = tz
         self.channel = channel
+        self.timestamps_format = timestamps_format
 
         # write start of file header
         start_time = self._format_header_datetime(datetime.now(tz=self._timezone))
         self.file.write(f"date {start_time}\n")
-        self.file.write("base hex  timestamps absolute\n")
+        self.file.write(f"base hex  timestamps {self.timestamps_format}\n")
         self.file.write("internal events logged\n")
 
         # the last part is written with the timestamp of the first message

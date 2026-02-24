@@ -687,6 +687,49 @@ class TestAscFileFormat(ReaderWriterTest):
 
         self.assertEqual(expected_file.read_text(), actual_file.read_text())
 
+    def test_write_timestamps_format_default_is_absolute(self):
+        """ASCWriter should write 'timestamps absolute' in the header by default."""
+        with can.ASCWriter(self.test_file_name) as writer:
+            pass
+
+        content = Path(self.test_file_name).read_text()
+        self.assertIn("timestamps absolute", content)
+
+    def test_write_timestamps_format_relative(self):
+        """ASCWriter should write 'timestamps relative' when requested."""
+        with can.ASCWriter(self.test_file_name, timestamps_format="relative") as writer:
+            pass
+
+        content = Path(self.test_file_name).read_text()
+        self.assertIn("timestamps relative", content)
+        self.assertNotIn("timestamps absolute", content)
+
+    def test_write_timestamps_format_invalid(self):
+        """ASCWriter should raise ValueError for an unsupported timestamps_format."""
+        with self.assertRaises(ValueError):
+            can.ASCWriter(self.test_file_name, timestamps_format="unix")
+
+    def test_write_relative_timestamp_roundtrip(self):
+        """Messages written with relative format round-trip with relative timestamps."""
+        msgs = [
+            can.Message(timestamp=100.0, arbitration_id=0x1, data=b"\x01"),
+            can.Message(timestamp=100.5, arbitration_id=0x2, data=b"\x02"),
+        ]
+
+        with can.ASCWriter(
+            self.test_file_name, timestamps_format="relative"
+        ) as writer:
+            for m in msgs:
+                writer.on_message_received(m)
+
+        with can.ASCReader(self.test_file_name, relative_timestamp=True) as reader:
+            result = list(reader)
+
+        self.assertEqual(len(result), len(msgs))
+        # With relative_timestamp=True timestamps are offsets from the first message
+        self.assertAlmostEqual(result[0].timestamp, 0.0, places=5)
+        self.assertAlmostEqual(result[1].timestamp, 0.5, places=5)
+
     @parameterized.expand(
         [
             (
