@@ -462,10 +462,22 @@ class ASCWriter(TextIOMessageWriter):
         # Use last known timestamp if unknown
         if timestamp is None:
             timestamp = self.last_timestamp
-        # turn into relative timestamps if necessary
-        if timestamp >= self.started:
-            timestamp -= self.started
-        line = self.FORMAT_EVENT.format(timestamp=timestamp, message=message)
+        # Compute written timestamp based on configured format
+        if self.timestamps_format == "absolute":
+            # offsets from the start of measurement
+            written_timestamp = (
+                timestamp - self.started if timestamp >= self.started else timestamp
+            )
+        else:
+            # deltas from the preceding event
+            written_timestamp = (
+                timestamp - self.last_timestamp
+                if timestamp >= self.last_timestamp
+                else 0.0
+            )
+        # Track last timestamp so the next event can compute its delta
+        self.last_timestamp = timestamp
+        line = self.FORMAT_EVENT.format(timestamp=written_timestamp, message=message)
         self.file.write(line)
 
     def on_message_received(self, msg: Message) -> None:
