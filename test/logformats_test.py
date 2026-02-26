@@ -711,7 +711,7 @@ class TestAscFileFormat(ReaderWriterTest):
             can.ASCWriter(self.test_file_name, timestamps_format="unix")
 
     def test_write_relative_timestamp_roundtrip(self):
-        """Messages written with relative format round-trip with relative timestamps."""
+        """Messages written with relative format round-trip to their original timestamps."""
         msgs = [
             can.Message(timestamp=100.0, arbitration_id=0x1, data=b"\x01"),
             can.Message(timestamp=100.5, arbitration_id=0x2, data=b"\x02"),
@@ -721,13 +721,12 @@ class TestAscFileFormat(ReaderWriterTest):
             for m in msgs:
                 writer.on_message_received(m)
 
-        with can.ASCReader(self.test_file_name, relative_timestamp=True) as reader:
+        with can.ASCReader(self.test_file_name, relative_timestamp=False) as reader:
             result = list(reader)
 
         self.assertEqual(len(result), len(msgs))
-        # Timestamps in file are per-event deltas; reader reads them as-is
-        self.assertAlmostEqual(result[0].timestamp, 0.0, places=5)
-        self.assertAlmostEqual(result[1].timestamp, 0.5, places=5)
+        self.assertAlmostEqual(result[0].timestamp, 100.0, places=3)
+        self.assertAlmostEqual(result[1].timestamp, 100.5, places=3)
 
     def test_write_relative_timestamps_are_per_event_deltas(self):
         """With timestamps_format='relative', each written timestamp is a delta from the
@@ -754,8 +753,8 @@ class TestAscFileFormat(ReaderWriterTest):
         self.assertAlmostEqual(result[2].timestamp, 0.7, places=5)
 
     def test_write_absolute_timestamps_are_offsets_from_start(self):
-        """With timestamps_format='absolute' (default), each written timestamp is an
-        offset from the measurement start, not a per-event delta."""
+        """With timestamps_format='absolute' (default), messages round-trip to their
+        original timestamps when read back with relative_timestamp=False."""
         msgs = [
             can.Message(timestamp=100.0, arbitration_id=0x1, data=b"\x01"),
             can.Message(timestamp=100.3, arbitration_id=0x2, data=b"\x02"),
@@ -766,14 +765,14 @@ class TestAscFileFormat(ReaderWriterTest):
             for m in msgs:
                 writer.on_message_received(m)
 
-        with can.ASCReader(self.test_file_name, relative_timestamp=True) as reader:
+        with can.ASCReader(self.test_file_name, relative_timestamp=False) as reader:
             result = list(reader)
 
         self.assertEqual(len(result), len(msgs))
-        # All timestamps are offsets from the measurement start (100.0):
-        self.assertAlmostEqual(result[0].timestamp, 0.0, places=5)
-        self.assertAlmostEqual(result[1].timestamp, 0.3, places=5)
-        self.assertAlmostEqual(result[2].timestamp, 1.0, places=5)
+        # Timestamps are recovered from the triggerblock start time + file offset:
+        self.assertAlmostEqual(result[0].timestamp, 100.0, places=3)
+        self.assertAlmostEqual(result[1].timestamp, 100.3, places=3)
+        self.assertAlmostEqual(result[2].timestamp, 101.0, places=3)
 
     @parameterized.expand(
         [

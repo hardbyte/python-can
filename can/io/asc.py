@@ -75,7 +75,6 @@ class ASCReader(TextIOMessageReader):
         self.relative_timestamp = relative_timestamp
         self.date: str | None = None
         self.start_time = 0.0
-        # TODO - what is this used for? The ASC Writer only prints `absolute`
         self.timestamps_format: str | None = None
         self.internal_events_logged = False
 
@@ -462,19 +461,14 @@ class ASCWriter(TextIOMessageWriter):
         # Use last known timestamp if unknown
         if timestamp is None:
             timestamp = self.last_timestamp
+        timestamp = max(timestamp, self.last_timestamp)
         # Compute written timestamp based on configured format
         if self.timestamps_format == "absolute":
             # offsets from the start of measurement
-            written_timestamp = (
-                timestamp - self.started if timestamp >= self.started else timestamp
-            )
+            written_timestamp = timestamp - self.started
         else:
             # deltas from the preceding event
-            written_timestamp = (
-                timestamp - self.last_timestamp
-                if timestamp >= self.last_timestamp
-                else 0.0
-            )
+            written_timestamp = timestamp - self.last_timestamp
         # Track last timestamp so the next event can compute its delta
         self.last_timestamp = timestamp
         line = self.FORMAT_EVENT.format(timestamp=written_timestamp, message=message)
