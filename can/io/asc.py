@@ -9,13 +9,15 @@ Example .asc files:
 import logging
 import re
 from collections.abc import Generator
-from datetime import datetime
+from datetime import datetime, timezone, tzinfo
 from typing import Any, Final, TextIO
 
 from ..message import Message
 from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
 from .generic import TextIOMessageReader, TextIOMessageWriter
+
+_LOCAL_TZ: Final = datetime.now(timezone.utc).astimezone().tzinfo
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
@@ -44,24 +46,31 @@ class ASCReader(TextIOMessageReader):
         file: StringPathLike | TextIO,
         base: str = "hex",
         relative_timestamp: bool = True,
+        tz: tzinfo | None = _LOCAL_TZ,
         **kwargs: Any,
     ) -> None:
         """
-        :param file: a path-like object or as file-like object to read from
-                     If this is a file-like object, is has to opened in text
-                     read mode, not binary read mode.
-        :param base: Select the base(hex or dec) of id and data.
-                     If the header of the asc file contains base information,
-                     this value will be overwritten. Default "hex".
-        :param relative_timestamp: Select whether the timestamps are
-                     `relative` (starting at 0.0) or `absolute` (starting at
-                     the system time). Default `True = relative`.
+        :param file:
+            a path-like object or a file-like object to read from.
+            If this is a file-like object, it must be opened in text
+            read mode, not binary read mode.
+        :param base:
+            Select the base ('hex' or 'dec') for CAN IDs and data bytes.
+            If the header of the ASC file contains base information,
+            this value will be overwritten. Default is "hex".
+        :param relative_timestamp:
+            Select whether the timestamps are
+            `relative` (starting at 0.0) or `absolute` (starting at
+            the system time). Default is `True` (relative).
+        :param tz:
+            Timezone for absolute timestamps. Defaults to local timezone.
         """
         super().__init__(file, mode="r")
 
         if not self.file:
             raise ValueError("The given file cannot be None")
         self.base = base
+        self._timezone = tz
         self._converted_base = self._check_base(base)
         self.relative_timestamp = relative_timestamp
         self.date: str | None = None
@@ -93,7 +102,7 @@ class ASCReader(TextIOMessageReader):
                 self.start_time = (
                     0.0
                     if self.relative_timestamp
-                    else self._datetime_to_timestamp(self.date)
+                    else self._datetime_to_timestamp(self.date, self._timezone)
                 )
                 continue
 
@@ -115,7 +124,7 @@ class ASCReader(TextIOMessageReader):
             break
 
     @staticmethod
-    def _datetime_to_timestamp(datetime_string: str) -> float:
+    def _datetime_to_timestamp(datetime_string: str, tz: tzinfo | None) -> float:
         month_map = {
             "jan": 1,
             "feb": 2,
@@ -155,7 +164,11 @@ class ASCReader(TextIOMessageReader):
 
         for format_str in datetime_formats:
             try:
-                return datetime.strptime(datetime_string, format_str).timestamp()
+                return (
+                    datetime.strptime(datetime_string, format_str)
+                    .replace(tzinfo=tz)
+                    .timestamp()
+                )
             except ValueError:
                 continue
 
@@ -279,7 +292,7 @@ class ASCReader(TextIOMessageReader):
                 self.start_time = (
                     0.0
                     if self.relative_timestamp
-                    else self._datetime_to_timestamp(datetime_str)
+                    else self._datetime_to_timestamp(datetime_str, self._timezone)
                 )
                 continue
 
@@ -358,14 +371,19 @@ class ASCWriter(TextIOMessageWriter):
         self,
         file: StringPathLike | TextIO,
         channel: int = 1,
+        tz: tzinfo | None = _LOCAL_TZ,
         **kwargs: Any,
     ) -> None:
         """
-        :param file: a path-like object or as file-like object to write to
-                     If this is a file-like object, is has to opened in text
-                     write mode, not binary write mode.
-        :param channel: a default channel to use when the message does not
-                        have a channel set
+        :param file:
+            a path-like object or a file-like object to write to.
+            If this is a file-like object, it must be opened in text
+            write mode, not binary write mode.
+        :param channel:
+            a default channel to use when the message does not
+            have a channel set. Default is 1.
+        :param tz:
+            Timezone for timestamps in the log file. Defaults to local timezone.
         """
         if kwargs.get("append", False):
             raise ValueError(
@@ -374,10 +392,11 @@ class ASCWriter(TextIOMessageWriter):
             )
         super().__init__(file, mode="w")
 
+        self._timezone = tz
         self.channel = channel
 
         # write start of file header
-        start_time = self._format_header_datetime(datetime.now())
+        start_time = self._format_header_datetime(datetime.now(tz=self._timezone))
         self.file.write(f"date {start_time}\n")
         self.file.write("base hex  timestamps absolute\n")
         self.file.write("internal events logged\n")
@@ -417,7 +436,7 @@ class ASCWriter(TextIOMessageWriter):
         if not self.header_written:
             self.started = self.last_timestamp = timestamp or 0.0
 
-            start_time = datetime.fromtimestamp(self.last_timestamp)
+            start_time = datetime.fromtimestamp(self.last_timestamp, tz=self._timezone)
             formatted_date = self._format_header_datetime(start_time)
 
             self.file.write(f"Begin Triggerblock {formatted_date}\n")
