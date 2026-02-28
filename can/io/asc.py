@@ -308,7 +308,11 @@ class ASCReader(TextIOMessageReader):
             msg_kwargs: dict[str, float | bool | int] = {}
             try:
                 _timestamp, channel, rest_of_message = line.split(None, 2)
-                timestamp = float(_timestamp) + self.start_time
+                if self.timestamps_format == "relative" and not self.relative_timestamp:
+                    self.start_time += float(_timestamp)
+                    timestamp = self.start_time
+                else:
+                    timestamp = float(_timestamp) + self.start_time
                 msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
                     msg_kwargs["is_fd"] = True

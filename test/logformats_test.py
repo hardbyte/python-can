@@ -714,7 +714,8 @@ class TestAscFileFormat(ReaderWriterTest):
         """Messages written with relative format round-trip to their original timestamps."""
         msgs = [
             can.Message(timestamp=100.0, arbitration_id=0x1, data=b"\x01"),
-            can.Message(timestamp=100.5, arbitration_id=0x2, data=b"\x02"),
+            can.Message(timestamp=100.3, arbitration_id=0x2, data=b"\x02"),
+            can.Message(timestamp=101.0, arbitration_id=0x3, data=b"\x03"),
         ]
 
         with can.ASCWriter(self.test_file_name, timestamps_format="relative") as writer:
@@ -726,7 +727,8 @@ class TestAscFileFormat(ReaderWriterTest):
 
         self.assertEqual(len(result), len(msgs))
         self.assertAlmostEqual(result[0].timestamp, 100.0, places=3)
-        self.assertAlmostEqual(result[1].timestamp, 100.5, places=3)
+        self.assertAlmostEqual(result[1].timestamp, 100.3, places=3)
+        self.assertAlmostEqual(result[2].timestamp, 101.0, places=3)
 
     def test_write_relative_timestamps_are_per_event_deltas(self):
         """With timestamps_format='relative', each written timestamp is a delta from the
