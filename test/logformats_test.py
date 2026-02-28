@@ -18,15 +18,16 @@ import tempfile
 import unittest
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from itertools import zip_longest
 from pathlib import Path
 from unittest.mock import patch
 
 from parameterized import parameterized
 
-import can
-from can.io import blf
+import can.io
+from can.io import asc, blf
+
 from .data.example_data import (
     TEST_COMMENTS,
     TEST_MESSAGES_BASE,
@@ -427,9 +428,11 @@ class TestAscFileFormat(ReaderWriterTest):
 
     def test_read_absolute_time(self):
         time_from_file = "Sat Sep 30 10:06:13.191 PM 2017"
-        start_time = datetime.strptime(
-            time_from_file, self.FORMAT_START_OF_FILE_DATE
-        ).timestamp()
+        start_time = (
+            datetime.strptime(time_from_file, self.FORMAT_START_OF_FILE_DATE)
+            .replace(tzinfo=asc._LOCAL_TZ)
+            .timestamp()
+        )
 
         expected_messages = [
             can.Message(
@@ -629,24 +632,25 @@ class TestAscFileFormat(ReaderWriterTest):
             os.unlink(temp_file.name)
 
     def test_write_millisecond_handling(self):
+        tz = asc._LOCAL_TZ
         now = datetime(
-            year=2017, month=9, day=30, hour=15, minute=6, second=13, microsecond=191456
+            year=2017,
+            month=9,
+            day=30,
+            hour=15,
+            minute=6,
+            second=13,
+            microsecond=191456,
+            tzinfo=tz,
         )
 
-        # We temporarily set the locale to C to ensure test reproducibility
-        with override_locale(category=locale.LC_TIME, locale_str="C"):
-            # We mock datetime.now during ASCWriter __init__ for reproducibility
-            # Unfortunately, now() is a readonly attribute, so we mock datetime
-            with patch("can.io.asc.datetime") as mock_datetime:
-                mock_datetime.now.return_value = now
-                writer = can.ASCWriter(self.test_file_name)
+        with patch("can.io.asc.datetime") as mock_datetime:
+            mock_datetime.now.return_value = now
+            writer = can.ASCWriter(self.test_file_name, tz=tz)
 
-            msg = can.Message(
-                timestamp=now.timestamp(), arbitration_id=0x123, data=b"h"
-            )
-            writer.on_message_received(msg)
-
-            writer.stop()
+        msg = can.Message(timestamp=now.timestamp(), arbitration_id=0x123, data=b"h")
+        writer.on_message_received(msg)
+        writer.stop()
 
         actual_file = Path(self.test_file_name)
         expected_file = self._get_logfile_location("single_frame_us_locale.asc")
@@ -654,26 +658,29 @@ class TestAscFileFormat(ReaderWriterTest):
         self.assertEqual(expected_file.read_text(), actual_file.read_text())
 
     def test_write(self):
-        now = datetime(
-            year=2017, month=9, day=30, hour=15, minute=6, second=13, microsecond=191456
+        tz = asc._LOCAL_TZ
+        with patch("can.io.asc.datetime") as mock_datetime:
+            now = datetime(
+                year=2017,
+                month=9,
+                day=30,
+                hour=15,
+                minute=6,
+                second=13,
+                microsecond=191456,
+                tzinfo=tz,
+            )
+            mock_datetime.now.return_value = now
+            writer = can.ASCWriter(self.test_file_name, tz=tz)
+
+        msg = can.Message(
+            timestamp=now.timestamp(),
+            arbitration_id=0x123,
+            data=range(64),
         )
 
-        # We temporarily set the locale to C to ensure test reproducibility
-        with override_locale(category=locale.LC_TIME, locale_str="C"):
-            # We mock datetime.now during ASCWriter __init__ for reproducibility
-            # Unfortunately, now() is a readonly attribute, so we mock datetime
-            with patch("can.io.asc.datetime") as mock_datetime:
-                mock_datetime.now.return_value = now
-                writer = can.ASCWriter(self.test_file_name)
-
-            msg = can.Message(
-                timestamp=now.timestamp(),
-                arbitration_id=0x123,
-                data=range(64),
-            )
-
-            with writer:
-                writer.on_message_received(msg)
+        with writer:
+            writer.on_message_received(msg)
 
         actual_file = Path(self.test_file_name)
         expected_file = self._get_logfile_location("single_frame.asc")
@@ -684,34 +691,48 @@ class TestAscFileFormat(ReaderWriterTest):
         [
             (
                 "May 27 04:09:35.000 pm 2014",
-                datetime(2014, 5, 27, 16, 9, 35, 0).timestamp(),
+                datetime(
+                    2014, 5, 27, 16, 9, 35, 0, tzinfo=timezone(timedelta(hours=5))
+                ).timestamp(),
             ),
             (
                 "Mai 27 04:09:35.000 pm 2014",
-                datetime(2014, 5, 27, 16, 9, 35, 0).timestamp(),
+                datetime(
+                    2014, 5, 27, 16, 9, 35, 0, tzinfo=timezone(timedelta(hours=5))
+                ).timestamp(),
             ),
             (
                 "Apr 28 10:44:52.480 2022",
-                datetime(2022, 4, 28, 10, 44, 52, 480000).timestamp(),
+                datetime(
+                    2022, 4, 28, 10, 44, 52, 480000, tzinfo=timezone(timedelta(hours=5))
+                ).timestamp(),
             ),
             (
                 "Sep 30 15:06:13.191 2017",
-                datetime(2017, 9, 30, 15, 6, 13, 191000).timestamp(),
+                datetime(
+                    2017, 9, 30, 15, 6, 13, 191000, tzinfo=timezone(timedelta(hours=5))
+                ).timestamp(),
             ),
             (
                 "Sep 30 15:06:13.191 pm 2017",
-                datetime(2017, 9, 30, 15, 6, 13, 191000).timestamp(),
+                datetime(
+                    2017, 9, 30, 15, 6, 13, 191000, tzinfo=timezone(timedelta(hours=5))
+                ).timestamp(),
             ),
             (
                 "Sep 30 15:06:13.191 am 2017",
-                datetime(2017, 9, 30, 15, 6, 13, 191000).timestamp(),
+                datetime(
+                    2017, 9, 30, 15, 6, 13, 191000, tzinfo=timezone(timedelta(hours=5))
+                ).timestamp(),
             ),
         ]
     )
     def test_datetime_to_timestamp(
         self, datetime_string: str, expected_timestamp: float
     ):
-        timestamp = can.ASCReader._datetime_to_timestamp(datetime_string)
+        timestamp = can.ASCReader._datetime_to_timestamp(
+            datetime_string, tz=timezone(timedelta(hours=5))
+        )
         self.assertAlmostEqual(timestamp, expected_timestamp)
 
 
