@@ -75,6 +75,7 @@ class ASCReader(TextIOMessageReader):
         self.relative_timestamp = relative_timestamp
         self.date: str | None = None
         self.start_time = 0.0
+        self._last_timestamp = 0.0
         self.timestamps_format: str | None = None
         self.internal_events_logged = False
 
@@ -293,6 +294,7 @@ class ASCReader(TextIOMessageReader):
                     if self.relative_timestamp
                     else self._datetime_to_timestamp(datetime_str, self._timezone)
                 )
+                self._last_timestamp = self.start_time
                 continue
 
             # Handle the "Start of measurement" line
@@ -309,8 +311,8 @@ class ASCReader(TextIOMessageReader):
             try:
                 _timestamp, channel, rest_of_message = line.split(None, 2)
                 if self.timestamps_format == "relative" and not self.relative_timestamp:
-                    self.start_time += float(_timestamp)
-                    timestamp = self.start_time
+                    self._last_timestamp += float(_timestamp)
+                    timestamp = self._last_timestamp
                 else:
                     timestamp = float(_timestamp) + self.start_time
                 msg_kwargs["timestamp"] = timestamp
