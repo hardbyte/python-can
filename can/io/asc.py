@@ -10,7 +10,7 @@ import logging
 import re
 from collections.abc import Generator
 from datetime import datetime, timezone, tzinfo
-from typing import Any, Final, TextIO
+from typing import Any, Final, Literal, TextIO
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -75,7 +75,7 @@ class ASCReader(TextIOMessageReader):
         self.relative_timestamp = relative_timestamp
         self.date: str | None = None
         self.start_time = 0.0
-        # TODO - what is this used for? The ASC Writer only prints `absolute`
+        self._last_timestamp = 0.0
         self.timestamps_format: str | None = None
         self.internal_events_logged = False
 
@@ -294,6 +294,7 @@ class ASCReader(TextIOMessageReader):
                     if self.relative_timestamp
                     else self._datetime_to_timestamp(datetime_str, self._timezone)
                 )
+                self._last_timestamp = self.start_time
                 continue
 
             # Handle the "Start of measurement" line
@@ -309,7 +310,11 @@ class ASCReader(TextIOMessageReader):
             msg_kwargs: dict[str, float | bool | int] = {}
             try:
                 _timestamp, channel, rest_of_message = line.split(None, 2)
-                timestamp = float(_timestamp) + self.start_time
+                if self.timestamps_format == "relative" and not self.relative_timestamp:
+                    self._last_timestamp += float(_timestamp)
+                    timestamp = self._last_timestamp
+                else:
+                    timestamp = float(_timestamp) + self.start_time
                 msg_kwargs["timestamp"] = timestamp
                 if channel == "CANFD":
                     msg_kwargs["is_fd"] = True
@@ -372,6 +377,7 @@ class ASCWriter(TextIOMessageWriter):
         file: StringPathLike | TextIO,
         channel: int = 1,
         tz: tzinfo | None = _LOCAL_TZ,
+        timestamps_format: Literal["absolute", "relative"] = "absolute",
         **kwargs: Any,
     ) -> None:
         """
@@ -384,7 +390,22 @@ class ASCWriter(TextIOMessageWriter):
             have a channel set. Default is 1.
         :param tz:
             Timezone for timestamps in the log file. Defaults to local timezone.
+        :param timestamps_format:
+            the format of timestamps in the header.
+            Use ``"absolute"`` (default) so that readers can recover
+            the original wall-clock timestamps by combining the
+            per-message offset with the trigger-block start time.
+            Use ``"relative"`` when only the elapsed time from the
+            start of the recording matters and no absolute time
+            recovery is needed.
+        :raises ValueError: if *timestamps_format* is not ``"absolute"`` or
+                            ``"relative"``
         """
+        if timestamps_format not in ("absolute", "relative"):
+            raise ValueError(
+                f"timestamps_format must be 'absolute' or 'relative', "
+                f"got {timestamps_format!r}"
+            )
         if kwargs.get("append", False):
             raise ValueError(
                 f"{self.__class__.__name__} is currently not equipped to "
@@ -394,11 +415,12 @@ class ASCWriter(TextIOMessageWriter):
 
         self._timezone = tz
         self.channel = channel
+        self.timestamps_format = timestamps_format
 
         # write start of file header
         start_time = self._format_header_datetime(datetime.now(tz=self._timezone))
         self.file.write(f"date {start_time}\n")
-        self.file.write("base hex  timestamps absolute\n")
+        self.file.write(f"base hex  timestamps {self.timestamps_format}\n")
         self.file.write("internal events logged\n")
 
         # the last part is written with the timestamp of the first message
@@ -445,10 +467,17 @@ class ASCWriter(TextIOMessageWriter):
         # Use last known timestamp if unknown
         if timestamp is None:
             timestamp = self.last_timestamp
-        # turn into relative timestamps if necessary
-        if timestamp >= self.started:
-            timestamp -= self.started
-        line = self.FORMAT_EVENT.format(timestamp=timestamp, message=message)
+        timestamp = max(timestamp, self.last_timestamp)
+        # Compute written timestamp based on configured format
+        if self.timestamps_format == "absolute":
+            # offsets from the start of measurement
+            written_timestamp = timestamp - self.started
+        else:
+            # deltas from the preceding event
+            written_timestamp = timestamp - self.last_timestamp
+        # Track last timestamp so the next event can compute its delta
+        self.last_timestamp = timestamp
+        line = self.FORMAT_EVENT.format(timestamp=written_timestamp, message=message)
         self.file.write(line)
 
     def on_message_received(self, msg: Message) -> None:
