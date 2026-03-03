@@ -74,7 +74,7 @@ class CanMsg(Structure):
     def id(self):
         return self.m_dwID
 
-    @id.setter
+    @id.setter  # noqa: A003
     def id(self, value):
         self.m_dwID = value
 

@@ -6,6 +6,7 @@ This module tests sending messages on socketcan with and without local_loopback 
 for a good explanation of why this might be needed:
 https://www.kernel.org/doc/html/v4.17/networking/can.html#socketcan-local-loopback1
 """
+
 import unittest
 
 import can

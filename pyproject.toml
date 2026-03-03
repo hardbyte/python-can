@@ -90,15 +90,15 @@ docs = [
 ]
 lint = [
     "pylint==4.0.*",
-    "ruff==0.14.*",
-    "black==25.12.*",
+    "ruff==0.15.*",
+    "black==26.1.*",
     "mypy==1.19.*",
 ]
 test = [
     "pytest==9.0.*",
     "pytest-timeout==2.4.*",
     "pytest-modern==0.7.*;platform_system!='Windows'",
-    "coveralls==4.0.*",
+    "coveralls==4.1.*",
     "pytest-cov==7.0.*",
     "coverage==7.13.*",
     "hypothesis==6.*",

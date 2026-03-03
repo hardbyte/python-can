@@ -397,7 +397,7 @@ class GeneralPurposeUdpMulticastBus:
                 timestamp = seconds + nanoseconds * 1.0e-9
             else:
                 # fetch data & source address
-                (raw_message_data, sender_address) = self._socket.recvfrom(
+                raw_message_data, sender_address = self._socket.recvfrom(
                     self.max_buffer
                 )
 

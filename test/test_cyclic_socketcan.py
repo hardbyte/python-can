@@ -3,6 +3,7 @@
 """
 This module tests multiple message cyclic send tasks.
 """
+
 import time
 import unittest
 

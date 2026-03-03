@@ -3,6 +3,7 @@
 """
 Test functions in `can.interfaces.socketcan.socketcan`.
 """
+
 import ctypes
 import struct
 import sys
