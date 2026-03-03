@@ -178,8 +178,7 @@ class SqliteWriter(MessageWriter, BufferedReader):
         conn = sqlite3.connect(file)
 
         # create table structure
-        conn.cursor().execute(
-            f"""CREATE TABLE IF NOT EXISTS {table_name}
+        conn.cursor().execute(f"""CREATE TABLE IF NOT EXISTS {table_name}
             (
               ts REAL,
               arbitration_id INTEGER,
@@ -188,8 +187,7 @@ class SqliteWriter(MessageWriter, BufferedReader):
               error INTEGER,
               dlc INTEGER,
               data BLOB
-            )"""
-        )
+            )""")
         conn.commit()
 
         return conn

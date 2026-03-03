@@ -74,7 +74,7 @@ class robotellBus(BusABC):
         if not channel:  # if None or empty
             raise TypeError("Must specify a serial port.")
         if "@" in channel:
-            (channel, ttyBaudrate) = channel.split("@")
+            channel, ttyBaudrate = channel.split("@")
         self.serialPortOrig = serial.serial_for_url(
             channel, baudrate=ttyBaudrate, rtscts=rtscts
         )

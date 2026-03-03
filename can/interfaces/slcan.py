@@ -132,7 +132,7 @@ class slcanBus(BusABC):
         if not channel:  # if None or empty
             raise ValueError("Must specify a serial port.")
         if "@" in channel:
-            (channel, baudrate) = channel.split("@")
+            channel, baudrate = channel.split("@")
             tty_baudrate = int(baudrate)
 
         with error_check(exception_type=CanInitializationError):
