@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 def _find_gs_usb_devices(
     bus: int | None = None, address: int | None = None
-) -> list[GsUsb]:
-    """Find gs_usb devices using auto-detected backend.
+) -> list[usb.core.Device]:
+    """Find raw USB devices for gs_usb using auto-detected backend.
 
     Unlike :meth:`GsUsb.scan`, this does not force the ``libusb1`` backend,
     allowing ``pyusb`` to auto-detect the best available backend. This enables
@@ -24,7 +24,7 @@ def _find_gs_usb_devices(
 
     :param bus: number of the bus that the device is connected to
     :param address: address of the device on the bus it is connected to
-    :return: a list of found GsUsb devices
+    :return: a list of found raw USB devices
     """
     kwargs = {}
     if bus is not None:
@@ -32,17 +32,14 @@ def _find_gs_usb_devices(
     if address is not None:
         kwargs["address"] = address
 
-    return [
-        GsUsb(dev)
-        for dev in (
-            usb.core.find(
-                find_all=True,
-                custom_match=GsUsb.is_gs_usb_device,
-                **kwargs,
-            )
-            or []
+    return list(
+        usb.core.find(
+            find_all=True,
+            custom_match=GsUsb.is_gs_usb_device,
+            **kwargs,
         )
-    ]
+        or []
+    )
 
 
 class GsUsbBus(can.BusABC):
@@ -90,15 +87,15 @@ class GsUsbBus(can.BusABC):
                 raise CanInitializationError(
                     f"Cannot find device {_index}. Devices found: {len(devs)}"
                 )
-            gs_usb = devs[_index]
+            gs_usb_dev = devs[_index]
             self._index = _index
         else:
             devs = _find_gs_usb_devices(bus=bus, address=address)
             if not devs:
                 raise CanInitializationError(f"Cannot find device {channel}")
-            gs_usb = devs[0]
+            gs_usb_dev = devs[0]
 
-        self.gs_usb = gs_usb
+        self.gs_usb = GsUsb(gs_usb_dev)
         self.channel_info = str(channel)
         self._can_protocol = can.CanProtocol.CAN_20
 
@@ -213,7 +210,7 @@ class GsUsbBus(can.BusABC):
             # opened in __init__()
             devs = _find_gs_usb_devices()
             if self._index < len(devs):
-                gs_usb = devs[self._index]
+                gs_usb = GsUsb(devs[self._index])
                 try:
                     gs_usb.set_bitrate(self._bitrate)
                     gs_usb.start()

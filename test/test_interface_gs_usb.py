@@ -44,8 +44,8 @@ def test_find_devices_with_args_does_not_force_backend(mock_find):
 
 
 @patch("can.interfaces.gs_usb.usb.core.find")
-def test_find_devices_returns_gs_usb_devices(mock_find):
-    """Verify that _find_gs_usb_devices wraps found USB devices in GsUsb objects."""
+def test_find_devices_returns_raw_usb_devices(mock_find):
+    """Verify that _find_gs_usb_devices returns the raw USB devices."""
     mock_dev1 = MagicMock()
     mock_dev2 = MagicMock()
     mock_find.return_value = [mock_dev1, mock_dev2]
@@ -53,8 +53,8 @@ def test_find_devices_returns_gs_usb_devices(mock_find):
     devices = _find_gs_usb_devices()
 
     assert len(devices) == 2
-    assert devices[0].gs_usb is mock_dev1
-    assert devices[1].gs_usb is mock_dev2
+    assert devices[0] is mock_dev1
+    assert devices[1] is mock_dev2
 
 
 @patch("can.interfaces.gs_usb.usb.core.find")
