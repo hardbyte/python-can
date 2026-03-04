@@ -103,7 +103,6 @@ test = [
     "coverage==7.13.*",
     "hypothesis==6.*",
     "parameterized==0.9.*",
-    "gs-usb==0.3.*",
 ]
 dev = [
     {include-group = "docs"},
