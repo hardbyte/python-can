@@ -137,7 +137,6 @@ exclude = [
     "^doc/conf.py$",
     "^test",
     "^can/interfaces/etas",
-    "^can/interfaces/gs_usb",
     "^can/interfaces/ics_neovi",
     "^can/interfaces/iscan",
     "^can/interfaces/ixxat",
