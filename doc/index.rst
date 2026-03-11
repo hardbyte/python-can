@@ -49,6 +49,7 @@ Contents:
    scripts
    development
    history
+   changelog
 
 
 Known Bugs

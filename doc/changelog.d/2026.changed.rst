@@ -1,0 +1,1 @@
+``cantact``: calling ``CantactBus.recv(timeout=None)`` now blocks 'forever'.

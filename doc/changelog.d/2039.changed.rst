@@ -1,0 +1,1 @@
+Move changelog from CHANGELOG.md to documentation.
