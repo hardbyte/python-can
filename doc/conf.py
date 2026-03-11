@@ -10,6 +10,7 @@ import ctypes
 import os
 import sys
 from importlib.metadata import version as get_version
+from pathlib import Path
 from unittest.mock import MagicMock
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -49,12 +50,18 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.graphviz",
     "sphinxcontrib.programoutput",
+    "sphinxcontrib.towncrier.ext",
     "sphinx_inline_tabs",
     "sphinx_copybutton",
 ]
 
+# Options: draft/sphinx-version/sphinx-release
+towncrier_draft_autoversion_mode = "draft"
+towncrier_draft_include_empty = False
+towncrier_draft_working_directory = Path(__file__).parent.parent
+
 # Now, you can use the alias name as a new role, e.g. :issue:`123`.
-extlinks = {"issue": ("https://github.com/hardbyte/python-can/issues/%s/", "issue #%s")}
+extlinks = {"issue": ("https://github.com/hardbyte/python-can/issues/%s/", "#%s")}
 
 intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
 
@@ -88,7 +95,7 @@ language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["_build"]
+exclude_patterns = ["_build", "changelog.d/*"]
 
 # The reST default role (used for this markup: `text`) to use for all documents
 # default_role = None

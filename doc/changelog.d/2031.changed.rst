@@ -1,0 +1,1 @@
+``gs_usb``: use ``pyusb`` package to allow WinUSB instead of requiring libusbK on Windows; calling ``GsUsbBus.recv(timeout=None)`` now blocks 'forever'.
