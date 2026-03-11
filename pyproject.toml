@@ -64,7 +64,7 @@ neovi = ["filelock", "python-ics>=2.12"]
 canalystii = ["canalystii>=0.1.0"]
 cantact = ["cantact>=0.0.7"]
 cvector = ["python-can-cvector"]
-gs-usb = ["gs-usb>=0.2.1"]
+gs-usb = ["gs-usb>=0.2.1", "pyusb>=1.0.2"]
 nixnet = ["nixnet>=0.3.2"]
 pcan = ["uptime~=3.0.1"]
 remote = ["python-can-remote"]
@@ -137,7 +137,6 @@ exclude = [
     "^doc/conf.py$",
     "^test",
     "^can/interfaces/etas",
-    "^can/interfaces/gs_usb",
     "^can/interfaces/ics_neovi",
     "^can/interfaces/iscan",
     "^can/interfaces/ixxat",

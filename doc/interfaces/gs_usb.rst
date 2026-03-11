@@ -52,8 +52,10 @@ Windows, Linux and Mac.
    The backend driver depends on `pyusb <https://pyusb.github.io/pyusb/>`_ so a ``pyusb`` backend driver library such as
    ``libusb`` must be installed.
 
-   On Windows a tool such as `Zadig <https://zadig.akeo.ie/>`_ can be used to set the USB device driver to
-   ``libusbK``.
+   On Windows, WinUSB and libusbK are both supported. Devices with WCID (Windows Compatible ID) descriptors,
+   such as candleLight firmware, will automatically use WinUSB without any additional driver installation.
+   Alternatively, a tool such as `Zadig <https://zadig.akeo.ie/>`_ can be used to set the USB device driver to
+   either ``WinUSB`` or ``libusbK``.
 
 
 Supplementary Info
