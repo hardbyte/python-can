@@ -62,9 +62,11 @@ class robotellBus(BusABC):
             port of underlying serial or usb device (e.g. ``/dev/ttyUSB0``, ``COM8``, ...)
             Must not be empty. Can also end with ``@115200`` (or similarly) to specify the baudrate.
         :param int ttyBaudrate:
-            baudrate of underlying serial or usb device (Ignored if set via the ``channel`` parameter)
+            baudrate of underlying serial or usb device
+            (Ignored if set via the ``channel`` parameter)
         :param int bitrate:
-            CAN Bitrate in bit/s. Value is stored in the adapter and will be used as default if no bitrate is specified
+            CAN Bitrate in bit/s.
+            Value is stored in the adapter and will be used as default if no bitrate is specified
         :param bool rtscts:
             turn hardware handshake (RTS/CTS) on and off
         """
@@ -141,7 +143,8 @@ class robotellBus(BusABC):
         :param bool enabled:
             This filter is enabled
         :param int msgid_value:
-            CAN message ID to filter on. The test unit does not accept an extented message ID unless bit 31 of the ID was set.
+            CAN message ID to filter on.
+            The test unit does not accept an extented message ID unless bit 31 of the ID was set.
         :param int msgid_mask:
             Mask to apply to CAN messagge ID
         :param bool extended_msg:
@@ -156,9 +159,9 @@ class robotellBus(BusABC):
             self._writeconfig(configid, msgid_value, msgid_mask)
 
     def _getconfigsize(self, configid):
-        if configid == self._CAN_ART_ID or configid == self._CAN_ABOM_ID:
+        if configid in (self._CAN_ART_ID, self._CAN_ABOM_ID):
             return 1
-        if configid == self._CAN_BAUD_ID or configid == self._CAN_INIT_FLASH_ID:
+        if configid in (self._CAN_BAUD_ID, self._CAN_INIT_FLASH_ID):
             return 4
         if configid == self._CAN_SERIALBPS_ID:
             return 4
@@ -181,7 +184,7 @@ class robotellBus(BusABC):
         newmsg = self._readmessage(not self._loopback_test, True, timeout)
         if newmsg is None:
             logger.warning(
-                f"Timeout waiting for response when reading config value {configid:04X}."
+                "Timeout waiting for response when reading config value %04X.", configid
             )
             return None
         return newmsg[4:12]
@@ -236,7 +239,7 @@ class robotellBus(BusABC):
             headpos = self._rxbuffer.find(header)
             if headpos > 0:
                 # data does not start with expected header bytes. Log error and ignore garbage
-                logger.warning("Ignoring extra " + str(headpos) + " garbage bytes")
+                logger.warning("Ignoring extra %s garbage bytes", headpos)
                 del self._rxbuffer[:headpos]
                 headpos = self._rxbuffer.find(header)  # should now be at index 0!
 
@@ -316,11 +319,7 @@ class robotellBus(BusABC):
         packet.append(self._PACKET_HEAD)
         packet.append(self._PACKET_HEAD)
         for msgbyte in msgbuf:
-            if (
-                msgbyte == self._PACKET_ESC
-                or msgbyte == self._PACKET_HEAD
-                or msgbyte == self._PACKET_TAIL
-            ):
+            if msgbyte in (self._PACKET_ESC, self._PACKET_HEAD, self._PACKET_TAIL):
                 packet.append(self._PACKET_ESC)
             packet.append(msgbyte)
         packet.append(self._PACKET_TAIL)
@@ -395,9 +394,9 @@ class robotellBus(BusABC):
         if sn2 is None:
             return None
 
-        serial = ""
+        serial_number = ""
         for idx in range(0, 8, 2):
-            serial += f"{sn1[idx]:02X}{sn1[idx + 1]:02X}-"
+            serial_number += f"{sn1[idx]:02X}{sn1[idx + 1]:02X}-"
         for idx in range(0, 4, 2):
-            serial += f"{sn2[idx]:02X}{sn2[idx + 1]:02X}-"
-        return serial[:-1]
+            serial_number += f"{sn2[idx]:02X}{sn2[idx + 1]:02X}-"
+        return serial_number[:-1]

@@ -86,9 +86,11 @@ class slcanBus(BusABC):
         """
         :param str channel:
             port of underlying serial or usb device (e.g. ``/dev/ttyUSB0``, ``COM8``, ...)
-            Must not be empty. Can also end with ``@115200`` (or similarly) to specify the baudrate.
+            Must not be empty. Can also end with ``@115200`` (or similarly)
+            to specify the baudrate.
         :param int tty_baudrate:
-            baudrate of underlying serial or usb device (Ignored if set via the ``channel`` parameter)
+            baudrate of underlying serial or usb device
+            (Ignored if set via the ``channel`` parameter)
         :param bitrate:
             Bitrate in bit/s
         :param timing:
@@ -96,8 +98,9 @@ class slcanBus(BusABC):
             If this argument is set then it overrides the bitrate and btr arguments. The
             `f_clock` value of the timing instance must be set to 8_000_000 (8MHz)
             for standard CAN.
-            CAN FD and the :class:`~can.BitTimingFd` class have partial support according to the non-standard
-            slcan protocol implementation in the CANABLE 2.0 firmware: currently only data rates of 2M and 5M.
+            CAN FD and the :class:`~can.BitTimingFd` class have partial support according to
+            the non-standard slcan protocol implementation in the
+            CANABLE 2.0 firmware: currently only data rates of 2M and 5M.
         :param poll_interval:
             Poll interval in seconds when reading messages
         :param sleep_after_open:
@@ -178,7 +181,7 @@ class slcanBus(BusABC):
         if bitrate in self._BITRATES:
             bitrate_code = self._BITRATES[bitrate]
         else:
-            bitrates = ", ".join(str(k) for k in self._BITRATES.keys())
+            bitrates = ", ".join(str(k) for k in self._BITRATES)
             raise ValueError(f"Invalid bitrate, choose one of {bitrates}.")
 
         # If data_bitrate is None, we set it to 0 which means no data bitrate
@@ -188,7 +191,7 @@ class slcanBus(BusABC):
         if data_bitrate in self._DATA_BITRATES:
             dbitrate_code = self._DATA_BITRATES[data_bitrate]
         else:
-            dbitrates = ", ".join(str(k) for k in self._DATA_BITRATES.keys())
+            dbitrates = ", ".join(str(k) for k in self._DATA_BITRATES)
             raise ValueError(f"Invalid data bitrate, choose one of {dbitrates}.")
 
         self.close()
@@ -216,8 +219,8 @@ class slcanBus(BusABC):
 
         with error_check("Could not read from serial device"):
             while True:
-                # Due to accessing `serialPortOrig.in_waiting` too often will reduce the performance.
-                # We read the `serialPortOrig.in_waiting` only once here.
+                # Due to accessing `serialPortOrig.in_waiting` too often will reduce
+                # the performance. We read the `serialPortOrig.in_waiting` only once here.
                 size = self.serialPortOrig.in_waiting or 1
                 self._buffer.extend(self.serialPortOrig.read(size))
 
