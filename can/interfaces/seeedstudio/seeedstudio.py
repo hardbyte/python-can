@@ -273,7 +273,9 @@ class SeeedBus(BusABC):
 
         if rx_byte_1 and ord(rx_byte_1) == 0xAA:
             try:
-                rx_byte_2 = ord(self.ser.read())
+                if self.ser.in_waiting >= 1:
+                    rx_byte_2_opt = self.ser.read()
+                rx_byte_2 = ord(rx_byte_2_opt)
 
                 time_stamp = time()
                 if rx_byte_2 == 0x55:
@@ -294,7 +296,21 @@ class SeeedBus(BusABC):
                         arb_id = (struct.unpack("<H", s_3_4))[0]
 
                     data = bytearray(self.ser.read(length))
-                    end_packet = ord(self.ser.read())
+
+                    if self.ser.in_waiting >= 1:
+                        end_packet_opt = self.ser.read()
+                    else:
+                        logger.debug("no end byte?")
+                        # Seems to be a bug in the seeedstudio-dongle, rarely
+                        # the end-byte is missing. Rarely: ~0.1% of the packets?
+                        # The communication works otherwise fine, no bad data
+                        # packets have been observed. Probably the underlying
+                        # usb-driver serves as a good protection.
+                        # No bad packets (corrupted data), despite this one
+                        # end-byte has been observed.
+                        # To ensure no data is lost, we fake an end-byte here.
+                        end_packet_opt = "U"
+                    end_packet = ord(end_packet_opt)
                     if end_packet == 0x55:
                         msg = Message(
                             timestamp=time_stamp,
