@@ -54,7 +54,7 @@ can_bridge = "can.bridge:main"
 homepage = "https://github.com/hardbyte/python-can"
 documentation = "https://python-can.readthedocs.io"
 repository = "https://github.com/hardbyte/python-can"
-changelog = "https://github.com/hardbyte/python-can/blob/develop/CHANGELOG.md"
+changelog = "https://python-can.readthedocs.io/en/main/changelog.html"
 
 [project.optional-dependencies]
 pywin32 = ["pywin32>=305; platform_system == 'Windows' and platform_python_implementation == 'CPython'"]
@@ -84,6 +84,7 @@ multicast = ["msgpack~=1.1.0"]
 docs = [
     "sphinx>=5.2.3",
     "sphinxcontrib-programoutput",
+    "sphinxcontrib-towncrier",
     "sphinx-inline-tabs",
     "sphinx-copybutton",
     "furo",
@@ -218,11 +219,10 @@ disable = [
 
 [tool.towncrier]
 directory = "doc/changelog.d"
-filename = "CHANGELOG.md"
-start_string = "<!-- towncrier release notes start -->\n"
-underlines = ["", "", ""]
-title_format = "## Version [{version}](https://github.com/hardbyte/python-can/tree/{version}) - {project_date}"
-issue_format = "[#{issue}](https://github.com/hardbyte/python-can/issues/{issue})"
+filename = "doc/changelog.rst"
+title_format = "Version {version} - {project_date}"
+issue_format = ":issue:`{issue}`"
+underlines = ["-", "~", "^"]
 
 [[tool.towncrier.type]]
 directory = "security"

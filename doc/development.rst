@@ -169,28 +169,28 @@ Step-by-Step Contribution Guide
 5. **Add a News Fragment for the Changelog**
 
    This project uses `towncrier <https://towncrier.readthedocs.io/>`__ to manage the changelog in
-   ``CHANGELOG.md``. For every user-facing change (new feature, bugfix, deprecation, etc.), you
+   ``doc/changelog.rst``. For every user-facing change (new feature, bugfix, deprecation, etc.), you
    must add a news fragment:
    
    * News fragments are short files describing your change, stored in ``doc/changelog.d``.
-   * Name each fragment ``<issue-or-description>.<type>.md``, where ``<type>`` is one of:
+   * Name each fragment ``<issue-or-description>.<type>.rst``, where ``<type>`` is one of:
      ``added``, ``changed``, ``deprecated``, ``removed``, ``fixed``, or ``security``.
    * Example (for a feature added in PR #1234):
    
      .. code-block:: shell
    
-        echo "Added support for CAN FD." > doc/changelog.d/1234.added.md
+        echo "Added support for CAN FD." > doc/changelog.d/1234.added.rst
    
    * Or use the towncrier CLI:
    
      .. code-block:: shell
    
-        uvx towncrier create --dir doc/changelog.d -c "Added support for CAN FD." 1234.added.md
+        uvx towncrier create --dir doc/changelog.d -c "Added support for CAN FD." 1234.added.rst
    
    * For changes not tied to an issue/PR, the fragment name must start with a plus symbol
-     (e.g., ``+mychange.added.md``). Towncrier calls these "orphan fragments".
+     (e.g., ``+mychange.added.rst``). Towncrier calls these "orphan fragments".
    
-   .. note:: You do not need to manually update ``CHANGELOG.md``—maintainers will build the
+   .. note:: You do not need to manually update ``doc/changelog.rst``—maintainers will build the
              changelog at release time.
 
 6. **(Optional) Build Source Distribution and Wheels**
@@ -252,7 +252,7 @@ Releases are automated via GitHub Actions. To create a new release:
 * Build the changelog with towncrier:
 
 
-  * Collect all news fragments and update ``CHANGELOG.md`` by running:
+  * Collect all news fragments and update ``doc/changelog.rst`` by running:
 
     .. code-block:: shell
 
@@ -263,9 +263,9 @@ Releases are automated via GitHub Actions. To create a new release:
 
     .. note:: You can generate the changelog for prereleases, but keep the news
               fragments so they are included in the final release. To do this, replace ``--yes`` with ``--keep``.
-              This will update ``CHANGELOG.md`` but leave the fragments in place for future builds.
+              This will update ``doc/changelog.rst`` but leave the fragments in place for future builds.
    
-  * Review ``CHANGELOG.md`` for accuracy and completeness.
+  * Review ``doc/changelog.rst`` for accuracy and completeness.
 
 * Ensure all tests pass and documentation is up-to-date.
 * Update ``CONTRIBUTORS.txt`` with any new contributors.
