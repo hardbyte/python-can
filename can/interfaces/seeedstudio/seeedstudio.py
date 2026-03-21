@@ -141,14 +141,10 @@ class SeeedBus(BusABC):
         super().shutdown()
         self.ser.close()
 
-    def init_frame(self, timeout=None):
+    def init_frame(self):
         """
         Send init message to setup the device for comms. this is called during
         interface creation.
-
-        :param timeout:
-            This parameter will be ignored. The timeout value of the channel is
-            used instead.
         """
         byte_msg = bytearray()
         byte_msg.append(0xAA)  # Frame Start Byte 1
@@ -175,14 +171,10 @@ class SeeedBus(BusABC):
     def flush_buffer(self):
         self.ser.flushInput()
 
-    def status_frame(self, timeout=None):
+    def status_frame(self):
         """
         Send status request message over the serial device.  The device will
         respond but details of error codes are unknown but are logged - DEBUG.
-
-        :param timeout:
-            This parameter will be ignored. The timeout value of the channel is
-            used instead.
         """
         byte_msg = bytearray()
         byte_msg.append(0xAA)  # Frame Start Byte 1

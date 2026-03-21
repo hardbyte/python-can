@@ -9,14 +9,13 @@ from typing import Any
 from unittest.mock import Mock
 
 from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
-
-from ..exceptions import (
+from can.exceptions import (
     CanInitializationError,
     CanInterfaceNotImplementedError,
     error_check,
 )
-from ..typechecking import AutoDetectedConfig
-from ..util import check_or_adjust_timing_clock, deprecated_args_alias
+from can.typechecking import AutoDetectedConfig
+from can.util import check_or_adjust_timing_clock, deprecated_args_alias
 
 logger = logging.getLogger(__name__)
 

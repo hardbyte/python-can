@@ -1,5 +1,3 @@
-""" """
-
 __all__ = [
     "SerialBus",
     "serial_can",
