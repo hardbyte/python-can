@@ -5,8 +5,8 @@ along some internal methods.
 At the end of the file the usage of the internal methods is shown.
 """
 
+# pylint: disable=too-many-lines
 import ctypes
-import ctypes.util
 import errno
 import logging
 import select
@@ -786,6 +786,10 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         #     so this is always supported by the kernel
         self.socket.setsockopt(socket.SOL_SOCKET, constants.SO_TIMESTAMPNS, 1)
 
+        # Create epoll instance and register socket for read and write events
+        self._epoll = select.epoll()
+        self._epoll.register(self.socket.fileno(), select.EPOLLIN | select.EPOLLOUT)
+
         try:
             bind_socket(self.socket, channel)
             kwargs.update(
@@ -810,6 +814,9 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         for channel, bcm_socket in self._bcm_sockets.items():
             log.debug("Closing bcm socket for channel %s", channel)
             bcm_socket.close()
+        if not self._epoll.closed:
+            self._epoll.unregister(self.socket.fileno())
+            self._epoll.close()
         log.debug("Closing raw can socket")
         self.socket.close()
 
@@ -817,7 +824,9 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         try:
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
-            ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
+            epoll_timeout = timeout if timeout is not None else -1
+            events = self._epoll.poll(epoll_timeout)
+            ready_receive_sockets = any(event & select.EPOLLIN for _, event in events)
         except OSError as error:
             # something bad happened (e.g. the interface went down)
             raise can.CanOperationError(
@@ -859,7 +868,8 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
 
         while time_left >= 0:
             # Wait for write availability
-            ready = select.select([], [self.socket], [], time_left)[1]
+            events = self._epoll.poll(time_left)
+            ready = any(event & select.EPOLLOUT for _, event in events)
             if not ready:
                 # Timeout
                 break
