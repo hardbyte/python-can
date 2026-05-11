@@ -158,28 +158,21 @@ class Notifier(AbstractContextManager["Notifier"]):
         return tuple(self._bus_list)
 
     def add_bus(self, bus: BusABC) -> None:
-        """Add a bus for notification.
-
-        :param bus:
-            CAN bus instance.
-        :raises ValueError:
-            If the *bus* is already assigned to an active :class:`~can.Notifier`.
-        """
-        # add bus to notifier registry
-        Notifier._registry.register(bus, self)
-
-        # add bus to internal bus list
+        """Add a bus for notification."""
         self._bus_list.append(bus)
+        self._start_reader(bus)
+
+    def _start_reader(self, bus: BusABC) -> None:
+        """Internal helper to spin up the actual background worker for a bus."""
+        Notifier._registry.register(bus, self)
 
         file_descriptor: int = -1
         try:
             file_descriptor = bus.fileno()
         except NotImplementedError:
-            # Bus doesn't support fileno, we fall back to thread based reader
             pass
 
         if self._loop is not None and file_descriptor >= 0:
-            # Use bus file descriptor to watch for messages
             self._loop.add_reader(file_descriptor, self._on_message_available, bus)
             self._readers.append(file_descriptor)
         else:
@@ -217,6 +210,10 @@ class Notifier(AbstractContextManager["Notifier"]):
         # remove bus from registry
         for bus in self._bus_list:
             Notifier._registry.unregister(bus, self)
+
+        self._readers = []
+        # Clear any pending asyncio tasks to prevent stale references
+        self._tasks.clear()
 
     def _rx_thread(self, bus: BusABC) -> None:
         # determine message handling callable early, not inside while loop
@@ -316,6 +313,30 @@ class Notifier(AbstractContextManager["Notifier"]):
             A tuple of :class:`~can.Notifier` instances associated with the given bus.
         """
         return Notifier._registry.find_instances(bus)
+
+    def restart(self) -> None:
+        """Restarts the Notifier if it has been stopped.
+        
+        :raises RuntimeWarning: If the notifier is already running.
+        """
+        with self._lock:
+            if not self._stopped:
+                raise RuntimeWarning("Notifier is already running.")
+            
+            self._stopped = False
+            self.exception = None
+            # Note: _bus_list is preserved from previous run
+            
+            for bus in self._bus_list:
+                self._start_reader(bus)
+            
+            # Re-trigger listeners if they have a start method
+            for listener in self.listeners:
+                if hasattr(listener, "start"):
+                    try:
+                        listener.start()
+                    except Exception as e:
+                        logger.error("Failed to restart listener: %s", e)
 
     def __exit__(
         self,
