@@ -815,11 +815,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
 
     def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         try:
-            # Wait for the socket to become readable. ``poll()`` is used in
-            # preference to ``select.select()`` because the latter is limited
-            # to file descriptors below ``FD_SETSIZE`` (1024 on glibc), and
-            # raises ``ValueError: filedescriptor out of range in select()``
-            # for higher fds even when the OS limit allows them.
+            # poll() avoids select.select()'s ValueError for fds >= FD_SETSIZE
             poller = select.poll()
             poller.register(self.socket, select.POLLIN)
             timeout_ms = -1 if timeout is None else max(0, int(timeout * 1000))
@@ -863,9 +859,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         time_left = timeout
         data = build_can_frame(msg)
 
-        # ``poll()`` is used in preference to ``select.select()`` because the
-        # latter is limited to file descriptors below ``FD_SETSIZE`` (1024 on
-        # glibc) and raises ``ValueError`` for higher fds.
+        # poll() avoids select.select()'s ValueError for fds >= FD_SETSIZE
         poller = select.poll()
         poller.register(self.socket, select.POLLOUT)
 
