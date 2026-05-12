@@ -1,0 +1,1 @@
+``SocketcanBus`` now uses ``select.poll()`` instead of ``select.select()`` so that socket file descriptors above ``FD_SETSIZE`` (1024 on glibc) no longer raise ``ValueError: filedescriptor out of range in select()``.
