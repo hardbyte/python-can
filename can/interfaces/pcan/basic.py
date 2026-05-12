@@ -990,12 +990,10 @@ class PCANBasic:
             logger.error("Exception on PCANBasic.GetValue")
             raise
 
-    # Returns a descriptive text of a given TPCANStatus
-    # error code, in any desired language
+    # Configures or sets a PCAN Channel value
     #
     def SetValue(self, Channel, Parameter, Buffer):
-        """Returns a descriptive text of a given TPCANStatus error
-        code, in any desired language
+        """Configures or sets a PCAN Channel value
 
         Remarks:
           Parameters can be present or not according with the kind
@@ -1036,7 +1034,8 @@ class PCANBasic:
             raise
 
     def GetErrorText(self, Error, Language=0):
-        """Configures or sets a PCAN Channel value
+        """Returns a descriptive text of a given TPCANStatus error
+        code, in any desired language
 
         Remarks:
 
