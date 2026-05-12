@@ -10,11 +10,7 @@ import time
 from collections.abc import Awaitable, Callable, Iterable
 from contextlib import AbstractContextManager
 from types import TracebackType
-from typing import (
-    Any,
-    Final,
-    NamedTuple,
-)
+from typing import Any, Final, NamedTuple
 
 from can.bus import BusABC
 from can.listener import Listener
@@ -101,7 +97,6 @@ class _NotifierRegistry:
 
 
 class Notifier(AbstractContextManager["Notifier"]):
-
     _registry: Final = _NotifierRegistry()
 
     def __init__(
@@ -316,20 +311,20 @@ class Notifier(AbstractContextManager["Notifier"]):
 
     def restart(self) -> None:
         """Restarts the Notifier if it has been stopped.
-        
+
         :raises RuntimeWarning: If the notifier is already running.
         """
         with self._lock:
             if not self._stopped:
                 raise RuntimeWarning("Notifier is already running.")
-            
+
             self._stopped = False
             self.exception = None
             # Note: _bus_list is preserved from previous run
-            
+
             for bus in self._bus_list:
                 self._start_reader(bus)
-            
+
             # Re-trigger listeners if they have a start method
             for listener in self.listeners:
                 if hasattr(listener, "start"):
