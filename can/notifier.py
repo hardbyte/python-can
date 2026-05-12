@@ -12,6 +12,7 @@ from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import Any, Final, NamedTuple
 
+from can import CanError
 from can.bus import BusABC
 from can.listener import Listener
 from can.message import Message
@@ -225,18 +226,20 @@ class Notifier(AbstractContextManager["Notifier"]):
                 if msg := bus.recv(self.timeout):
                     with self._lock:
                         handle_message(msg)
-            except Exception as exc:  # pylint: disable=broad-except
+            except CanError as exc:
                 self.exception = exc
+                # Always notify the system when the bus fails
                 if self._loop is not None:
                     self._loop.call_soon_threadsafe(self._on_error, exc)
-                    # Raise anyway
-                    raise
-                elif not self._on_error(exc):
-                    # If it was not handled, raise the exception here
-                    raise
                 else:
-                    # It was handled, so only log it
-                    logger.debug("suppressed exception: %s", exc)
+                    self._on_error(exc)
+                logger.error("CAN error in notifier thread: %s", exc)
+            except Exception as exc:
+                # Catching other runtime errors to prevent silent thread death
+                self.exception = exc
+                logger.critical("Unexpected error in notifier thread: %s", exc)
+                self._on_error(exc)
+                raise  # Re-raise unexpected non-CAN errors
 
     def _on_message_available(self, bus: BusABC) -> None:
         if msg := bus.recv(0):
@@ -330,7 +333,7 @@ class Notifier(AbstractContextManager["Notifier"]):
                 if hasattr(listener, "start"):
                     try:
                         listener.start()
-                    except Exception as e:
+                    except (AttributeError, RuntimeError, TypeError, ValueError) as e:
                         logger.error("Failed to restart listener: %s", e)
 
     def __exit__(
