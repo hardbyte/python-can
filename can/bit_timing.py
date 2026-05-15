@@ -74,8 +74,8 @@ class BitTiming(Mapping[str, int]):
             "sjw": sjw,
             "nof_samples": nof_samples,
         }
-        self._validate()
         if strict:
+            self._validate()
             self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
