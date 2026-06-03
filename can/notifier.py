@@ -133,7 +133,7 @@ class Notifier(AbstractContextManager["Notifier"]):
         :raises ValueError:
             If a passed in *bus* is already assigned to an active :class:`~can.Notifier`.
         """
-        self.listeners: list[MessageRecipient] = list(listeners)
+        self.listeners: set[MessageRecipient] = set(listeners)
         self._bus_list: list[BusABC] = []
         self.timeout = timeout
         self._loop = loop
@@ -278,20 +278,18 @@ class Notifier(AbstractContextManager["Notifier"]):
         return was_handled
 
     def add_listener(self, listener: MessageRecipient) -> None:
-        """Add new Listener to the notification list.
-        If it is already present, it will be called two times
-        each time a message arrives.
+        """Add new Listener to the notification set.
 
         :param listener: Listener to be added to the list to be notified
         """
-        self.listeners.append(listener)
+        self.listeners.add(listener)
 
     def remove_listener(self, listener: MessageRecipient) -> None:
-        """Remove a listener from the notification list. This method
+        """Remove a listener from the notification set. This method
         throws an exception if the given listener is not part of the
         stored listeners.
 
-        :param listener: Listener to be removed from the list to be notified
+        :param listener: Listener to be removed from the set to be notified
         :raises ValueError: if `listener` was never added to this notifier
         """
         self.listeners.remove(listener)
