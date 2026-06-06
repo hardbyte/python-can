@@ -1,0 +1,1 @@
+Fix ``can.BitTiming`` rejecting bit rate prescaler values greater than 64 even when ``strict=False``.
