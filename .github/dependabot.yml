@@ -9,7 +9,10 @@ updates:
     # Enable version updates for development dependencies
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "cron"
+      cronjob: "0 0 1 */3 *" # Run once every 3 months
+    cooldown:
+      default-days: 7
     versioning-strategy: "increase-if-necessary"
     groups:
       dev-deps:
@@ -20,7 +23,10 @@ updates:
     # Enable version updates for GitHub Actions
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "cron"
+      cronjob: "0 0 1 */3 *" # Run once every 3 months
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns:

@@ -39,6 +39,8 @@ jobs:
         persist-credentials: false
     - name: Install uv
       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # 8.1.0
+      with:
+        enable-cache: false
     - name: Install tox
       run: uv tool install tox --with tox-uv
     - name: Setup SocketCAN
@@ -85,6 +87,8 @@ jobs:
         persist-credentials: false
     - name: Install uv
       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # 8.1.0
+      with:
+        enable-cache: false
     - name: Install tox
       run: uv tool install tox --with tox-uv
     - name: Run linters
@@ -103,6 +107,8 @@ jobs:
         persist-credentials: false
     - name: Install uv
       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # 8.1.0
+      with:
+        enable-cache: false
     - name: Install tox
       run: uv tool install tox --with tox-uv
     - name: Build documentation
@@ -119,6 +125,8 @@ jobs:
           persist-credentials: false
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # 8.1.0
+        with:
+          enable-cache: false
       - name: Build wheel and sdist
         run: uv build
       - name: Check build artifacts
