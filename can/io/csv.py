@@ -49,9 +49,15 @@ class CSVReader(TextIOMessageReader):
             return
 
         for line in self.file:
-            timestamp, arbitration_id, extended, remote, error, dlc, data = line.split(
-                ","
-            )
+            parts = line.strip().split(",")
+            if len(parts) < 7:
+                continue
+
+            # Unpack the standard 7 columns
+            timestamp, arbitration_id, extended, remote, error, dlc, data = parts[:7]
+
+            # Handle the optional 8th column (channel)
+            channel = parts[7] if len(parts) > 7 else 0
 
             yield Message(
                 timestamp=float(timestamp),
@@ -61,6 +67,7 @@ class CSVReader(TextIOMessageReader):
                 arbitration_id=int(arbitration_id, base=16),
                 dlc=int(dlc),
                 data=b64decode(data),
+                channel=int(channel),  # <--- Pass the channel here
             )
 
         self.stop()
@@ -82,6 +89,7 @@ class CSVWriter(TextIOMessageWriter):
     error            1 == True, 0 == False   0
     dlc              int                     6
     data             base64 encoded          WzQyLCA5XQ==
+    channel          int or string           0
     ================ ======================= ===============
 
     Each line is terminated with a platform specific line separator.
@@ -106,19 +114,21 @@ class CSVWriter(TextIOMessageWriter):
 
         # Write a header row
         if not append:
-            self.file.write("timestamp,arbitration_id,extended,remote,error,dlc,data\n")
+            self.file.write(
+                "timestamp,arbitration_id,extended,remote,error,dlc,data,channel\n"
+            )
 
     def on_message_received(self, msg: Message) -> None:
         row = ",".join(
             [
-                repr(msg.timestamp),  # cannot use str() here because that is rounding
+                repr(msg.timestamp),
                 hex(msg.arbitration_id),
                 "1" if msg.is_extended_id else "0",
                 "1" if msg.is_remote_frame else "0",
                 "1" if msg.is_error_frame else "0",
                 str(msg.dlc),
                 b64encode(msg.data).decode("utf8"),
+                str(msg.channel),  # <--- Add this line
             ]
         )
-        self.file.write(row)
-        self.file.write("\n")
+        self.file.write(row + "\n")
