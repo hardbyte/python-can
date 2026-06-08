@@ -1,0 +1,1 @@
+Add support for bit CAN timing parameters in can.ini for pcan interface.
