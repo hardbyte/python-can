@@ -273,6 +273,19 @@ class PcanBus(BusABC):
         else:
             raise ValueError("BusState must be Active or Passive")
 
+    
+        # Check if the user provided parameters to build a BitTiming object
+        timing_keys = {"f_clock", "brp", "tseg1", "tseg2", "sjw"}
+        if timing is None and not is_fd and timing_keys.issubset(kwargs.keys()):
+            timing = BitTiming(
+                f_clock=kwargs.get("f_clock"),
+                brp=kwargs.get("brp"),
+                tseg1=kwargs.get("tseg1"),
+                tseg2=kwargs.get("tseg2"),
+                sjw=kwargs.get("sjw"),
+            )
+
+
         if isinstance(timing, BitTiming):
             timing = check_or_adjust_timing_clock(timing, VALID_PCAN_CAN_CLOCKS)
             pcan_bitrate = TPCANBaudrate(timing.btr0 << 8 | timing.btr1)
