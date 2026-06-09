@@ -5,6 +5,7 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 """
 
 import ctypes
+import select
 import struct
 import sys
 import unittest
@@ -26,6 +27,7 @@ from can.interfaces.socketcan.socketcan import (
     build_bcm_transmit_header,
     build_bcm_tx_delete_header,
     build_bcm_update_header,
+    build_can_frame,
 )
 
 from .config import IS_LINUX, IS_PYPY, TEST_INTERFACE_SOCKETCAN
@@ -389,6 +391,53 @@ class SocketCANTest(unittest.TestCase):
                     "Please check if PyPy has implemented raw CAN socket support! "
                     "See: https://github.com/pypy/pypy/issues/3808"
                 )
+
+
+@unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
+class SocketCANHighFdTest(unittest.TestCase):
+    """SocketcanBus must work with socket fds above FD_SETSIZE, see #2053."""
+
+    HIGH_FD = 2048
+
+    def setUp(self):
+        patcher_poll = patch("can.interfaces.socketcan.socketcan.select.poll")
+        patcher_create = patch("can.interfaces.socketcan.socketcan.create_socket")
+        patcher_bind = patch("can.interfaces.socketcan.socketcan.bind_socket")
+        self.mock_poller = patcher_poll.start().return_value
+        self.mock_socket = patcher_create.start().return_value
+        patcher_bind.start()
+        self.addCleanup(patcher_poll.stop)
+        self.addCleanup(patcher_create.stop)
+        self.addCleanup(patcher_bind.stop)
+
+        self.mock_socket.fileno.return_value = self.HIGH_FD
+        self.bus = can.Bus(interface="socketcan", channel="can0")
+        self.addCleanup(self.bus.shutdown)
+
+    def test_send_high_fd(self):
+        self.mock_poller.poll.return_value = [(self.HIGH_FD, select.POLLOUT)]
+        msg = can.Message(arbitration_id=0x123, data=[1, 2, 3, 4, 5, 6, 7, 8])
+        frame = build_can_frame(msg)
+        self.mock_socket.send.return_value = len(frame)
+
+        self.bus.send(msg)
+
+        self.mock_socket.send.assert_called_once_with(frame)
+
+    def test_recv_high_fd(self):
+        self.mock_poller.poll.return_value = [(self.HIGH_FD, select.POLLIN)]
+        expected_msg = can.Message(
+            arbitration_id=0x123, data=[1, 2, 3, 4, 5, 6, 7, 8], timestamp=1000.0
+        )
+        with patch(
+            "can.interfaces.socketcan.socketcan.capture_message"
+        ) as mock_capture:
+            mock_capture.return_value = expected_msg
+            msg = self.bus.recv(timeout=1.0)
+
+        self.assertIsNotNone(msg)
+        self.assertEqual(msg.arbitration_id, 0x123)
+        mock_capture.assert_called_once_with(self.mock_socket, False)
 
 
 if __name__ == "__main__":

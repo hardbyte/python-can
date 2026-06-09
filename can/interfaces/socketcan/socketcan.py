@@ -741,6 +741,14 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         self._task_id_guard = threading.Lock()
         self._can_protocol = CanProtocol.CAN_FD if fd else CanProtocol.CAN_20
 
+        # poll() avoids select.select()'s ValueError for fds >= FD_SETSIZE.
+        # One poller per direction so a writable socket cannot wake up a
+        # blocking receive and concurrent send/recv share no state.
+        self._poll_in = select.poll()
+        self._poll_in.register(self.socket, select.POLLIN)
+        self._poll_out = select.poll()
+        self._poll_out.register(self.socket, select.POLLOUT)
+
         # set the local_loopback parameter
         try:
             self.socket.setsockopt(
@@ -815,9 +823,8 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
 
     def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         try:
-            # get all sockets that are ready (can be a list with a single value
-            # being self.socket or an empty list if self.socket is not ready)
-            ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
+            timeout_ms = -1 if timeout is None else max(0, int(timeout * 1000))
+            ready_receive_sockets = self._poll_in.poll(timeout_ms)
         except OSError as error:
             # something bad happened (e.g. the interface went down)
             raise can.CanOperationError(
@@ -859,7 +866,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
 
         while time_left >= 0:
             # Wait for write availability
-            ready = select.select([], [self.socket], [], time_left)[1]
+            ready = self._poll_out.poll(int(time_left * 1000))
             if not ready:
                 # Timeout
                 break
