@@ -5,6 +5,7 @@ This module tests :meth:`can.BusABC._matches_filters`.
 """
 
 import unittest
+from unittest.mock import MagicMock, patch
 
 from can import Bus, Message
 
@@ -45,6 +46,57 @@ class TestMessageFiltering(unittest.TestCase):
         self.bus.set_filters(MATCH_ONLY_HIGHEST)
         self.assertFalse(self.bus._matches_filters(EXAMPLE_MSG))
         self.assertTrue(self.bus._matches_filters(HIGHEST_MSG))
+
+    def test_empty_queue_up_to_match(self):
+        bus2 = Bus(interface="virtual", channel="testy")
+        self.bus.set_filters(MATCH_EXAMPLE)
+        bus2.send(HIGHEST_MSG)
+        bus2.send(EXAMPLE_MSG)
+        actual = self.bus.recv(timeout=0)
+        bus2.shutdown()
+        self.assertTrue(
+            EXAMPLE_MSG.equals(
+                actual, timestamp_delta=None, check_direction=False, check_channel=False
+            )
+        )
+
+
+@patch("can.bus.time")
+class TestMessageFilterRetryTiming(unittest.TestCase):
+    def setUp(self):
+        self.bus = Bus(interface="virtual", channel="testy")
+        self.bus._recv_internal = MagicMock(name="_recv_internal")
+
+    def tearDown(self):
+        self.bus.shutdown()
+
+    def test_propagate_recv_internal_timeout(self, time: MagicMock) -> None:
+        self.bus._recv_internal.side_effect = [
+            (None, False),
+        ]
+        time.side_effect = [0]
+        self.bus.set_filters(MATCH_EXAMPLE)
+        self.assertIsNone(self.bus.recv(timeout=3))
+
+    def test_retry_with_adjusted_timeout(self, time: MagicMock) -> None:
+        self.bus._recv_internal.side_effect = [
+            (HIGHEST_MSG, False),
+            (EXAMPLE_MSG, False),
+        ]
+        time.side_effect = [0, 1]
+        self.bus.set_filters(MATCH_EXAMPLE)
+        self.bus.recv(timeout=3)
+        self.bus._recv_internal.assert_called_with(timeout=2)
+
+    def test_keep_timeout_non_negative(self, time: MagicMock) -> None:
+        self.bus._recv_internal.side_effect = [
+            (HIGHEST_MSG, False),
+            (EXAMPLE_MSG, False),
+        ]
+        time.side_effect = [0, 1]
+        self.bus.set_filters(MATCH_EXAMPLE)
+        self.bus.recv(timeout=0.5)
+        self.bus._recv_internal.assert_called_with(timeout=0)
 
 
 if __name__ == "__main__":
