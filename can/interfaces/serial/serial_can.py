@@ -179,8 +179,6 @@ class SerialBus(BusABC):
                 s = self._ser.read(4)
                 timestamp = struct.unpack("<I", s)[0]
                 dlc = ord(self._ser.read())
-                if dlc > 8:
-                    raise ValueError("received DLC may not exceed 8 bytes")
 
                 s = self._ser.read(4)
                 arbitration_id = struct.unpack("<I", s)[0]
