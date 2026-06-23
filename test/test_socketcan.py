@@ -6,7 +6,6 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 
 import ctypes
 import os
-import resource
 import struct
 import sys
 import tempfile
@@ -32,7 +31,20 @@ from can.interfaces.socketcan.socketcan import (
     build_bcm_update_header,
 )
 
-from .config import IS_LINUX, IS_PYPY, TEST_INTERFACE_SOCKETCAN
+from .config import IS_LINUX, IS_PYPY, IS_WINDOWS, TEST_INTERFACE_SOCKETCAN
+
+if IS_WINDOWS:
+
+    def get_fd_limit() -> int:
+        """Get the current limit on the number of file descriptors."""
+        return ctypes.CDLL("msvcrt")._getmaxstdio()
+
+else:
+    import resource
+
+    def get_fd_limit() -> int:
+        """Get the current limit on the number of file descriptors."""
+        return resource.getrlimit(resource.RLIMIT_NOFILE)[0]
 
 
 class SocketCANTest(unittest.TestCase):
@@ -396,7 +408,7 @@ class SocketCANTest(unittest.TestCase):
 
     @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "Only run when vcan0 is available")
     @unittest.skipUnless(
-        resource.getrlimit(resource.RLIMIT_NOFILE)[0] > 1024,
+        get_fd_limit() > 1024,
         "Only run when the system supports high file limit",
     )
     def test_high_socket_fileno(self):
