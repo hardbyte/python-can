@@ -33,12 +33,12 @@ jobs:
         ]
       fail-fast: false
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # 6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # 7.0.0
       with:
         fetch-depth: 0
         persist-credentials: false
     - name: Install uv
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # 8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # 8.2.0
       with:
         enable-cache: false
     - name: Install tox
@@ -68,7 +68,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # 6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # 7.0.0
       with:
         fetch-depth: 0
         persist-credentials: false
@@ -81,12 +81,12 @@ jobs:
   static-code-analysis:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # 6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # 7.0.0
       with:
         fetch-depth: 0
         persist-credentials: false
     - name: Install uv
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # 8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # 8.2.0
       with:
         enable-cache: false
     - name: Install tox
@@ -101,12 +101,12 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # 6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # 7.0.0
       with:
         fetch-depth: 0
         persist-credentials: false
     - name: Install uv
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # 8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # 8.2.0
       with:
         enable-cache: false
     - name: Install tox
@@ -119,12 +119,12 @@ jobs:
     name: Packaging
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # 7.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # 8.1.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # 8.2.0
         with:
           enable-cache: false
       - name: Build wheel and sdist
