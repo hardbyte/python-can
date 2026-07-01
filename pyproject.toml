@@ -78,7 +78,7 @@ viewer = [
     "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
 ]
 mf4 = ["asammdf>=6.0.0"]
-multicast = ["msgpack~=1.1.0"]
+multicast = ["msgpack~=1.2.1"]
 
 [dependency-groups]
 docs = [
@@ -96,7 +96,7 @@ lint = [
     "mypy==2.1.*",
 ]
 test = [
-    "pytest==9.0.*",
+    "pytest==9.1.*",
     "pytest-timeout==2.4.*",
     "pytest-modern==0.7.*;platform_system!='Windows'",
     "coveralls==4.1.*",
