@@ -1,0 +1,1 @@
+Replaced select.select() with select.epoll() in SocketcanBus

@@ -5,10 +5,13 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 """
 
 import ctypes
+import os
 import struct
 import sys
+import tempfile
 import unittest
 import warnings
+from contextlib import ExitStack
 from unittest.mock import patch
 
 import can
@@ -28,7 +31,20 @@ from can.interfaces.socketcan.socketcan import (
     build_bcm_update_header,
 )
 
-from .config import IS_LINUX, IS_PYPY, TEST_INTERFACE_SOCKETCAN
+from .config import IS_LINUX, IS_PYPY, IS_WINDOWS, TEST_INTERFACE_SOCKETCAN
+
+if IS_WINDOWS:
+
+    def get_fd_limit() -> int:
+        """Get the current limit on the number of file descriptors."""
+        return ctypes.CDLL("msvcrt")._getmaxstdio()
+
+else:
+    import resource
+
+    def get_fd_limit() -> int:
+        """Get the current limit on the number of file descriptors."""
+        return resource.getrlimit(resource.RLIMIT_NOFILE)[0]
 
 
 class SocketCANTest(unittest.TestCase):
@@ -389,6 +405,34 @@ class SocketCANTest(unittest.TestCase):
                     "Please check if PyPy has implemented raw CAN socket support! "
                     "See: https://github.com/pypy/pypy/issues/3808"
                 )
+
+    @unittest.skipUnless(TEST_INTERFACE_SOCKETCAN, "Only run when vcan0 is available")
+    @unittest.skipUnless(
+        get_fd_limit() > 1024,
+        "Only run when the system supports high file limit",
+    )
+    def test_high_socket_fileno(self):
+        """send() and recv() succeed when socket fileno > 1023."""
+        num_open_files = len(os.listdir("/proc/self/fd"))
+        num_files_to_open = 1024 - num_open_files
+        with ExitStack() as stack:
+            for _ in range(num_files_to_open):
+                stack.enter_context(tempfile.TemporaryFile())
+
+            bus1 = can.Bus(interface="socketcan", channel="vcan0")
+            bus2 = can.Bus(interface="socketcan", channel="vcan0")
+            msg = can.Message(
+                is_extended_id=False,
+                arbitration_id=0x100,
+                data=[1, 2, 3, 4, 5, 6, 7, 8],
+            )
+
+            timeout = 1.0 if IS_PYPY else 0.1
+            bus1.send(msg)
+            recv_msg = bus2.recv(timeout)
+            self.assertIsNotNone(recv_msg)
+            self.assertEqual(recv_msg.arbitration_id, 0x100)
+            self.assertEqual(recv_msg.data, bytearray([1, 2, 3, 4, 5, 6, 7, 8]))
 
 
 if __name__ == "__main__":
