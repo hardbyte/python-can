@@ -219,21 +219,28 @@ class slcanBus(BusABC):
 
         with error_check("Could not read from serial device"):
             while True:
-                # Due to accessing `serialPortOrig.in_waiting` too often will reduce
-                # the performance. We read the `serialPortOrig.in_waiting` only once here.
-                size = self.serialPortOrig.in_waiting or 1
-                self._buffer.extend(self.serialPortOrig.read(size))
-
-                for i, byte in enumerate(self._buffer):
-                    if byte in (self._OK[0], self._ERROR[0]):
-                        string = self._buffer[: i + 1].decode()
-                        del self._buffer[: i + 1]
-                        return string
-
-                if _timeout.expired():
-                    break
-
-            return None
+                size = self.serialPortOrig.in_waiting or 1          # read the `serialPortOrig.in_waiting` only once.
+                self._buffer.extend(self.serialPortOrig.read(size)) # read serial at once
+    
+                i1 = self._buffer.find(self._OK)                    # bytearray.find() or byte.find() is in C level
+                i2 = self._buffer.find(self._ERROR)
+    
+                if i1 >= 0 and i2 >= 0:
+                    i = i1 if i1 < i2 else i2                       # python if/else branch is faster than min()/max()
+                elif i1 >= 0:
+                    i = i1
+                elif i2 >= 0:
+                    i = i2
+                else:
+                    if _timeout.expired():
+                        break
+                    continue
+    
+                string = self._buffer[:i + 1].decode()
+                del self._buffer[:i + 1]
+                return string
+    
+        return None
 
     def flush(self) -> None:
         self._buffer.clear()
