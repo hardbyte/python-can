@@ -74,6 +74,7 @@ zlgcan = ["zlgcan"]
 candle = ["python-can-candle>=1.2.2"]
 rp1210 = ["rp1210>=1.0.1"]
 damiao = ["python-can-damiao"]
+flexible-serial = ["python-can-flexible-serial>=0.1.1"]
 viewer = [
     "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
 ]
