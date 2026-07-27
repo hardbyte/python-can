@@ -1,0 +1,1 @@
+Added link to python-can-flexible-serial plugin in plugin interface documentation page
