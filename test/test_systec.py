@@ -5,6 +5,8 @@ from unittest.mock import Mock, patch
 
 import can
 from can.interfaces.systec import ucan, ucanbus
+from can.interfaces.systec.constants import ReturnCode
+from can.interfaces.systec.exceptions import UcanError
 from can.interfaces.systec.ucan import *
 
 
@@ -45,6 +47,15 @@ class SystecTest(unittest.TestCase):
         self.assertTrue(ucan.UcanInitCanEx2.called)
         self.assertTrue(ucan.UcanGetHardwareInfoEx2.called)
         self.assertTrue(ucan.UcanSetAcceptanceEx.called)
+
+    def test_error_preserves_ctypes_return_code_message(self):
+        def failing_function():
+            pass
+
+        error = UcanError(ReturnCode(ReturnCode.ERR_ILLPARAM), failing_function, ())
+
+        self.assertEqual(error.error_code, ReturnCode.ERR_ILLPARAM)
+        self.assertIn("wrong parameter handed over to the function", str(error))
 
     def test_bus_shutdown(self):
         self.bus.shutdown()
