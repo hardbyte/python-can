@@ -215,7 +215,11 @@ class BitTiming(Mapping[str, int]):
 
     @classmethod
     def iterate_from_sample_point(
-        cls, f_clock: int, bitrate: int, sample_point: float = 69.0
+        cls,
+        f_clock: int,
+        bitrate: int,
+        sample_point: float = 69.0,
+        strict: bool = True,
     ) -> Iterator["BitTiming"]:
         """Create a :class:`~can.BitTiming` iterator with all the solutions for a sample point.
 
@@ -225,6 +229,10 @@ class BitTiming(Mapping[str, int]):
             Bitrate in bit/s.
         :param int sample_point:
             The sample point value in percent.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as
+            defined in ISO 11898. This can be set to False to find timings
+            for modern CAN controllers that support larger register ranges.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -255,7 +263,7 @@ class BitTiming(Mapping[str, int]):
                     tseg1=tseg1,
                     tseg2=tseg2,
                     sjw=sjw,
-                    strict=True,
+                    strict=strict,
                 )
                 yield bt
             except ValueError:
@@ -263,7 +271,11 @@ class BitTiming(Mapping[str, int]):
 
     @classmethod
     def from_sample_point(
-        cls, f_clock: int, bitrate: int, sample_point: float = 69.0
+        cls,
+        f_clock: int,
+        bitrate: int,
+        sample_point: float = 69.0,
+        strict: bool = True,
     ) -> "BitTiming":
         """Create a :class:`~can.BitTiming` instance for a sample point.
 
@@ -280,6 +292,10 @@ class BitTiming(Mapping[str, int]):
             Bitrate in bit/s.
         :param int sample_point:
             The sample point value in percent.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as
+            defined in ISO 11898. This can be set to False to find timings
+            for modern CAN controllers that support larger register ranges.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -288,7 +304,7 @@ class BitTiming(Mapping[str, int]):
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
 
         possible_solutions: list[BitTiming] = list(
-            cls.iterate_from_sample_point(f_clock, bitrate, sample_point)
+            cls.iterate_from_sample_point(f_clock, bitrate, sample_point, strict=strict)
         )
 
         if not possible_solutions:
@@ -757,6 +773,7 @@ class BitTimingFd(Mapping[str, int]):
         nom_sample_point: float,
         data_bitrate: int,
         data_sample_point: float,
+        strict: bool = True,
     ) -> Iterator["BitTimingFd"]:
         """Create an :class:`~can.BitTimingFd` iterator with all the solutions for a sample point.
 
@@ -770,6 +787,10 @@ class BitTimingFd(Mapping[str, int]):
             Data bitrate in bit/s.
         :param int data_sample_point:
             The sample point value of the data phase in percent.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as
+            defined in ISO 11898. This can be set to False to find timings
+            for modern CAN FD controllers that support larger register ranges.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -828,7 +849,7 @@ class BitTimingFd(Mapping[str, int]):
                         data_tseg1=data_tseg1,
                         data_tseg2=data_tseg2,
                         data_sjw=data_sjw,
-                        strict=True,
+                        strict=strict,
                     )
                     yield bt
                 except ValueError:
@@ -842,6 +863,7 @@ class BitTimingFd(Mapping[str, int]):
         nom_sample_point: float,
         data_bitrate: int,
         data_sample_point: float,
+        strict: bool = True,
     ) -> "BitTimingFd":
         """Create a :class:`~can.BitTimingFd` instance for a sample point.
 
@@ -862,6 +884,10 @@ class BitTimingFd(Mapping[str, int]):
             Data bitrate in bit/s.
         :param int data_sample_point:
             The sample point value of the data phase in percent.
+        :param bool strict:
+            If True, restrict bit timings to the minimum required range as
+            defined in ISO 11898. This can be set to False to find timings
+            for modern CAN FD controllers that support larger register ranges.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -882,6 +908,7 @@ class BitTimingFd(Mapping[str, int]):
                 nom_sample_point,
                 data_bitrate,
                 data_sample_point,
+                strict=strict,
             )
         )
 
