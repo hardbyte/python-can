@@ -1,0 +1,1 @@
+Fixed gs_usb.py modyfying the data member of the can.Message msg passed to GsUsbBus send method.
