@@ -202,6 +202,8 @@ class BLFReader(BinaryIOMessageReader):
                     LOG.warning("Unknown compression method (%d)", method)
                     continue
                 yield from self._parse_container(data)
+            else:
+                yield from self._parse_data(data + obj_data)
         self.stop()
 
     def _parse_container(self, data: bytes) -> Iterator[Message]:
