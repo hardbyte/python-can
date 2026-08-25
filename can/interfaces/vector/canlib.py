@@ -704,7 +704,7 @@ class VectorBus(BusABC):
             LOG.warning("Could not reset filters: %s", exc)
 
     def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
-        end_time = time.time() + timeout if timeout is not None else None
+        end_time = time.perf_counter() + timeout if timeout is not None else None
 
         while True:
             try:
@@ -721,7 +721,7 @@ class VectorBus(BusABC):
                     return msg, self._is_filtered
 
             # if no message was received, wait or return on timeout
-            if end_time is not None and time.time() > end_time:
+            if end_time is not None and time.perf_counter() > end_time:
                 return None, self._is_filtered
 
             if HAS_EVENTS:
@@ -729,7 +729,7 @@ class VectorBus(BusABC):
                 if end_time is None:
                     time_left_ms = INFINITE
                 else:
-                    time_left = end_time - time.time()
+                    time_left = end_time - time.perf_counter()
                     time_left_ms = max(0, int(time_left * 1000))
                 WaitForSingleObject(self.event_handle.value, time_left_ms)  # type: ignore
             else:

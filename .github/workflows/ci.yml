@@ -57,7 +57,7 @@ jobs:
         # See: https://github.com/pypy/pypy/issues/3808
         TEST_SOCKETCAN: "${{ matrix.os == 'ubuntu-latest' && ! startsWith(matrix.env, 'pypy' ) }}"
     - name: Coveralls Parallel
-      uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e  # 2.3.7
+      uses: coverallsapp/github-action@v2.3.8
       with:
         github-token: ${{ secrets.github_token }}
         flag-name: Unittests-${{ matrix.os }}-${{ matrix.env }}
@@ -73,7 +73,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Coveralls Finished
-      uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e  # 2.3.7
+      uses: coverallsapp/github-action@v2.3.8
       with:
         github-token: ${{ secrets.github_token }}
         parallel-finished: true
