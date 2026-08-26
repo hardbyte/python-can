@@ -5,11 +5,13 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 """
 
 import ctypes
+import os
+import socket
 import struct
 import sys
 import unittest
 import warnings
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import can
 from can.interfaces.socketcan.constants import (
@@ -26,6 +28,7 @@ from can.interfaces.socketcan.socketcan import (
     build_bcm_transmit_header,
     build_bcm_tx_delete_header,
     build_bcm_update_header,
+    build_can_frame,
 )
 
 from .config import IS_LINUX, IS_PYPY, TEST_INTERFACE_SOCKETCAN
@@ -389,6 +392,61 @@ class SocketCANTest(unittest.TestCase):
                     "Please check if PyPy has implemented raw CAN socket support! "
                     "See: https://github.com/pypy/pypy/issues/3808"
                 )
+
+
+@unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
+class SocketCANHighFdTest(unittest.TestCase):
+    def setUp(self):
+        import fcntl
+
+        patcher_create = patch("can.interfaces.socketcan.socketcan.create_socket")
+        patcher_bind = patch("can.interfaces.socketcan.socketcan.bind_socket")
+
+        self.mock_create_socket = patcher_create.start()
+        self.addCleanup(patcher_create.stop)
+        self.mock_bind_socket = patcher_bind.start()
+        self.addCleanup(patcher_bind.stop)
+
+        poll_socket, peer_socket = socket.socketpair()
+        self.addCleanup(poll_socket.close)
+        self.addCleanup(peer_socket.close)
+        self.peer_socket = peer_socket
+        self.high_fd = fcntl.fcntl(poll_socket.fileno(), fcntl.F_DUPFD_CLOEXEC, 1024)
+        self.addCleanup(os.close, self.high_fd)
+
+        self.mock_socket = MagicMock()
+        self.mock_socket.fileno.return_value = self.high_fd
+        self.mock_create_socket.return_value = self.mock_socket
+
+        self.bus = can.Bus(interface="socketcan", channel="can0")
+        self.addCleanup(self.bus.shutdown)
+
+    def test_send_high_fd(self):
+        msg = can.Message(arbitration_id=0x123, data=range(8))
+        frame_data = build_can_frame(msg)
+        self.mock_socket.send.return_value = len(frame_data)
+
+        self.bus.send(msg)
+
+        self.mock_socket.send.assert_called_once_with(frame_data)
+
+    @patch("can.interfaces.socketcan.socketcan.capture_message")
+    def test_recv_high_fd(self, mock_capture):
+        expected_msg = can.Message(
+            arbitration_id=0x123,
+            data=range(8),
+            channel="can0",
+            timestamp=1000.0,
+        )
+        mock_capture.return_value = expected_msg
+        self.peer_socket.send(b"x")
+
+        msg = self.bus.recv(timeout=1.0)
+
+        self.assertIsNotNone(msg)
+        self.assertEqual(msg.arbitration_id, 0x123)
+        self.assertEqual(msg.data, bytearray(range(8)))
+        mock_capture.assert_called_once_with(self.mock_socket, False)
 
 
 if __name__ == "__main__":
