@@ -286,6 +286,57 @@ def test_from_sample_point():
             )
 
 
+def test_from_sample_point_with_extended_hardware_limits():
+    timing = can.BitTiming.from_sample_point(
+        f_clock=160_000_000,
+        bitrate=250_000,
+        sample_point=87.5,
+    )
+
+    assert timing.bitrate == 250_000
+    assert timing.sample_point == 87.5
+    assert timing.brp == 40
+    assert timing.tseg1 == 13
+    assert timing.tseg2 == 2
+
+    extended_timing = can.BitTiming.from_sample_point(
+        f_clock=160_000_000,
+        bitrate=250_000,
+        sample_point=87.5,
+        tseg1_max=256,
+        tseg2_max=128,
+        brp_max=512,
+    )
+    assert extended_timing.brp == 4
+    assert extended_timing.tseg1 == 139
+    assert extended_timing.tseg2 == 20
+
+    with pytest.raises(ValueError, match="No suitable bit timings found"):
+        can.BitTiming.from_sample_point(
+            f_clock=160_000_000,
+            bitrate=250_000,
+            sample_point=87.5,
+            brp_max=39,
+        )
+
+    with pytest.raises(ValueError, match="No suitable bit timings found"):
+        can.BitTiming.from_sample_point(
+            f_clock=80_000_000,
+            bitrate=2_000_000,
+            sample_point=75.0,
+        )
+
+    for parameter in ("tseg1_max", "tseg2_max", "brp_max"):
+        with pytest.raises(ValueError, match=rf"{parameter} \(=0\) must be at least 1"):
+            list(
+                can.BitTiming.iterate_from_sample_point(
+                    f_clock=16_000_000,
+                    bitrate=500_000,
+                    **{parameter: 0},
+                )
+            )
+
+
 def test_iterate_from_sample_point():
     for sp in range(50, 100):
         solutions = list(
