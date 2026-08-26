@@ -1,0 +1,1 @@
+Fix SocketCAN send and receive operations for socket file descriptors greater than 1023.
