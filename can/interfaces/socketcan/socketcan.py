@@ -9,6 +9,7 @@ import ctypes
 import ctypes.util
 import errno
 import logging
+import math
 import select
 import socket
 import struct
@@ -815,9 +816,10 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
 
     def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
         try:
-            # get all sockets that are ready (can be a list with a single value
-            # being self.socket or an empty list if self.socket is not ready)
-            ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
+            poller = select.poll()
+            poller.register(self.socket, select.POLLIN)
+            timeout_ms = None if timeout is None else math.ceil(timeout * 1000)
+            ready_receive_sockets = poller.poll(timeout_ms)
         except OSError as error:
             # something bad happened (e.g. the interface went down)
             raise can.CanOperationError(
@@ -856,10 +858,12 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
             timeout = 0
         time_left = timeout
         data = build_can_frame(msg)
+        poller = select.poll()
+        poller.register(self.socket, select.POLLOUT)
 
         while time_left >= 0:
             # Wait for write availability
-            ready = select.select([], [self.socket], [], time_left)[1]
+            ready = poller.poll(math.ceil(time_left * 1000))
             if not ready:
                 # Timeout
                 break
