@@ -215,7 +215,14 @@ class BitTiming(Mapping[str, int]):
 
     @classmethod
     def iterate_from_sample_point(
-        cls, f_clock: int, bitrate: int, sample_point: float = 69.0
+        cls,
+        f_clock: int,
+        bitrate: int,
+        sample_point: float = 69.0,
+        *,
+        tseg1_max: int = 16,
+        tseg2_max: int = 8,
+        brp_max: int = 64,
     ) -> Iterator["BitTiming"]:
         """Create a :class:`~can.BitTiming` iterator with all the solutions for a sample point.
 
@@ -225,6 +232,12 @@ class BitTiming(Mapping[str, int]):
             Bitrate in bit/s.
         :param int sample_point:
             The sample point value in percent.
+        :param int tseg1_max:
+            Maximum time segment 1 value supported by the CAN controller.
+        :param int tseg2_max:
+            Maximum time segment 2 value supported by the CAN controller.
+        :param int brp_max:
+            Maximum bit rate prescaler supported by the CAN controller.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -232,7 +245,18 @@ class BitTiming(Mapping[str, int]):
         if sample_point < 50.0:
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
 
-        for brp in range(1, 65):
+        for name, value in (
+            ("tseg1_max", tseg1_max),
+            ("tseg2_max", tseg2_max),
+            ("brp_max", brp_max),
+        ):
+            if value < 1:
+                raise ValueError(f"{name} (={value}) must be at least 1.")
+
+        if not 5_000 <= bitrate <= 1_000_000:
+            return
+
+        for brp in range(1, brp_max + 1):
             nbt = int(f_clock / (bitrate * brp))
             if nbt < 8:
                 break
@@ -248,22 +272,27 @@ class BitTiming(Mapping[str, int]):
             tseg2 = nbt - tseg1 - 1
             sjw = min(tseg2, 4)
 
-            try:
-                bt = BitTiming(
-                    f_clock=f_clock,
-                    brp=brp,
-                    tseg1=tseg1,
-                    tseg2=tseg2,
-                    sjw=sjw,
-                    strict=True,
-                )
-                yield bt
-            except ValueError:
+            if tseg1 > tseg1_max or tseg2 > tseg2_max:
                 continue
+
+            yield cls(
+                f_clock=f_clock,
+                brp=brp,
+                tseg1=tseg1,
+                tseg2=tseg2,
+                sjw=sjw,
+            )
 
     @classmethod
     def from_sample_point(
-        cls, f_clock: int, bitrate: int, sample_point: float = 69.0
+        cls,
+        f_clock: int,
+        bitrate: int,
+        sample_point: float = 69.0,
+        *,
+        tseg1_max: int = 16,
+        tseg2_max: int = 8,
+        brp_max: int = 64,
     ) -> "BitTiming":
         """Create a :class:`~can.BitTiming` instance for a sample point.
 
@@ -280,6 +309,12 @@ class BitTiming(Mapping[str, int]):
             Bitrate in bit/s.
         :param int sample_point:
             The sample point value in percent.
+        :param int tseg1_max:
+            Maximum time segment 1 value supported by the CAN controller.
+        :param int tseg2_max:
+            Maximum time segment 2 value supported by the CAN controller.
+        :param int brp_max:
+            Maximum bit rate prescaler supported by the CAN controller.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -288,7 +323,14 @@ class BitTiming(Mapping[str, int]):
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
 
         possible_solutions: list[BitTiming] = list(
-            cls.iterate_from_sample_point(f_clock, bitrate, sample_point)
+            cls.iterate_from_sample_point(
+                f_clock,
+                bitrate,
+                sample_point,
+                tseg1_max=tseg1_max,
+                tseg2_max=tseg2_max,
+                brp_max=brp_max,
+            )
         )
 
         if not possible_solutions:

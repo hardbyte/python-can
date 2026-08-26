@@ -1,0 +1,1 @@
+Allow ``BitTiming.from_sample_point`` to find valid timings for CAN controllers with bit rate prescalers above 32.
