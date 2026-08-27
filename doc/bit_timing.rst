@@ -87,6 +87,20 @@ produce an overview of possible bit timings for your desired bit rate:
     BR: 250_000 bit/s, SP: 87.50%, BRP: 2, TSEG1: 13, TSEG2: 2, SJW: 2, BTR: 411Ch, CLK: 8MHz
     BR: 250_000 bit/s, SP: 93.75%, BRP: 2, TSEG1: 14, TSEG2: 1, SJW: 1, BTR: 010Dh, CLK: 8MHz
 
+Controller-specific maximum values can be supplied when the standard timing
+limits are too restrictive:
+
+.. code-block:: python
+
+    timing = can.BitTiming.from_sample_point(
+        f_clock=160_000_000,
+        bitrate=250_000,
+        sample_point=87.5,
+        tseg1_max=256,
+        tseg2_max=128,
+        brp_max=512,
+    )
+
 
 It is possible to specify CAN 2.0 bit timings
 using the config file:
