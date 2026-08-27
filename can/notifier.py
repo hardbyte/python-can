@@ -276,14 +276,13 @@ class Notifier(AbstractContextManager["Notifier"]):
         exc = task.exception()
         if exc is None:
             return
+        if not isinstance(exc, Exception):
+            raise exc
 
         self.exception = exc
-        if isinstance(exc, Exception):
-            if not self._on_error(exc):
-                raise exc
-            logger.debug("suppressed exception: %s", exc)
-        else:
+        if not self._on_error(exc):
             raise exc
+        logger.debug("suppressed exception: %s", exc)
 
     def _on_error(self, exc: Exception) -> bool:
         """Calls ``on_error()`` for all listeners if they implement it.
