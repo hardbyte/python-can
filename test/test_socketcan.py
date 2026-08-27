@@ -13,6 +13,13 @@ import unittest
 import warnings
 from unittest.mock import MagicMock, patch
 
+try:
+    import fcntl
+    import resource
+except ImportError:
+    fcntl = None
+    resource = None
+
 import can
 from can.interfaces.socketcan.constants import (
     CAN_BCM_TX_DELETE,
@@ -397,7 +404,12 @@ class SocketCANTest(unittest.TestCase):
 @unittest.skipUnless(IS_LINUX, "socketcan is only available on Linux")
 class SocketCANHighFdTest(unittest.TestCase):
     def setUp(self):
-        import fcntl
+        assert fcntl is not None
+        assert resource is not None
+
+        soft_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
+        if soft_limit != resource.RLIM_INFINITY and soft_limit <= 1024:
+            self.skipTest("RLIMIT_NOFILE does not permit file descriptor 1024")
 
         patcher_create = patch("can.interfaces.socketcan.socketcan.create_socket")
         patcher_bind = patch("can.interfaces.socketcan.socketcan.bind_socket")
@@ -447,6 +459,30 @@ class SocketCANHighFdTest(unittest.TestCase):
         self.assertEqual(msg.arbitration_id, 0x123)
         self.assertEqual(msg.data, bytearray(range(8)))
         mock_capture.assert_called_once_with(self.mock_socket, False)
+
+    @patch("can.interfaces.socketcan.socketcan.select.poll")
+    def test_recv_rejects_negative_timeout(self, mock_poll):
+        mock_poll.return_value.poll.return_value = []
+
+        with self.assertRaisesRegex(ValueError, "timeout must not be negative"):
+            self.bus.recv(timeout=-1.0)
+
+        mock_poll.return_value.poll.assert_not_called()
+
+    @patch("can.interfaces.socketcan.socketcan.select.poll")
+    def test_send_caps_large_finite_poll_timeout(self, mock_poll):
+        max_poll_timeout_ms = 2_147_483_647
+        mock_poll.return_value.poll.return_value = []
+        msg = can.Message(arbitration_id=0x123, data=range(8))
+
+        with patch(
+            "can.interfaces.socketcan.socketcan.time.monotonic",
+            side_effect=[0.0, max_poll_timeout_ms / 1000 + 2.0],
+        ):
+            with self.assertRaisesRegex(can.CanOperationError, "Transmit buffer full"):
+                self.bus.send(msg, timeout=max_poll_timeout_ms / 1000 + 1.0)
+
+        mock_poll.return_value.poll.assert_called_once_with(max_poll_timeout_ms)
 
 
 if __name__ == "__main__":
