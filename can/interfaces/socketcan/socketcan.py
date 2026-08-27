@@ -9,6 +9,7 @@ import ctypes
 import ctypes.util
 import errno
 import logging
+import math
 import select
 import socket
 import struct
@@ -46,6 +47,12 @@ RECEIVED_TIMESTAMP_STRUCT = struct.Struct("@ll")
 RECEIVED_ANCILLARY_BUFFER_SIZE = (
     CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size) if CMSG_SPACE_available else 0
 )
+MAX_POLL_TIMEOUT_MS = 2_147_483_647
+
+
+def _poll_timeout_ms(timeout: float) -> int:
+    """Convert seconds to a timeout accepted by ``poll()``."""
+    return min(math.ceil(timeout * 1000), MAX_POLL_TIMEOUT_MS)
 
 
 # Setup BCM struct
@@ -814,10 +821,19 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         self.socket.close()
 
     def _recv_internal(self, timeout: float | None) -> tuple[Message | None, bool]:
+        if timeout is not None and timeout < 0:
+            raise ValueError("timeout must not be negative")
+
         try:
-            # get all sockets that are ready (can be a list with a single value
-            # being self.socket or an empty list if self.socket is not ready)
-            ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
+            poller = select.poll()
+            poller.register(self.socket, select.POLLIN)
+            time_left = timeout
+            while True:
+                timeout_ms = None if time_left is None else _poll_timeout_ms(time_left)
+                ready_receive_sockets = poller.poll(timeout_ms)
+                if ready_receive_sockets or timeout_ms != MAX_POLL_TIMEOUT_MS:
+                    break
+                time_left -= MAX_POLL_TIMEOUT_MS / 1000
         except OSError as error:
             # something bad happened (e.g. the interface went down)
             raise can.CanOperationError(
@@ -850,26 +866,32 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         logger_tx = log.getChild("tx")
         logger_tx.debug("sending: %s", msg)
 
-        started = time.time()
+        started = time.monotonic()
         # If no timeout is given, poll for availability
         if timeout is None:
             timeout = 0
         time_left = timeout
         data = build_can_frame(msg)
+        poller = select.poll()
+        poller.register(self.socket, select.POLLOUT)
 
         while time_left >= 0:
             # Wait for write availability
-            ready = select.select([], [self.socket], [], time_left)[1]
+            timeout_ms = _poll_timeout_ms(time_left)
+            ready = poller.poll(timeout_ms)
             if not ready:
-                # Timeout
-                break
+                if timeout_ms != MAX_POLL_TIMEOUT_MS:
+                    # Timeout
+                    break
+                time_left = timeout - (time.monotonic() - started)
+                continue
             channel = str(msg.channel) if msg.channel else None
             sent = self._send_once(data, channel)
             if sent == len(data):
                 return
             # Not all data were sent, try again with remaining data
             data = data[sent:]
-            time_left = timeout - (time.time() - started)
+            time_left = timeout - (time.monotonic() - started)
 
         raise can.CanOperationError("Transmit buffer full")
 
