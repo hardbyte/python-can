@@ -7,6 +7,24 @@ import unittest
 import can
 
 
+class RaisingListener(can.Listener):
+    def on_message_received(self, msg: can.Message) -> None:
+        raise ValueError("listener failed")
+
+
+class ErrorCollector(can.Listener):
+    def __init__(self, event: asyncio.Event) -> None:
+        self.event = event
+        self.errors: list[Exception] = []
+
+    def on_message_received(self, msg: can.Message) -> None:
+        pass
+
+    def on_error(self, exc: Exception) -> None:
+        self.errors.append(exc)
+        self.event.set()
+
+
 class NotifierTest(unittest.TestCase):
     def test_single_bus(self):
         with can.Bus("test", interface="virtual", receive_own_messages=True) as bus:
@@ -85,6 +103,58 @@ class AsyncNotifierTest(unittest.TestCase):
                 recv_msg = await asyncio.wait_for(reader.get_message(), 0.5)
                 self.assertIsNotNone(recv_msg)
                 notifier.stop()
+
+        asyncio.run(run_it())
+
+    def test_sync_listener_error_calls_on_error_with_loop(self):
+        async def run_it():
+            event = asyncio.Event()
+            collector = ErrorCollector(event)
+            with can.Bus(
+                "sync-listener-error", interface="virtual", receive_own_messages=True
+            ) as bus:
+                notifier = can.Notifier(
+                    bus,
+                    [RaisingListener(), collector],
+                    0.1,
+                    loop=asyncio.get_running_loop(),
+                )
+                try:
+                    bus.send(can.Message())
+                    await asyncio.wait_for(event.wait(), 0.5)
+                    self.assertEqual(len(collector.errors), 1)
+                    self.assertIsInstance(collector.errors[0], ValueError)
+                    self.assertIs(notifier.exception, collector.errors[0])
+                finally:
+                    notifier.stop()
+
+        asyncio.run(run_it())
+
+    def test_async_listener_error_calls_on_error(self):
+        async def run_it():
+            event = asyncio.Event()
+            collector = ErrorCollector(event)
+
+            async def raising_callback(msg: can.Message) -> None:
+                raise RuntimeError("async listener failed")
+
+            with can.Bus(
+                "async-listener-error", interface="virtual", receive_own_messages=True
+            ) as bus:
+                notifier = can.Notifier(
+                    bus,
+                    [raising_callback, collector],
+                    0.1,
+                    loop=asyncio.get_running_loop(),
+                )
+                try:
+                    bus.send(can.Message())
+                    await asyncio.wait_for(event.wait(), 0.5)
+                    self.assertEqual(len(collector.errors), 1)
+                    self.assertIsInstance(collector.errors[0], RuntimeError)
+                    self.assertIs(notifier.exception, collector.errors[0])
+                finally:
+                    notifier.stop()
 
         asyncio.run(run_it())
 
