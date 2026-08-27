@@ -316,7 +316,7 @@ def test_from_sample_point_with_extended_hardware_limits():
             f_clock=160_000_000,
             bitrate=250_000,
             sample_point=87.5,
-            brp_max=39,
+            brp_max=28,
         )
 
     with pytest.raises(ValueError, match="No suitable bit timings found"):
@@ -335,6 +335,37 @@ def test_from_sample_point_with_extended_hardware_limits():
                     **{parameter: 0},
                 )
             )
+
+
+def test_from_sample_point_rejects_effective_bitrate_outside_supported_range():
+    with pytest.raises(ValueError, match="No suitable bit timings found"):
+        can.BitTiming.from_sample_point(
+            f_clock=8_024_000,
+            bitrate=1_000_000,
+            sample_point=75.0,
+        )
+
+
+@pytest.mark.parametrize(
+    ("limits", "expected_tseg1", "expected_tseg2"),
+    [
+        ({"tseg1_max": 4}, 4, 3),
+        ({"tseg2_max": 1}, 6, 1),
+    ],
+)
+def test_from_sample_point_clamps_to_controller_segment_limits(
+    limits, expected_tseg1, expected_tseg2
+):
+    timing = can.BitTiming.from_sample_point(
+        f_clock=8_000_000,
+        bitrate=1_000_000,
+        sample_point=75.0,
+        **limits,
+    )
+
+    assert timing.bitrate == 1_000_000
+    assert timing.tseg1 == expected_tseg1
+    assert timing.tseg2 == expected_tseg2
 
 
 def test_iterate_from_sample_point():
@@ -542,6 +573,25 @@ def test_recreate_with_f_clock():
         timing_16mhz.sjw / timing_16mhz.nbt, abs=1e-3
     )
     assert timing_8mhz.nof_samples == timing_16mhz.nof_samples
+
+    extended_timing_160mhz = can.BitTiming.from_sample_point(
+        f_clock=160_000_000,
+        bitrate=5_000,
+        sample_point=75.0,
+        tseg1_max=256,
+        tseg2_max=128,
+        brp_max=512,
+    )
+    extended_timing_200mhz = extended_timing_160mhz.recreate_with_f_clock(
+        f_clock=200_000_000
+    )
+    assert (
+        abs(extended_timing_200mhz.bitrate - extended_timing_160mhz.bitrate)
+        <= extended_timing_160mhz.bitrate / 256
+    )
+    assert extended_timing_200mhz.sample_point == pytest.approx(
+        extended_timing_160mhz.sample_point, abs=1.0
+    )
 
     timing_16mhz = can.BitTiming(
         f_clock=16000000, brp=2, tseg1=12, tseg2=3, sjw=3, nof_samples=1
