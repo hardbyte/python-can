@@ -74,7 +74,7 @@ class _NotifierRegistry:
         with self.lock:
             registered_pairs_to_remove: list[_BusNotifierPair] = []
             for pair in self.pairs:
-                if pair.bus is bus and pair.notifier is notifier:
+                if bus is pair.bus and pair.notifier is notifier:
                     registered_pairs_to_remove.append(pair)
             for pair in registered_pairs_to_remove:
                 self.pairs.remove(pair)
@@ -223,7 +223,7 @@ class Notifier(AbstractContextManager["Notifier"]):
         if self._loop:
             handle_message: Callable[[Message], Any] = functools.partial(
                 self._loop.call_soon_threadsafe,
-                self._on_message_received,  # type: ignore[arg-type]
+                self._on_message_received_with_error_handling,  # type: ignore[arg-type]
             )
         else:
             handle_message = self._on_message_received
@@ -248,7 +248,16 @@ class Notifier(AbstractContextManager["Notifier"]):
 
     def _on_message_available(self, bus: BusABC) -> None:
         if msg := bus.recv(0):
+            self._on_message_received_with_error_handling(msg)
+
+    def _on_message_received_with_error_handling(self, msg: Message) -> None:
+        try:
             self._on_message_received(msg)
+        except Exception as exc:  # pylint: disable=broad-except
+            self.exception = exc
+            if not self._on_error(exc):
+                raise
+            logger.debug("suppressed exception: %s", exc)
 
     def _on_message_received(self, msg: Message) -> None:
         for callback in self.listeners:
@@ -257,7 +266,24 @@ class Notifier(AbstractContextManager["Notifier"]):
                 # Schedule coroutine and keep a reference to the task
                 task = self._loop.create_task(res)
                 self._tasks.add(task)
-                task.add_done_callback(self._tasks.discard)
+                task.add_done_callback(self._on_task_done)
+
+    def _on_task_done(self, task: asyncio.Task) -> None:
+        self._tasks.discard(task)
+        if task.cancelled():
+            return
+
+        exc = task.exception()
+        if exc is None:
+            return
+
+        self.exception = exc
+        if isinstance(exc, Exception):
+            if not self._on_error(exc):
+                raise exc
+            logger.debug("suppressed exception: %s", exc)
+        else:
+            raise exc
 
     def _on_error(self, exc: Exception) -> bool:
         """Calls ``on_error()`` for all listeners if they implement it.
@@ -278,7 +304,7 @@ class Notifier(AbstractContextManager["Notifier"]):
         return was_handled
 
     def add_listener(self, listener: MessageRecipient) -> None:
-        """Add new Listener to the notification set.
+        """Add new Listener for notification.
 
         :param listener: Listener to be added to the list to be notified
         """
@@ -289,8 +315,8 @@ class Notifier(AbstractContextManager["Notifier"]):
         throws an exception if the given listener is not part of the
         stored listeners.
 
-        :param listener: Listener to be removed from the set to be notified
-        :raises ValueError: if `listener` was never added to this notifier
+        :param listener: Listener to be removed from the set
+        :raises ValueError: if `listener` was never added to the notifier
         """
         self.listeners.remove(listener)
 
@@ -301,7 +327,7 @@ class Notifier(AbstractContextManager["Notifier"]):
 
     @staticmethod
     def find_instances(bus: BusABC) -> tuple["Notifier", ...]:
-        """Find :class:`~can.Notifier` instances associated with a given CAN bus.
+        """Find :class:`~can.Notifier` instances associated with a given bus.
 
         This method searches the registry for the :class:`~can.Notifier`
         that is linked to the specified bus. If the bus is found, the
