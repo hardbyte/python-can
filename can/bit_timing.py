@@ -74,19 +74,30 @@ class BitTiming(Mapping[str, int]):
             "sjw": sjw,
             "nof_samples": nof_samples,
         }
+        self._tseg1_max = max(16, tseg1)
+        self._tseg2_max = max(8, tseg2)
+        self._brp_max = max(64, brp)
         if strict:
             self._validate()
             self._restrict_to_minimum_range()
 
-    def _validate(self) -> None:
-        if not 1 <= self.brp <= 64:
-            raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
+    def _validate(
+        self,
+        *,
+        tseg1_max: int = 16,
+        tseg2_max: int = 8,
+        brp_max: int = 64,
+    ) -> None:
+        if not 1 <= self.brp <= brp_max:
+            raise ValueError(
+                f"bitrate prescaler (={self.brp}) must be in [1...{brp_max}]."
+            )
 
-        if not 1 <= self.tseg1 <= 16:
-            raise ValueError(f"tseg1 (={self.tseg1}) must be in [1...16].")
+        if not 1 <= self.tseg1 <= tseg1_max:
+            raise ValueError(f"tseg1 (={self.tseg1}) must be in [1...{tseg1_max}].")
 
-        if not 1 <= self.tseg2 <= 8:
-            raise ValueError(f"tseg2 (={self.tseg2}) must be in [1...8].")
+        if not 1 <= self.tseg2 <= tseg2_max:
+            raise ValueError(f"tseg2 (={self.tseg2}) must be in [1...{tseg2_max}].")
 
         if not 1 <= self.sjw <= 4:
             raise ValueError(f"sjw (={self.sjw}) must be in [1...4].")
@@ -264,24 +275,31 @@ class BitTiming(Mapping[str, int]):
             effective_bitrate = f_clock / (nbt * brp)
             if abs(effective_bitrate - bitrate) > bitrate / 256:
                 continue
+            if not 5_000 <= round(effective_bitrate) <= 1_000_000:
+                continue
+
+            tseg1_min = max(1, nbt - tseg2_max - 1)
+            tseg1_max_feasible = min(tseg1_max, nbt - 2)
+            if tseg1_min > tseg1_max_feasible:
+                continue
 
             tseg1 = round(sample_point / 100 * nbt) - 1
-            # limit tseg1, so tseg2 is at least 1 TQ
-            tseg1 = min(tseg1, nbt - 2)
+            tseg1 = max(tseg1_min, min(tseg1, tseg1_max_feasible))
 
             tseg2 = nbt - tseg1 - 1
             sjw = min(tseg2, 4)
 
-            if tseg1 > tseg1_max or tseg2 > tseg2_max:
-                continue
-
-            yield cls(
+            timing = cls(
                 f_clock=f_clock,
                 brp=brp,
                 tseg1=tseg1,
                 tseg2=tseg2,
                 sjw=sjw,
             )
+            timing._tseg1_max = tseg1_max
+            timing._tseg2_max = tseg2_max
+            timing._brp_max = brp_max
+            yield timing
 
     @classmethod
     def from_sample_point(
@@ -455,7 +473,7 @@ class BitTiming(Mapping[str, int]):
         """
         # try the most simple solution first: another bitrate prescaler
         try:
-            return BitTiming.from_bitrate_and_segments(
+            bt = BitTiming.from_bitrate_and_segments(
                 f_clock=f_clock,
                 bitrate=self.bitrate,
                 tseg1=self.tseg1,
@@ -464,12 +482,21 @@ class BitTiming(Mapping[str, int]):
                 nof_samples=self.nof_samples,
                 strict=True,
             )
+            bt._tseg1_max = self._tseg1_max
+            bt._tseg2_max = self._tseg2_max
+            bt._brp_max = self._brp_max
+            return bt
         except ValueError:
             pass
 
         # create a new timing instance with the same sample point
         bt = BitTiming.from_sample_point(
-            f_clock=f_clock, bitrate=self.bitrate, sample_point=self.sample_point
+            f_clock=f_clock,
+            bitrate=self.bitrate,
+            sample_point=self.sample_point,
+            tseg1_max=self._tseg1_max,
+            tseg2_max=self._tseg2_max,
+            brp_max=self._brp_max,
         )
         if abs(bt.sample_point - self.sample_point) > 1.0:
             raise ValueError(
@@ -480,7 +507,11 @@ class BitTiming(Mapping[str, int]):
         sjw = max(1, min(4, bt.tseg2, sjw))
         bt._data["sjw"] = sjw  # pylint: disable=protected-access
         bt._data["nof_samples"] = self.nof_samples  # pylint: disable=protected-access
-        bt._validate()  # pylint: disable=protected-access
+        bt._validate(  # pylint: disable=protected-access
+            tseg1_max=self._tseg1_max,
+            tseg2_max=self._tseg2_max,
+            brp_max=self._brp_max,
+        )
         return bt
 
     def __str__(self) -> str:
