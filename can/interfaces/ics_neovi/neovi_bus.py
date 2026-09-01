@@ -430,31 +430,31 @@ class NeoViBus(BusABC):
                 data = ics_msg.Data[:number_bytes]
 
             return Message(
-                timestamp=timestamp,
-                arbitration_id=arbitration_id,
-                is_extended_id=is_extended_id,
-                is_remote_frame=is_remote_frame,
-                is_error_frame=is_error_frame,
-                channel=channel,
-                dlc=number_bytes,
-                is_fd=is_fd,
-                is_rx=is_rx,
-                data=data,
-                error_state_indicator=bool(status_bitfield3 & ics.SPY_STATUS3_CANFD_ESI),
-                bitrate_switch=bool(status_bitfield3 & ics.SPY_STATUS3_CANFD_BRS),
+                timestamp,
+                arbitration_id,
+                is_extended_id,
+                is_remote_frame,
+                is_error_frame,
+                channel,
+                number_bytes,
+                data,
+                is_fd,
+                is_rx,
+                bool(status_bitfield3 & ics.SPY_STATUS3_CANFD_BRS),
+                bool(status_bitfield3 & ics.SPY_STATUS3_CANFD_ESI),
             )
         else:
             return Message(
-                timestamp=timestamp,
-                arbitration_id=arbitration_id,
-                is_extended_id=is_extended_id,
-                is_remote_frame=is_remote_frame,
-                is_error_frame=is_error_frame,
-                channel=channel,
-                dlc=number_bytes,
-                is_fd=is_fd,
-                is_rx=is_rx,
-                data=ics_msg.Data[:number_bytes],
+                timestamp,
+                arbitration_id,
+                is_extended_id,
+                is_remote_frame,
+                is_error_frame,
+                channel,
+                number_bytes,
+                ics_msg.Data[:number_bytes],
+                is_fd,
+                is_rx,
             )
 
     def _recv_internal(self, timeout=0.1):
