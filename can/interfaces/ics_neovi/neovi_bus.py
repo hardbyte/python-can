@@ -460,12 +460,11 @@ class NeoViBus(BusABC):
     def _recv_internal(self, timeout=0.1):
         if not self.rx_buffer:
             self._process_msg_queue(timeout=timeout)
-        try:
-            ics_msg = self.rx_buffer.popleft()
-            msg = self._ics_msg_to_message(ics_msg)
-        except IndexError:
+        if not self.rx_buffer:
             return None, False
-        return msg, False
+
+        ics_msg = self.rx_buffer.popleft()
+        return self._ics_msg_to_message(ics_msg), False
 
     @check_if_bus_open
     def send(self, msg, timeout=0):
