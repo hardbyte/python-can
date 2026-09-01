@@ -217,7 +217,8 @@ class NeoViBus(BusABC):
         else:
             # Assume comma separated string of channels
             self.channels = [ch.strip() for ch in channel.split(",")]
-        self.channels = [NeoViBus.channel_to_netid(ch) for ch in self.channels]
+        self.channels = tuple(NeoViBus.channel_to_netid(ch) for ch in self.channels)
+        self._channel_set = set(self.channels)
 
         type_filter = kwargs.get("type_filter")
         serial = kwargs.get("serial")
@@ -344,24 +345,33 @@ class NeoViBus(BusABC):
             messages, errors = ics.get_messages(self.dev, False, timeout)
         except ics.RuntimeError:
             return
+
+        channel_set = self._channel_set
+        rx_append = self.rx_buffer.append
+        message_receipts = self.message_receipts
+        receive_own_messages = self._receive_own_messages
+
         for ics_msg in messages:
             channel = ics_msg.NetworkID | (ics_msg.NetworkID2 << 8)
-            if channel not in self.channels:
+            if channel not in channel_set:
                 continue
 
-            is_tx = bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG)
+            status_bitfield = ics_msg.StatusBitField
+            is_tx = bool(status_bitfield & ics.SPY_STATUS_TX_MSG)
 
             if is_tx:
-                if bool(ics_msg.StatusBitField & ics.SPY_STATUS_GLOBAL_ERR):
+                if status_bitfield & ics.SPY_STATUS_GLOBAL_ERR:
                     continue
 
                 receipt_key = (ics_msg.ArbIDOrHeader, ics_msg.DescriptionID)
-                if ics_msg.DescriptionID and receipt_key in self.message_receipts:
-                    self.message_receipts[receipt_key].set()
-                if not self._receive_own_messages:
+                if ics_msg.DescriptionID:
+                    receipt_event = message_receipts.get(receipt_key)
+                    if receipt_event is not None:
+                        receipt_event.set()
+                if not receive_own_messages:
                     continue
 
-            self.rx_buffer.append(ics_msg)
+            rx_append(ics_msg)
         if errors:
             logger.warning("%d error(s) found", errors)
 
