@@ -12,7 +12,7 @@ import functools
 import logging
 import os
 import tempfile
-from collections import Counter, defaultdict, deque
+from collections import Counter, deque
 from datetime import datetime
 from functools import partial
 from itertools import cycle
@@ -271,7 +271,7 @@ class NeoViBus(BusABC):
         logger.info(f"Using device: {self.channel_info}")
 
         self.rx_buffer = deque()
-        self.message_receipts = defaultdict(Event)
+        self.message_receipts = {}
 
     @staticmethod
     def channel_to_netid(channel_name_or_id):
@@ -531,7 +531,8 @@ class NeoViBus(BusABC):
             msg_desc_id = next(description_id)
             message.DescriptionID = msg_desc_id
             receipt_key = (msg.arbitration_id, msg_desc_id)
-            self.message_receipts[receipt_key].clear()
+            receipt_event = Event()
+            self.message_receipts[receipt_key] = receipt_event
 
         try:
             ics.transmit_messages(self.dev, message)
@@ -542,8 +543,8 @@ class NeoViBus(BusABC):
         # This requires a notifier for the bus or
         # some other thread calling recv periodically
         if timeout != 0:
-            got_receipt = self.message_receipts[receipt_key].wait(timeout)
+            got_receipt = receipt_event.wait(timeout)
             # We no longer need this receipt, so no point keeping it in memory
-            del self.message_receipts[receipt_key]
+            self.message_receipts.pop(receipt_key, None)
             if not got_receipt:
                 raise CanTimeoutError("Transmit timeout")
