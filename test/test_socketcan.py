@@ -5,6 +5,8 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 """
 
 import ctypes
+import inspect
+import socket
 import struct
 import sys
 import unittest
@@ -20,6 +22,7 @@ from can.interfaces.socketcan.constants import (
     TX_COUNTEVT,
 )
 from can.interfaces.socketcan.socketcan import (
+    MSG_DONTROUTE,
     BcmMsgHead,
     bcm_header_factory,
     build_bcm_header,
@@ -389,6 +392,44 @@ class SocketCANTest(unittest.TestCase):
                     "Please check if PyPy has implemented raw CAN socket support! "
                     "See: https://github.com/pypy/pypy/issues/3808"
                 )
+
+
+class SocketCANHotPathTest(unittest.TestCase):
+    """Guard the per-frame optimisations in :func:`capture_message`."""
+
+    def test_msg_dontroute_is_plain_int(self):
+        """``socket.MSG_DONTROUTE`` is an ``enum.IntFlag`` member on CPython, and
+        evaluating ``msg_flags & <IntFlag>`` once per received frame constructs a new
+        flag instance each time. ``capture_message`` therefore tests against a plain
+        int, which must still carry the same value.
+        """
+        self.assertEqual(MSG_DONTROUTE, socket.MSG_DONTROUTE)
+        self.assertIs(type(MSG_DONTROUTE), int)
+
+    def test_capture_message_message_args(self):
+        """``capture_message`` builds its :class:`~can.Message` positionally to avoid
+        per-frame keyword binding, so a reordering of ``Message.__init__`` would
+        silently corrupt every received frame. Pin the expected order.
+        """
+        params = list(inspect.signature(can.Message.__init__).parameters)
+        self.assertEqual(
+            params[:13],
+            [
+                "self",
+                "timestamp",
+                "arbitration_id",
+                "is_extended_id",
+                "is_remote_frame",
+                "is_error_frame",
+                "channel",
+                "dlc",
+                "data",
+                "is_fd",
+                "is_rx",
+                "bitrate_switch",
+                "error_state_indicator",
+            ],
+        )
 
 
 if __name__ == "__main__":

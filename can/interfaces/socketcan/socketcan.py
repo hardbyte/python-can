@@ -47,6 +47,8 @@ RECEIVED_ANCILLARY_BUFFER_SIZE = (
     CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size) if CMSG_SPACE_available else 0
 )
 
+MSG_DONTROUTE = int(socket.MSG_DONTROUTE)
+
 
 # Setup BCM struct
 def bcm_header_factory(
@@ -656,7 +658,7 @@ def capture_message(sock: socket.socket, get_channel: bool = False) -> Message |
     error_state_indicator = bool(flags & constants.CANFD_ESI)
 
     # Section 4.7.1: MSG_DONTROUTE: set when the received frame was created on the local host.
-    is_rx = not bool(msg_flags & socket.MSG_DONTROUTE)
+    is_rx = not msg_flags & MSG_DONTROUTE
 
     if is_extended_frame_format:
         # log.debug("CAN: Extended")
@@ -666,22 +668,21 @@ def capture_message(sock: socket.socket, get_channel: bool = False) -> Message |
         # log.debug("CAN: Standard")
         arbitration_id = can_id & 0x000007FF
 
-    msg = Message(
-        timestamp=timestamp,
-        channel=channel,
-        arbitration_id=arbitration_id,
-        is_extended_id=is_extended_frame_format,
-        is_remote_frame=is_remote_transmission_request,
-        is_error_frame=is_error_frame,
-        is_fd=is_fd,
-        is_rx=is_rx,
-        bitrate_switch=bitrate_switch,
-        error_state_indicator=error_state_indicator,
-        dlc=can_dlc,
-        data=data,
+    # Built positionally: binding twelve keyword arguments is slower.
+    return Message(
+        timestamp,
+        arbitration_id,
+        is_extended_frame_format,
+        is_remote_transmission_request,
+        is_error_frame,
+        channel,
+        can_dlc,
+        data,
+        is_fd,
+        is_rx,
+        bitrate_switch,
+        error_state_indicator,
     )
-
-    return msg
 
 
 class SocketcanBus(BusABC):  # pylint: disable=abstract-method
