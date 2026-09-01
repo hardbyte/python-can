@@ -281,7 +281,7 @@ class NeoViBus(BusABC):
         :return: ics device serial string
         :rtype: str
         """
-        if int("0A0000", 36) < device.SerialNumber < int("ZZZZZZ", 36):
+        if ics.MIN_BASE36_SERIAL < device.SerialNumber < ics.MAX_SERIAL:
             return ics.base36enc(device.SerialNumber)
         else:
             return str(device.SerialNumber)
