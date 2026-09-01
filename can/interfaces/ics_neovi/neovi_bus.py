@@ -41,6 +41,19 @@ except ImportError as ie:
     ics = None
 
 
+def _build_ics_netid_lookup(ics_module):
+    if ics_module is None:
+        return {}
+    return {
+        name[6:]: getattr(ics_module, name)
+        for name in dir(ics_module)
+        if name.startswith("NETID_")
+    }
+
+
+ICS_NETID_LOOKUP = _build_ics_netid_lookup(ics)
+
+
 try:
     from filelock import FileLock
 except ImportError as ie:
@@ -265,10 +278,8 @@ class NeoViBus(BusABC):
         try:
             channel = int(channel_name_or_id)
         except ValueError:
-            netid = f"NETID_{channel_name_or_id.upper()}"
-            if hasattr(ics, netid):
-                channel = getattr(ics, netid)
-            else:
+            channel = ICS_NETID_LOOKUP.get(channel_name_or_id.upper())
+            if channel is None:
                 raise ValueError(
                     "channel must be an integer or a valid ICS channel name"
                 ) from None
