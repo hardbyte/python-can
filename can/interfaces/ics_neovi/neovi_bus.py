@@ -14,7 +14,6 @@ import os
 import tempfile
 from collections import Counter, deque
 from datetime import datetime
-from functools import partial
 from itertools import cycle
 from threading import Event
 from warnings import warn
@@ -413,38 +412,49 @@ class NeoViBus(BusABC):
 
     def _ics_msg_to_message(self, ics_msg):
         is_fd = ics_msg.Protocol == ics.SPY_PROTOCOL_CANFD
-
-        message_from_ics = partial(
-            Message,
-            timestamp=self._get_timestamp_for_msg(ics_msg),
-            arbitration_id=ics_msg.ArbIDOrHeader,
-            is_extended_id=bool(ics_msg.StatusBitField & ics.SPY_STATUS_XTD_FRAME),
-            is_remote_frame=bool(ics_msg.StatusBitField & ics.SPY_STATUS_REMOTE_FRAME),
-            is_error_frame=bool(ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME),
-            channel=ics_msg.NetworkID | (ics_msg.NetworkID2 << 8),
-            dlc=ics_msg.NumberBytesData,
-            is_fd=is_fd,
-            is_rx=not bool(ics_msg.StatusBitField & ics.SPY_STATUS_TX_MSG),
-        )
+        status_bitfield = ics_msg.StatusBitField
+        status_bitfield3 = ics_msg.StatusBitField3
+        number_bytes = ics_msg.NumberBytesData
+        channel = ics_msg.NetworkID | (ics_msg.NetworkID2 << 8)
+        timestamp = self._get_timestamp_for_msg(ics_msg)
+        arbitration_id = ics_msg.ArbIDOrHeader
+        is_extended_id = bool(status_bitfield & ics.SPY_STATUS_XTD_FRAME)
+        is_remote_frame = bool(status_bitfield & ics.SPY_STATUS_REMOTE_FRAME)
+        is_error_frame = bool(ics_msg.StatusBitField2 & ics.SPY_STATUS2_ERROR_FRAME)
+        is_rx = not bool(status_bitfield & ics.SPY_STATUS_TX_MSG)
 
         if is_fd:
             if ics_msg.ExtraDataPtrEnabled:
-                data = ics_msg.ExtraDataPtr[: ics_msg.NumberBytesData]
+                data = ics_msg.ExtraDataPtr[:number_bytes]
             else:
-                data = ics_msg.Data[: ics_msg.NumberBytesData]
+                data = ics_msg.Data[:number_bytes]
 
-            return message_from_ics(
+            return Message(
+                timestamp=timestamp,
+                arbitration_id=arbitration_id,
+                is_extended_id=is_extended_id,
+                is_remote_frame=is_remote_frame,
+                is_error_frame=is_error_frame,
+                channel=channel,
+                dlc=number_bytes,
+                is_fd=is_fd,
+                is_rx=is_rx,
                 data=data,
-                error_state_indicator=bool(
-                    ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_ESI
-                ),
-                bitrate_switch=bool(
-                    ics_msg.StatusBitField3 & ics.SPY_STATUS3_CANFD_BRS
-                ),
+                error_state_indicator=bool(status_bitfield3 & ics.SPY_STATUS3_CANFD_ESI),
+                bitrate_switch=bool(status_bitfield3 & ics.SPY_STATUS3_CANFD_BRS),
             )
         else:
-            return message_from_ics(
-                data=ics_msg.Data[: ics_msg.NumberBytesData],
+            return Message(
+                timestamp=timestamp,
+                arbitration_id=arbitration_id,
+                is_extended_id=is_extended_id,
+                is_remote_frame=is_remote_frame,
+                is_error_frame=is_error_frame,
+                channel=channel,
+                dlc=number_bytes,
+                is_fd=is_fd,
+                is_rx=is_rx,
+                data=ics_msg.Data[:number_bytes],
             )
 
     def _recv_internal(self, timeout=0.1):
