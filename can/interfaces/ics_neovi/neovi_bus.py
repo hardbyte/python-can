@@ -532,7 +532,10 @@ class NeoViBus(BusABC):
         else:
             raise ValueError("msg.channel must be set when using multiple channels.")
 
-        message.NetworkID, message.NetworkID2 = network_id & 0xFF, (network_id >> 8) & 0xFF
+        message.NetworkID, message.NetworkID2 = (
+            network_id & 0xFF,
+            (network_id >> 8) & 0xFF,
+        )
 
         if timeout != 0:
             msg_desc_id = next(description_id)
