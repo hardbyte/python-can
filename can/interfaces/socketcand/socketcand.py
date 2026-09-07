@@ -176,6 +176,13 @@ def convert_ascii_message_to_can_message(ascii_msg: str) -> can.Message:
 def convert_can_message_to_ascii_message(can_message: can.Message) -> str:
     # Note: socketcan bus adds extended flag, remote_frame_flag & error_flag to id
     # not sure if that is necessary here
+    if can_message.is_remote_frame:
+        # The send command is "< send id dlc [data]* >", there is no field for
+        # the remote request flag, so the frame would go out as a normal one
+        raise can.CanOperationError(
+            "socketcand cannot send remote frames, its send command has no "
+            "remote request flag"
+        )
     can_id = can_message.arbitration_id
     if can_message.is_extended_id:
         can_id_string = f"{(can_id&0x1FFFFFFF):08X}"
