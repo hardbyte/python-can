@@ -49,10 +49,10 @@ FILE_HEADER_SIZE = 144
 OBJ_HEADER_BASE_STRUCT = struct.Struct("<4sHHLL")
 
 # flags, client index, object version, timestamp
-OBJ_HEADER_V1_STRUCT = struct.Struct("<LHHQ")
+OBJ_HEADER_V1_STRUCT = struct.Struct("<LHHq")
 
 # flags, timestamp status, object version, timestamp, (original timestamp)
-OBJ_HEADER_V2_STRUCT = struct.Struct("<LBxHQ8x")
+OBJ_HEADER_V2_STRUCT = struct.Struct("<LBxHq8x")
 
 # compression method, size uncompressed
 LOG_CONTAINER_STRUCT = struct.Struct("<H6xL4x")
