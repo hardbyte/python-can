@@ -1,0 +1,1 @@
+Include the SocketCAN channel in socket binding errors.

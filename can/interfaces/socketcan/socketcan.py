@@ -598,7 +598,16 @@ def bind_socket(sock: socket.socket, channel: str = "can0") -> None:
         If the specified interface isn't found.
     """
     log.debug("Binding socket to channel=%s", channel)
-    sock.bind((channel,))
+    try:
+        sock.bind((channel,))
+    except OSError as error:
+        context = f"SocketCAN channel {channel!r}"
+        if error.strerror is None:
+            error.args = (f"{error} ({context})",)
+        else:
+            error.strerror = f"{error.strerror} ({context})"
+            error.args = (error.errno, error.strerror)
+        raise
     log.debug("Bound socket.")
 
 

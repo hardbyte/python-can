@@ -5,11 +5,12 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 """
 
 import ctypes
+import errno
 import struct
 import sys
 import unittest
 import warnings
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import can
 from can.interfaces.socketcan.constants import (
@@ -22,6 +23,7 @@ from can.interfaces.socketcan.constants import (
 from can.interfaces.socketcan.socketcan import (
     BcmMsgHead,
     bcm_header_factory,
+    bind_socket,
     build_bcm_header,
     build_bcm_transmit_header,
     build_bcm_tx_delete_header,
@@ -32,6 +34,32 @@ from .config import IS_LINUX, IS_PYPY, TEST_INTERFACE_SOCKETCAN
 
 
 class SocketCANTest(unittest.TestCase):
+    def test_bind_socket_failure_identifies_channel(self):
+        for channel, error in (
+            ("can0", OSError(errno.ENODEV, "No such device")),
+            ("vcan42", PermissionError(errno.EPERM, "Operation not permitted")),
+            ("can-special", OSError("bind failed")),
+        ):
+            with self.subTest(channel=channel):
+                sock = Mock()
+                sock.bind.side_effect = error
+
+                with self.assertRaises(OSError) as caught:
+                    bind_socket(sock, channel)
+
+                self.assertIn(channel, str(caught.exception))
+                self.assertIn(channel, repr(caught.exception))
+                self.assertIs(caught.exception, error)
+                self.assertEqual(caught.exception.errno, error.errno)
+                sock.bind.assert_called_once_with((channel,))
+
+    def test_bind_socket_success(self):
+        sock = Mock()
+
+        bind_socket(sock, "can0")
+
+        sock.bind.assert_called_once_with(("can0",))
+
     def setUp(self):
         self._ctypes_sizeof = ctypes.sizeof
         self._ctypes_alignment = ctypes.alignment
