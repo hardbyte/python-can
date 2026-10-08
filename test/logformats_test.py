@@ -24,10 +24,9 @@ from itertools import zip_longest
 from pathlib import Path
 from unittest.mock import patch
 
-from parameterized import parameterized
-
 import can.io
 from can.io import asc, blf
+from parameterized import parameterized
 
 from .data.example_data import (
     TEST_COMMENTS,
@@ -907,6 +906,39 @@ class TestBlfFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanFdMessage64.blf")
         self.assertMessagesEqual(actual, [expected] * 2)
         self.assertEqual(actual[0].channel, expected.channel)
+
+    def test_readwrite_cycle(self):
+        data_folder = os.path.join(os.path.dirname(__file__), "data")
+        dont_test_files = ["test_CanErrorFrameExt.blf"]
+        blf_test_files = [ f for f in os.listdir(data_folder) if f.endswith(".blf") and f not in dont_test_files ]
+        for src in blf_test_files:
+            with can.BLFReader(os.path.join(data_folder, src)) as reader:
+                msgs = list(reader)
+                with can.BLFWriter(self.test_file_name, timestamps_format="absolute") as writer:
+                    writer.start_timestamp = reader.start_timestamp
+                    for m in msgs:
+                        writer.on_message_received(m)
+
+            with can.BLFReader(self.test_file_name) as verification_reader:
+                verification_msgs = list(verification_reader)
+                self.assertMessagesEqual(msgs, verification_msgs, msg="file: " + src)
+
+    def test_pre_recording_timestamp(self):
+            t0 = 716868000.0
+            msgs_absolute = [
+                can.Message(timestamp=t0 - 0.1, arbitration_id=0x123, data=b"\x01"),
+                can.Message(timestamp=t0, arbitration_id=0x456, data=b"\x02"),
+                can.Message(timestamp=t0 + 0.1, arbitration_id=0x789, data=b"\x03"),
+            ]
+
+            with can.BLFWriter(self.test_file_name) as writer:
+                writer.start_timestamp = t0
+                for m in msgs_absolute:
+                    writer.on_message_received(m)
+            with can.BLFReader(self.test_file_name) as reader:
+                print("reader.start_timestamp:", reader.start_timestamp)
+                resulting_msgs = list(reader)
+                self.assertMessagesEqual(resulting_msgs, msgs_absolute)
 
     def test_can_error_frame_ext(self):
         expected = can.Message(

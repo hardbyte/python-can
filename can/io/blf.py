@@ -49,10 +49,10 @@ FILE_HEADER_SIZE = 144
 OBJ_HEADER_BASE_STRUCT = struct.Struct("<4sHHLL")
 
 # flags, client index, object version, timestamp
-OBJ_HEADER_V1_STRUCT = struct.Struct("<LHHQ")
+OBJ_HEADER_V1_STRUCT = struct.Struct("<LHHq")
 
 # flags, timestamp status, object version, timestamp, (original timestamp)
-OBJ_HEADER_V2_STRUCT = struct.Struct("<LBxHQ8x")
+OBJ_HEADER_V2_STRUCT = struct.Struct("<LBxHq8x")
 
 # compression method, size uncompressed
 LOG_CONTAINER_STRUCT = struct.Struct("<H6xL4x")
@@ -546,7 +546,7 @@ class BLFWriter(BinaryIOMessageWriter):
         base_header = OBJ_HEADER_BASE_STRUCT.pack(
             b"LOBJ", header_size, 1, obj_size, obj_type
         )
-        obj_header = OBJ_HEADER_V1_STRUCT.pack(TIME_ONE_NANS, 0, 0, max(timestamp, 0))
+        obj_header = OBJ_HEADER_V1_STRUCT.pack(TIME_ONE_NANS, 0, 0, timestamp)
 
         self._buffer.append(base_header)
         self._buffer.append(obj_header)

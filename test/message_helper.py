@@ -21,7 +21,7 @@ class ComparingMessagesTestCase:
         self.allowed_timestamp_delta = allowed_timestamp_delta
         self.preserves_channel = preserves_channel
 
-    def assertMessageEqual(self, message_1, message_2):
+    def assertMessageEqual(self, message_1, message_2, msg=None):
         """
         Checks that two messages are equal, according to the given rules.
         """
@@ -31,18 +31,26 @@ class ComparingMessagesTestCase:
             check_channel=self.preserves_channel,
             timestamp_delta=self.allowed_timestamp_delta,
         ):
+            fail_message = f"messages are unequal: \n{message_1}\n{message_2}"
+            if msg:
+                fail_message = f"{msg}: {fail_message}"
+                print(f"Assertion message: {msg}")
             print(f"Comparing: message 1: {message_1!r}")
             print(f"           message 2: {message_2!r}")
-            self.fail(f"messages are unequal: \n{message_1}\n{message_2}")
+            self.fail(fail_message)
 
-    def assertMessagesEqual(self, messages_1, messages_2):
+    def assertMessagesEqual(self, messages_1, messages_2, msg=None):
         """
         Checks the order and content of the individual messages pairwise.
         Raises an error if the lengths of the sequences are not equal.
         """
+        assert_msg = "the number of messages differs"
+        if msg:
+            assert_msg = f"{assert_msg}2:2 {msg}"
+
         self.assertEqual(
-            len(messages_1), len(messages_2), "the number of messages differs"
+            len(messages_1), len(messages_2), assert_msg
         )
 
         for message_1, message_2 in zip(messages_1, messages_2):
-            self.assertMessageEqual(message_1, message_2)
+            self.assertMessageEqual(message_1, message_2, msg=msg)
