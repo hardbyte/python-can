@@ -250,6 +250,8 @@ class BLFReader(BinaryIOMessageReader):
             signature, header_size, header_version, obj_size, obj_type = header
             if signature != b"LOBJ":
                 raise BLFParseError()
+            if obj_size < obj_header_base_size:
+                raise BLFParseError(f"Invalid object size {obj_size}")
 
             # Calculate position of next object
             next_pos = pos + obj_size
