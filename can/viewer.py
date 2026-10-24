@@ -340,7 +340,7 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
         # Trigger a complete redraw
         self.draw_header()
         for ids in self.ids.values():
-            self.draw_can_bus_message(ids["msg"])
+            self.draw_can_bus_message(ids["msg"], sorting=True)
 
 
 class SmartFormatter(argparse.HelpFormatter):
