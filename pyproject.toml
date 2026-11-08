@@ -103,6 +103,8 @@ test = [
     "pytest-cov==7.1.*",
     "coverage==7.14.*",
     "hypothesis==6.*",
+    # hypothesis>=6.156 needs a Rust extension that does not support PyPy 3.10
+    "hypothesis<6.156;platform_python_implementation=='PyPy' and python_version<'3.11'",
     "parameterized==0.9.*",
 ]
 dev = [
