@@ -78,7 +78,7 @@ viewer = [
     "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
 ]
 mf4 = ["asammdf>=6.0.0"]
-multicast = ["msgpack~=1.1.0"]
+multicast = ["msgpack~=1.2.4"]
 
 [dependency-groups]
 docs = [
@@ -90,18 +90,18 @@ docs = [
     "furo",
 ]
 lint = [
-    "pylint==4.0.*",
-    "ruff==0.15.*",
-    "black==26.5.*",
-    "mypy==2.1.*",
+    "pylint==4.1.*",
+    "ruff==0.17.*",
+    "black==26.10.*",
+    "mypy==2.4.*",
 ]
 test = [
-    "pytest==9.0.*",
+    "pytest==9.2.*",
     "pytest-timeout==2.4.*",
     "pytest-modern==0.7.*;platform_system!='Windows'",
     "coveralls==4.1.*",
     "pytest-cov==7.1.*",
-    "coverage==7.14.*",
+    "coverage==7.16.*",
     "hypothesis==6.*",
     # hypothesis>=6.156 needs a Rust extension that does not support PyPy 3.10
     "hypothesis<6.156;platform_python_implementation=='PyPy' and python_version<'3.11'",
