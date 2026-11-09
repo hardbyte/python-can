@@ -9,7 +9,7 @@ import struct
 import sys
 import unittest
 import warnings
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import can
 from can.interfaces.socketcan.constants import (
@@ -21,6 +21,7 @@ from can.interfaces.socketcan.constants import (
 )
 from can.interfaces.socketcan.socketcan import (
     BcmMsgHead,
+    SocketcanBus,
     bcm_header_factory,
     build_bcm_header,
     build_bcm_transmit_header,
@@ -35,6 +36,19 @@ class SocketCANTest(unittest.TestCase):
     def setUp(self):
         self._ctypes_sizeof = ctypes.sizeof
         self._ctypes_alignment = ctypes.alignment
+
+    @patch("can.interfaces.socketcan.socketcan.select.select")
+    def test_send_without_timeout_blocks_indefinitely(self, select):
+        bus = SocketcanBus.__new__(SocketcanBus)
+        bus.channel = "can0"
+        bus.socket = MagicMock()
+        bus._send_once = MagicMock(side_effect=[1, 15])
+        select.return_value = ([], [bus.socket], [])
+
+        bus.send(can.Message(arbitration_id=0x123, data=[1, 2, 3, 4]))
+
+        self.assertEqual(2, select.call_count)
+        self.assertTrue(all(call.args[3] is None for call in select.call_args_list))
 
     @unittest.skipIf(sys.version_info >= (3, 14), "Fails on Python 3.14 or newer")
     @patch("ctypes.sizeof")

@@ -841,7 +841,7 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         :param msg: A message object.
         :param timeout:
             Wait up to this many seconds for the transmit queue to be ready.
-            If not given, the call may fail immediately.
+            If not given, wait indefinitely.
 
         :raises ~can.exceptions.CanError:
             if the message could not be written.
@@ -851,13 +851,10 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         logger_tx.debug("sending: %s", msg)
 
         started = time.time()
-        # If no timeout is given, poll for availability
-        if timeout is None:
-            timeout = 0
         time_left = timeout
         data = build_can_frame(msg)
 
-        while time_left >= 0:
+        while time_left is None or time_left >= 0:
             # Wait for write availability
             ready = select.select([], [self.socket], [], time_left)[1]
             if not ready:
@@ -869,7 +866,8 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
                 return
             # Not all data were sent, try again with remaining data
             data = data[sent:]
-            time_left = timeout - (time.time() - started)
+            if timeout is not None:
+                time_left = timeout - (time.time() - started)
 
         raise can.CanOperationError("Transmit buffer full")
 
