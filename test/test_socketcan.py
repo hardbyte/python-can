@@ -5,27 +5,32 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 """
 
 import ctypes
+import socket
 import struct
 import sys
 import unittest
 import warnings
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import can
 from can.interfaces.socketcan.constants import (
     CAN_BCM_TX_DELETE,
     CAN_BCM_TX_SETUP,
     SETTIMER,
+    SO_TIMESTAMPNS,
     STARTTIMER,
     TX_COUNTEVT,
 )
 from can.interfaces.socketcan.socketcan import (
+    RECEIVED_TIMESTAMP_STRUCT,
     BcmMsgHead,
     bcm_header_factory,
     build_bcm_header,
     build_bcm_transmit_header,
     build_bcm_tx_delete_header,
     build_bcm_update_header,
+    build_can_frame,
+    capture_message,
 )
 
 from .config import IS_LINUX, IS_PYPY, TEST_INTERFACE_SOCKETCAN
@@ -388,6 +393,44 @@ class SocketCANTest(unittest.TestCase):
                 warnings.warn(
                     "Please check if PyPy has implemented raw CAN socket support! "
                     "See: https://github.com/pypy/pypy/issues/3808"
+                )
+
+    def test_capture_message(self):
+        ancillary_data = [
+            (
+                socket.SOL_SOCKET,
+                SO_TIMESTAMPNS,
+                RECEIVED_TIMESTAMP_STRUCT.pack(1_700_000_000, 123_456_000),
+            )
+        ]
+        defaults = {"timestamp": 1_700_000_000.123456, "is_extended_id": False}
+        # Every pair of boolean fields differs in at least one message, so swapped
+        # arguments in the Message() call of capture_message() cannot go unnoticed.
+        for kwargs in (
+            {"arbitration_id": 0x123, "channel": "vcan0", "data": [1, 2, 3]},
+            {"arbitration_id": 0x1ABCDEF, "is_extended_id": True, "is_rx": False},
+            {"arbitration_id": 0x7FF, "is_remote_frame": True, "dlc": 4},
+            {"arbitration_id": 0x004, "is_error_frame": True, "data": bytes(8)},
+            {"arbitration_id": 0x456, "is_fd": True, "data": range(12)},
+            {"arbitration_id": 0x456, "is_fd": True, "bitrate_switch": True},
+            {"arbitration_id": 0x456, "is_fd": True, "error_state_indicator": True},
+        ):
+            with self.subTest(**kwargs):
+                expected = can.Message(**{**defaults, **kwargs})
+                sock = Mock()
+                sock.recvmsg.return_value = (
+                    build_can_frame(expected),
+                    ancillary_data,
+                    0 if expected.is_rx else socket.MSG_DONTROUTE,
+                    ("vcan0",),
+                )
+
+                received = capture_message(
+                    sock, get_channel=expected.channel is not None
+                )
+
+                self.assertTrue(
+                    received.equals(expected), f"{received!r} != {expected!r}"
                 )
 
 
