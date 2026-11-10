@@ -96,14 +96,14 @@ lint = [
     "mypy==2.4.*",
 ]
 test = [
-    "pytest==9.0.*",
+    "pytest==9.2.*",
     "pytest-timeout==2.4.*",
     "pytest-modern==0.7.*;platform_system!='Windows'",
     "coveralls==4.1.*",
     "pytest-cov==7.1.*",
-    "coverage==7.14.*",
+    "coverage==7.17.*",
     "hypothesis==6.*",
-    "hypothesis<6.156",
+    "hypothesis<6.171",
     "parameterized==0.9.*",
 ]
 dev = [
