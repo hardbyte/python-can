@@ -48,30 +48,32 @@ def receive(bus, stop_event):
 
 def main():
     """Controls the sender and receiver."""
-    with can.Bus(interface="serial", channel="/dev/ttyS10") as server:
-        with can.Bus(interface="serial", channel="/dev/ttyS11") as client:
-            tx_msg = can.Message(
-                arbitration_id=0x01,
-                data=[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],
-            )
+    with (
+        can.Bus(interface="serial", channel="/dev/ttyS10") as server,
+        can.Bus(interface="serial", channel="/dev/ttyS11") as client,
+    ):
+        tx_msg = can.Message(
+            arbitration_id=0x01,
+            data=[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],
+        )
 
-            # Thread for sending and receiving messages
-            stop_event = threading.Event()
-            t_send_cyclic = threading.Thread(
-                target=send_cyclic, args=(server, tx_msg, stop_event)
-            )
-            t_receive = threading.Thread(target=receive, args=(client, stop_event))
-            t_receive.start()
-            t_send_cyclic.start()
+        # Thread for sending and receiving messages
+        stop_event = threading.Event()
+        t_send_cyclic = threading.Thread(
+            target=send_cyclic, args=(server, tx_msg, stop_event)
+        )
+        t_receive = threading.Thread(target=receive, args=(client, stop_event))
+        t_receive.start()
+        t_send_cyclic.start()
 
-            try:
-                while True:
-                    time.sleep(0)  # yield
-            except KeyboardInterrupt:
-                pass  # exit normally
+        try:
+            while True:
+                time.sleep(0)  # yield
+        except KeyboardInterrupt:
+            pass  # exit normally
 
-            stop_event.set()
-            time.sleep(0.5)
+        stop_event.set()
+        time.sleep(0.5)
 
     print("Stopped script")
 

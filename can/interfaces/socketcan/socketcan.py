@@ -57,7 +57,7 @@ def bcm_header_factory(
 ):
     curr_stride = 0
     results: list[
-        tuple[str, type[ctypes.c_uint8] | type[ctypes.c_uint32] | type[ctypes.c_long]]
+        tuple[str, type[ctypes.c_uint8 | ctypes.c_uint32 | ctypes.c_long]]
     ] = []
     pad_index = 0
     for field in fields:

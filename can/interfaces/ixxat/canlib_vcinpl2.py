@@ -53,7 +53,7 @@ _canlib = None
 if sys.platform == "win32" or sys.platform == "cygwin":
     try:
         _canlib = CLibrary("vcinpl2.dll")
-    except Exception as e:
+    except OSError as e:
         log.warning("Cannot load IXXAT vcinpl library: %s", e)
 else:
     # Will not work on other systems, but have it importable anyway for
@@ -376,7 +376,7 @@ try:
 except AttributeError:
     # In case _canlib == None meaning we're not on win32/no lib found
     pass
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     log.warning("Could not initialize IXXAT VCI library: %s", e)
 # ---------------------------------------------------------------------------
 

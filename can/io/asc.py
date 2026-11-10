@@ -348,26 +348,25 @@ class ASCWriter(TextIOMessageWriter):
     """
 
     FORMAT_MESSAGE = "{channel}  {id:<15} {dir:<4} {dtype} {data}"
-    FORMAT_MESSAGE_FD = " ".join(
-        [
-            "CANFD",
-            "{channel:>3}",
-            "{dir:<4}",
-            "{id:>8}  {symbolic_name:>32}",
-            "{brs}",
-            "{esi}",
-            "{dlc:x}",
-            "{data_length:>2}",
-            "{data}",
-            "{message_duration:>8}",
-            "{message_length:>4}",
-            "{flags:>8X}",
-            "{crc:>8}",
-            "{bit_timing_conf_arb:>8}",
-            "{bit_timing_conf_data:>8}",
-            "{bit_timing_conf_ext_arb:>8}",
-            "{bit_timing_conf_ext_data:>8}",
-        ]
+    FORMAT_MESSAGE_FD = (
+        "CANFD "
+        "{channel:>3} "
+        "{dir:<4} "
+        "{id:>8}  "
+        "{symbolic_name:>32} "
+        "{brs} "
+        "{esi} "
+        "{dlc:x} "
+        "{data_length:>2} "
+        "{data} "
+        "{message_duration:>8} "
+        "{message_length:>4} "
+        "{flags:>8X} "
+        "{crc:>8} "
+        "{bit_timing_conf_arb:>8} "
+        "{bit_timing_conf_data:>8} "
+        "{bit_timing_conf_ext_arb:>8} "
+        "{bit_timing_conf_ext_data:>8}"
     )
     FORMAT_DATE = "%a %b %d %H:%M:%S.{} %Y"
     FORMAT_EVENT = "{timestamp: 9.6f} {message}\n"

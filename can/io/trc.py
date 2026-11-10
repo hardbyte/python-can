@@ -112,13 +112,11 @@ class TRCReader(TextIOMessageReader):
             else:
                 break
 
-        if self.file_version >= TRCFileVersion.V1_1:
-            if self._start_time is None:
-                raise ValueError("File has no start time information")
+        if self.file_version >= TRCFileVersion.V1_1 and self._start_time is None:
+            raise ValueError("File has no start time information")
 
-        if self.file_version >= TRCFileVersion.V2_0:
-            if not self.columns:
-                raise ValueError("File has no column information")
+        if self.file_version >= TRCFileVersion.V2_0 and not self.columns:
+            raise ValueError("File has no column information")
 
         if self.file_version == TRCFileVersion.UNKNOWN:
             logger.info(

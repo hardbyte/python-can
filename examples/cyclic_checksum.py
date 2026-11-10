@@ -58,6 +58,8 @@ def compute_xbr_checksum(message: can.Message, counter: int) -> int:
 
 
 if __name__ == "__main__":
-    with can.Bus(channel=0, interface="virtual", receive_own_messages=True) as _bus:
-        with can.Notifier(bus=_bus, listeners=[print]):
-            cyclic_checksum_send(_bus)
+    with (
+        can.Bus(channel=0, interface="virtual", receive_own_messages=True) as _bus,
+        can.Notifier(bus=_bus, listeners=[print]),
+    ):
+        cyclic_checksum_send(_bus)

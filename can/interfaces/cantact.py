@@ -42,7 +42,7 @@ class CantactBus(BusABC):
             return []
 
         channels: list[AutoDetectedConfig] = []
-        for i in range(0, interface.channel_count()):
+        for i in range(interface.channel_count()):
             channels.append({"interface": "cantact", "channel": f"ch:{i}"})
         return channels
 
