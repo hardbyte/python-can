@@ -9,7 +9,7 @@ Example .asc files:
 import logging
 import re
 from collections.abc import Generator
-from datetime import datetime, timezone, tzinfo
+from datetime import UTC, datetime, tzinfo
 from typing import Any, Final, Literal, TextIO
 
 from ..message import Message
@@ -17,7 +17,7 @@ from ..typechecking import StringPathLike
 from ..util import channel2int, dlc2len, len2dlc
 from .generic import TextIOMessageReader, TextIOMessageWriter
 
-_LOCAL_TZ: Final = datetime.now(timezone.utc).astimezone().tzinfo
+_LOCAL_TZ: Final = datetime.now(UTC).astimezone().tzinfo
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF

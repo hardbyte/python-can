@@ -64,6 +64,7 @@ CanData = ctypes.c_ubyte * 8
 
 
 class RxMessageStruct(ctypes.Structure):
+    _layout_ = "ms"
     _pack_ = 1
     _fields_ = [
         ("timestamp", ctypes.c_ulonglong),

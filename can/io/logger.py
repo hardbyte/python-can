@@ -5,22 +5,17 @@ See the :class:`Logger` class.
 import gzip
 import os
 import pathlib
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import TracebackType
 from typing import (
     Any,
     ClassVar,
     Final,
     Literal,
+    Self,
 )
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 from .._entry_points import read_entry_points
 from ..message import Message
@@ -406,7 +401,7 @@ class SizedRotatingLogger(BaseRotatingLogger):
         new_name = (
             path.stem.split(".")[0]
             + "_"
-            + datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H%M%S")
+            + datetime.now(tz=UTC).strftime("%Y-%m-%dT%H%M%S")
             + "_"
             + f"#{self.rollover_count:03}"
             + "".join(path.suffixes[-2:])

@@ -4,21 +4,13 @@ Contains the ABC bus implementation and its documentation.
 
 import contextlib
 import logging
-import sys
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Sequence
 from enum import Enum, auto
 from time import time
 from types import TracebackType
-from typing import (
-    cast,
-)
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Self, cast
 
 import can.typechecking
 from can.broadcastmanager import CyclicSendTaskABC, ThreadBasedCyclicSendTask
