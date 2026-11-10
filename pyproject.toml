@@ -90,10 +90,10 @@ docs = [
     "furo",
 ]
 lint = [
-    "pylint==4.0.*",
-    "ruff==0.15.*",
-    "black==26.5.*",
-    "mypy==2.1.*",
+    "pylint==4.1.*",
+    "ruff==0.17.*",
+    "black==26.10.*",
+    "mypy==2.4.*",
 ]
 test = [
     "pytest==9.0.*",
@@ -200,6 +200,7 @@ known-first-party = ["can"]
 [tool.pylint]
 extension-pkg-allow-list = ["curses"]
 disable = [
+    "abstract-method",
     "cyclic-import",
     "duplicate-code",
     "fixme",

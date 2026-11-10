@@ -9,7 +9,7 @@ import argparse
 import errno
 import math
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, cast
 
 from can import LogReader, MessageSync
@@ -38,7 +38,7 @@ def _parse_loop(value: str) -> int | float:
         raise argparse.ArgumentTypeError(err_msg) from exc
 
 
-def _format_player_start_message(iteration: int, loop_count: int | float) -> str:
+def _format_player_start_message(iteration: int, loop_count: float) -> str:
     """
     Generate a status message indicating the start of a CAN log replay iteration.
 
@@ -54,7 +54,7 @@ def _format_player_start_message(iteration: int, loop_count: int | float) -> str
     else:
         loop_val = "∞" if math.isinf(loop_count) else str(loop_count)
         loop_info = f" [loop {iteration + 1}/{loop_val}]"
-    return f"Can LogReader (Started on {datetime.now()}){loop_info}"
+    return f"Can LogReader (Started on {datetime.now(tz=timezone.utc)}){loop_info}"
 
 
 def main() -> None:

@@ -56,7 +56,7 @@ _canlib = None
 if sys.platform == "win32" or sys.platform == "cygwin":
     try:
         _canlib = CLibrary("vcinpl.dll")
-    except Exception as e:
+    except OSError as e:
         log.warning("Cannot load IXXAT vcinpl library: %s", e)
 else:
     # Will not work on other systems, but have it importable anyway for
@@ -349,7 +349,7 @@ try:
 except AttributeError:
     # In case _canlib == None meaning we're not on win32/no lib found
     pass
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     log.warning("Could not initialize IXXAT VCI library: %s", e)
 # ---------------------------------------------------------------------------
 
@@ -742,10 +742,12 @@ class IXXATBus(BusABC):
                         raise VCIErrorLimitExceededError("Error warning limit exceeded")
                     # Not checking CAN_STATUS_OVRRUN here because it is handled above and would be
                     # raised every time as the flag is never cleared until a reset.
-                elif error_byte_2 > constants.CAN_STATUS_ININIT:
+                elif (
+                    error_byte_2 > constants.CAN_STATUS_ININIT
+                    and error_byte_2 & constants.CAN_STATUS_BUSCERR
+                ):
                     # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
-                    if error_byte_2 & constants.CAN_STATUS_BUSCERR:
-                        raise VCIBusCouplingError("Bus coupling error")
+                    raise VCIBusCouplingError("Bus coupling error")
 
         if not data_received:
             # Timed out / can message type is not DATA
@@ -1005,7 +1007,7 @@ def _detect_available_configs() -> Sequence["AutoDetectedIxxatConfig"]:
                             constants.FALSE,
                             ctypes.byref(channel_handle),
                         )
-                    except Exception:
+                    except VCIError:
                         # Array outside of bounds error == accessing a channel not in the hardware
                         break
                     else:

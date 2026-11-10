@@ -8,6 +8,7 @@ to various file formats.
 
 import locale
 import os
+import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from contextlib import AbstractContextManager
@@ -24,7 +25,10 @@ from typing import (
     TypeVar,
 )
 
-from typing_extensions import Self
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from ..listener import Listener
 from ..message import Message
@@ -137,7 +141,7 @@ class TextIOMessageWriter(FileIOMessageWriter[TextIO | TextIOWrapper], ABC):
         if isinstance(file, (str, os.PathLike)):
             encoding: str = kwargs.get("encoding", locale.getpreferredencoding(False))
             # pylint: disable=consider-using-with
-            self.file = Path(file).open(mode=mode, encoding=encoding)
+            self.file = Path(file).open(mode=mode, encoding=encoding)  # noqa: SIM115
         else:
             self.file = file
 
@@ -158,7 +162,7 @@ class BinaryIOMessageWriter(FileIOMessageWriter[BinaryIO | BufferedIOBase], ABC)
     ) -> None:
         if isinstance(file, (str, os.PathLike)):
             # pylint: disable=consider-using-with,unspecified-encoding
-            self.file = Path(file).open(mode=mode)
+            self.file = Path(file).open(mode=mode)  # noqa: SIM115
         else:
             self.file = file
 
@@ -232,7 +236,7 @@ class TextIOMessageReader(FileIOMessageReader[TextIO | TextIOWrapper], ABC):
         if isinstance(file, (str, os.PathLike)):
             encoding: str = kwargs.get("encoding", locale.getpreferredencoding(False))
             # pylint: disable=consider-using-with
-            self.file = Path(file).open(mode=mode, encoding=encoding)
+            self.file = Path(file).open(mode=mode, encoding=encoding)  # noqa: SIM115
         else:
             self.file = file
 
@@ -253,6 +257,6 @@ class BinaryIOMessageReader(FileIOMessageReader[BinaryIO | BufferedIOBase], ABC)
     ) -> None:
         if isinstance(file, (str, os.PathLike)):
             # pylint: disable=consider-using-with,unspecified-encoding
-            self.file = Path(file).open(mode=mode)
+            self.file = Path(file).open(mode=mode)  # noqa: SIM115
         else:
             self.file = file

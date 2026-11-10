@@ -1,7 +1,7 @@
 import argparse
 import errno
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
 )
@@ -107,7 +107,7 @@ def main() -> None:
         bus.state = BusState.PASSIVE
 
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
-    print(f"Can Logger (Started on {datetime.now()})")
+    print(f"Can Logger (Started on {datetime.now(tz=timezone.utc)})")
 
     logger: MessageWriter | BaseRotatingLogger
     if results.file_size:

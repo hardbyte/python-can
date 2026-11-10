@@ -3,11 +3,17 @@ This module contains the implementation of `can.Listener` and some readers.
 """
 
 import asyncio
+import sys
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from queue import Empty, SimpleQueue
 from typing import Any
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from can.bus import BusABC
 from can.message import Message
@@ -165,7 +171,7 @@ class AsyncBufferedReader(
         """
         return await self.buffer.get()
 
-    def __aiter__(self) -> AsyncIterator[Message]:
+    def __aiter__(self) -> Self:
         return self
 
     async def __anext__(self) -> Message:

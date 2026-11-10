@@ -337,7 +337,7 @@ def init_kvaser_library():
             log.debug("Initializing Kvaser CAN library")
             canInitializeLibrary()
             log.debug("CAN library initialized")
-        except Exception:
+        except CANLIBError:
             log.warning("Kvaser canlib could not be initialized.")
 
 
@@ -614,7 +614,7 @@ class KvaserBus(BusABC):
                 kvReadTimer(self._read_handle, ctypes.byref(timer))
                 return time.time() - (timer.value * TIMESTAMP_FACTOR)
 
-        except Exception as exc:
+        except CANLIBError as exc:
             # timer is usually close to 0
             log.info(str(exc))
             return time.time() - (timer.value * TIMESTAMP_FACTOR)
@@ -791,7 +791,7 @@ class KvaserBus(BusABC):
             num_channels = ctypes.c_int(0)
             canGetNumberOfChannels(ctypes.byref(num_channels))
 
-            for channel in range(0, int(num_channels.value)):
+            for channel in range(int(num_channels.value)):
                 info = get_channel_info(channel)
 
                 config_list.append({"interface": "kvaser", "channel": channel, **info})

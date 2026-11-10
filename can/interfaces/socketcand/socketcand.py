@@ -196,7 +196,7 @@ def connect_to_server(s, host, port):
         try:
             s.connect((host, port))
             return
-        except Exception as e:
+        except OSError as e:
             log.warning(f"Failed to connect to server: {type(e)} Message: {e}")
             now = time.time() * 1000
     raise TimeoutError(
@@ -368,6 +368,6 @@ class SocketCanDaemonBus(can.BusABC):
     def _detect_available_configs() -> list[can.typechecking.AutoDetectedConfig]:
         try:
             return detect_beacon()
-        except Exception as e:
+        except OSError as e:
             log.warning(f"Could not detect socketcand beacon: {e}")
             return []

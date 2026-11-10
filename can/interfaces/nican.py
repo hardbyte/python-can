@@ -134,7 +134,7 @@ def get_error_message(status_code: int) -> str:
 if sys.platform == "win32":
     try:
         nican = ctypes.windll.LoadLibrary("nican")
-    except Exception as e:
+    except OSError as e:
         nican = None
         logger.error("Failed to load NI-CAN driver: %s", e)
     else:
