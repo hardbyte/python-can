@@ -17,11 +17,10 @@ from configparser import ConfigParser
 from time import get_clock_info, perf_counter, time
 from typing import (
     Any,
+    ParamSpec,
     TypeVar,
     cast,
 )
-
-from typing_extensions import ParamSpec
 
 import can
 

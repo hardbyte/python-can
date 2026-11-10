@@ -8,7 +8,6 @@ to various file formats.
 
 import locale
 import os
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from contextlib import AbstractContextManager
@@ -21,14 +20,10 @@ from typing import (
     BinaryIO,
     Generic,
     Literal,
+    Self,
     TextIO,
     TypeVar,
 )
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 from ..listener import Listener
 from ..message import Message

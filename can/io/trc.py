@@ -10,7 +10,7 @@ Version 1.1 will be implemented as it is most commonly used
 import logging
 import os
 from collections.abc import Callable, Generator
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from io import TextIOWrapper
 from typing import Any, TextIO
@@ -67,7 +67,7 @@ class TRCReader(TextIOMessageReader):
     @property
     def start_time(self) -> datetime | None:
         if self._start_time:
-            return datetime.fromtimestamp(self._start_time, timezone.utc)
+            return datetime.fromtimestamp(self._start_time, UTC)
         return None
 
     def _extract_header(self) -> str:
@@ -94,7 +94,7 @@ class TRCReader(TextIOMessageReader):
                 logger.debug("TRCReader: Found start time '%s'", line)
                 try:
                     self._start_time = (
-                        datetime(1899, 12, 30, tzinfo=timezone.utc)
+                        datetime(1899, 12, 30, tzinfo=UTC)
                         + timedelta(days=float(line.split("=")[1]))
                     ).timestamp()
                 except IndexError:
@@ -337,9 +337,7 @@ class TRCWriter(TextIOMessageWriter):
         self.file.writelines(line + "\n" for line in lines)
 
     def _write_header_v2_1(self, start_time: datetime) -> None:
-        header_time = start_time - datetime(
-            year=1899, month=12, day=30, tzinfo=timezone.utc
-        )
+        header_time = start_time - datetime(year=1899, month=12, day=30, tzinfo=UTC)
         lines = [
             ";$FILEVERSION=2.1",
             f";$STARTTIME={header_time/timedelta(days=1)}",
@@ -397,7 +395,7 @@ class TRCWriter(TextIOMessageWriter):
 
     def write_header(self, timestamp: float) -> None:
         # write start of file header
-        start_time = datetime.fromtimestamp(timestamp, timezone.utc)
+        start_time = datetime.fromtimestamp(timestamp, UTC)
 
         if self.file_version == TRCFileVersion.V1_0:
             self._write_header_v1_0(start_time)

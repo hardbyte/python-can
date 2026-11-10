@@ -9,7 +9,7 @@ import argparse
 import errno
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Final
 
 from can.cli import add_bus_arguments, create_bus_from_namespace
@@ -52,14 +52,14 @@ def main() -> None:
         reader1_to_2 = RedirectReader(bus2)
         reader2_to_1 = RedirectReader(bus1)
         with Notifier(bus1, [reader1_to_2]), Notifier(bus2, [reader2_to_1]):
-            print(f"CAN Bridge (Started on {datetime.now(tz=timezone.utc)})")
+            print(f"CAN Bridge (Started on {datetime.now(tz=UTC)})")
             try:
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
                 pass
 
-    print(f"CAN Bridge (Stopped on {datetime.now(tz=timezone.utc)})")
+    print(f"CAN Bridge (Stopped on {datetime.now(tz=UTC)})")
 
 
 if __name__ == "__main__":

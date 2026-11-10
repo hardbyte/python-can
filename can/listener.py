@@ -3,17 +3,11 @@ This module contains the implementation of `can.Listener` and some readers.
 """
 
 import asyncio
-import sys
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from queue import Empty, SimpleQueue
-from typing import Any
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Any, Self
 
 from can.bus import BusABC
 from can.message import Message
