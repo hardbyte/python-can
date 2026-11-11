@@ -45,6 +45,15 @@ Linux installation
 
 Beginning with version 3.4, Linux kernels support the PCAN adapters natively via :doc:`/interfaces/socketcan`, refer to: :ref:`socketcan-pcan`.
 
+Timestamps
+----------
+
+PCAN-Basic on Linux provides timestamps relative to the Unix epoch, so no boot-time
+offset or ``uptime`` package is needed. On other supported platforms, install
+``python-can[pcan]`` to use ``uptime`` for conversion of boot-relative timestamps to
+epoch timestamps. Without a known boot time, those platforms retain relative
+timestamps.
+
 Bus
 ---
 

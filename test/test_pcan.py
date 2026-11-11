@@ -3,8 +3,13 @@ Test for PCAN Interface
 """
 
 import ctypes
+import importlib.util
+import logging
 import struct
+import sys
 import unittest
+from datetime import datetime, timezone
+from types import ModuleType
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -15,6 +20,7 @@ import can
 from can import BusState, CanProtocol
 from can.exceptions import CanInitializationError
 from can.interfaces.pcan import PcanBus, PcanError
+from can.interfaces.pcan import pcan as pcan_module
 from can.interfaces.pcan.basic import *
 
 
@@ -257,6 +263,128 @@ class TestPCANBus(unittest.TestCase):
         self.assertSequenceEqual(recv_msg.data, msg.DATA)
         self.assertEqual(recv_msg.timestamp, 0)
         self.assertEqual(recv_msg.channel, "PCAN_USBBUS1")
+
+    def _load_timestamp_backend(
+        self, platform_name: str, uptime_state: str
+    ) -> tuple[ModuleType, Mock, Mock]:
+        # Exercise import-time platform selection without reloading shared aliases.
+        spec = importlib.util.spec_from_file_location(
+            "can.interfaces.pcan._timestamp_test", pcan_module.__file__
+        )
+        assert spec is not None and spec.loader is not None
+        backend = importlib.util.module_from_spec(spec)
+        uptime_module = Mock()
+        uptime_module.boottime.return_value = (
+            None
+            if uptime_state == "unknown"
+            else datetime.fromtimestamp(1_700_000_000, timezone.utc)
+        )
+        with (
+            patch("can.interfaces.pcan.basic.IS_LINUX", platform_name == "linux"),
+            patch("can.interfaces.pcan.basic.IS_WINDOWS", platform_name == "windows"),
+            patch.dict(
+                sys.modules,
+                {"uptime": None if uptime_state == "missing" else uptime_module},
+            ),
+            patch.object(logging.getLogger("can.pcan"), "warning") as warning,
+        ):
+            spec.loader.exec_module(backend)
+        return backend, uptime_module, warning
+
+    @parameterized.expand(
+        [
+            (
+                f"{platform_name}_{frame_type}_{uptime_state}",
+                platform_name,
+                fd,
+                uptime_state,
+            )
+            for platform_name in ("linux", "windows", "macos")
+            for frame_type, fd in (("classic", False), ("fd", True))
+            for uptime_state in ("available", "missing", "unknown")
+        ]
+    )
+    def test_timestamp_clock(
+        self, name: str, platform_name: str, fd: bool, uptime_state: str
+    ) -> None:
+        backend, uptime_module, warning = self._load_timestamp_backend(
+            platform_name, uptime_state
+        )
+        offset = (
+            1_700_000_000
+            if platform_name != "linux" and uptime_state == "available"
+            else 0
+        )
+        # Clock conversion does not need native event handles on any platform.
+        backend.HAS_EVENTS = False
+        with patch.object(backend, "PCANBasic", return_value=self.mock_pcan):
+            self.bus = backend.PcanBus(fd=fd)
+
+        # Linux uses a realistic epoch; non-Linux uses an elapsed clock. Both
+        # include fractional seconds and a nonzero millis_overflow.
+        start_us = (
+            1_790_000_000_123_456
+            if platform_name == "linux"
+            else (1 << 32) * 1000 + 123_456
+        )
+        rollover_us = ((start_us // 1000) // (1 << 32) + 1) * (1 << 32) * 1000
+        raw_times = [start_us, start_us + 1_234_567, rollover_us - 1, rollover_us + 1]
+        received_times = []
+        for raw_us in raw_times:
+            if fd:
+                length = 12
+                pcan_msg = TPCANMsgFD(
+                    ID=0x123,
+                    DLC=9,
+                    MSGTYPE=PCAN_MESSAGE_FD.value | PCAN_MESSAGE_BRS.value,
+                    DATA=(ctypes.c_ubyte * 64)(*range(64)),
+                )
+                self.mock_pcan.ReadFD.return_value = (
+                    PCAN_ERROR_OK,
+                    pcan_msg,
+                    TPCANTimestampFD(raw_us),
+                )
+            else:
+                length = 8
+                millis, micros = divmod(raw_us, 1000)
+                overflow, millis = divmod(millis, 1 << 32)
+                pcan_msg = TPCANMsg(
+                    ID=0x123,
+                    LEN=length,
+                    MSGTYPE=PCAN_MESSAGE_STANDARD,
+                    DATA=(ctypes.c_ubyte * 8)(*range(8)),
+                )
+                self.mock_pcan.Read.return_value = (
+                    PCAN_ERROR_OK,
+                    pcan_msg,
+                    TPCANTimestamp(
+                        millis=millis, millis_overflow=overflow, micros=micros
+                    ),
+                )
+            msg = self.bus.recv(timeout=0)
+            self.assertIsNotNone(msg)
+            self.assertAlmostEqual(msg.timestamp, offset + raw_us / 1_000_000, places=6)
+            received_times.append(msg.timestamp)
+            self.assertEqual(msg.arbitration_id, 0x123)
+            self.assertEqual(msg.is_fd, fd)
+            self.assertEqual(msg.bitrate_switch, fd)
+            self.assertEqual(msg.dlc, length)
+            self.assertEqual(msg.data, bytes(range(length)))
+
+        self.assertAlmostEqual(
+            received_times[1] - received_times[0], 1.234567, places=6
+        )
+        self.assertAlmostEqual(
+            received_times[3] - received_times[2], 0.000002, places=6
+        )
+        if platform_name == "linux":
+            uptime_module.boottime.assert_not_called()
+            warning.assert_not_called()
+        elif uptime_state == "missing":
+            warning.assert_called_once()
+        else:
+            uptime_module.boottime.assert_called()
+            warning.assert_not_called()
 
     @pytest.mark.timeout(3.0)
     @patch("select.select", return_value=([], [], []))

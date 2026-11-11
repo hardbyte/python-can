@@ -1,0 +1,3 @@
+Fixed PCAN classic CAN and CAN FD timestamps on Linux being offset by the system
+boot time when ``uptime`` is installed. Linux timestamps no longer depend on
+``uptime``; timestamp conversion on other platforms is unchanged.
