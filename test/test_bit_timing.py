@@ -346,6 +346,31 @@ def test_from_sample_point_rejects_effective_bitrate_outside_supported_range():
         )
 
 
+def test_strict_timing_rejects_segment_above_standard_limit():
+    with pytest.raises(ValueError, match=r"tseg1 \(=17\) must be in \[1\.\.\.16\]"):
+        can.BitTiming(f_clock=8_000_000, brp=1, tseg1=17, tseg2=2, sjw=2, strict=True)
+
+
+@pytest.mark.parametrize("brp_max", [1, 2])
+def test_recreate_with_f_clock_respects_controller_prescaler_limit(brp_max):
+    timing = can.BitTiming.from_sample_point(
+        f_clock=8_000_000,
+        bitrate=500_000,
+        sample_point=75.0,
+        brp_max=brp_max,
+    )
+    assert timing.brp == 1
+
+    if brp_max == 1:
+        with pytest.raises(ValueError, match="No suitable bit timings found"):
+            timing.recreate_with_f_clock(16_000_000)
+    else:
+        recreated = timing.recreate_with_f_clock(16_000_000)
+        assert recreated.brp == 2
+        assert recreated.bitrate == 500_000
+        assert recreated.sample_point == 75.0
+
+
 @pytest.mark.parametrize(
     ("limits", "expected_tseg1", "expected_tseg2"),
     [

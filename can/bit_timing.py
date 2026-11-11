@@ -74,6 +74,7 @@ class BitTiming(Mapping[str, int]):
             "sjw": sjw,
             "nof_samples": nof_samples,
         }
+        # Retain fallback limits for clock recreation; validation uses its arguments.
         self._tseg1_max = max(16, tseg1)
         self._tseg2_max = max(8, tseg2)
         self._brp_max = max(64, brp)
@@ -482,9 +483,14 @@ class BitTiming(Mapping[str, int]):
                 nof_samples=self.nof_samples,
                 strict=True,
             )
-            bt._tseg1_max = self._tseg1_max
-            bt._tseg2_max = self._tseg2_max
-            bt._brp_max = self._brp_max
+            bt._validate(  # pylint: disable=protected-access
+                tseg1_max=self._tseg1_max,
+                tseg2_max=self._tseg2_max,
+                brp_max=self._brp_max,
+            )
+            bt._tseg1_max = self._tseg1_max  # pylint: disable=protected-access
+            bt._tseg2_max = self._tseg2_max  # pylint: disable=protected-access
+            bt._brp_max = self._brp_max  # pylint: disable=protected-access
             return bt
         except ValueError:
             pass
