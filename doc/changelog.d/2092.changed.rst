@@ -1,0 +1,2 @@
+Document the reported PCBUSB 0.13 timestamp offset after macOS system sleep,
+including diagnostic steps and capture limitations.
