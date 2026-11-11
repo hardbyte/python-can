@@ -1,0 +1,3 @@
+Fixed IXXAT receive timestamps using an incorrect controller-start epoch offset.
+Preserve start ticks and timestamp wraps while draining startup messages and
+handling CAN FD reads, including nonblocking reads.

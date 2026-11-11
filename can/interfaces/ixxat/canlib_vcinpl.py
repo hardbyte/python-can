@@ -626,7 +626,7 @@ class IXXATBus(BusABC):
 
         # Calculate an offset to make them relative to epoch
         # Assume that the time offset is in the middle of the start command
-        self._timeoffset = start_begin + (start_end - start_begin / 2)
+        self._timeoffset = start_begin + (start_end - start_begin) / 2
         self._overrunticks = 0
         self._starttickoffset = 0
 
@@ -642,10 +642,20 @@ class IXXATBus(BusABC):
                 _canlib.canChannelReadMessage(
                     self._channel_handle, 0, ctypes.byref(self._message)
                 )
+                self._update_timestamp()
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
         super().__init__(channel=channel, can_filters=None, **kwargs)
+
+    def _update_timestamp(self):
+        """Retain clock metadata even when startup messages are discarded."""
+        message_type = self._message.uMsgInfo.Bits.type
+        if message_type == constants.CAN_MSGTYPE_INFO:
+            if self._message.abData[0] == constants.CAN_INFO_START:
+                self._starttickoffset = self._message.dwTime
+        elif message_type == constants.CAN_MSGTYPE_TIMEOVR:
+            self._overrunticks += self._message.dwMsgId << 32
 
     def _inWaiting(self):
         try:
@@ -701,9 +711,7 @@ class IXXATBus(BusABC):
                         f"Unknown CAN info message code {self._message.abData[0]}",
                     )
                 )
-                # Handle CAN start info message
-                if self._message.abData[0] == constants.CAN_INFO_START:
-                    self._starttickoffset = self._message.dwTime
+                self._update_timestamp()
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
                 if self._message.uMsgInfo.Bytes.bFlags & constants.CAN_MSGFLAGS_OVR:
                     raise VCIDataOverrunError("Data overrun occurred")
@@ -721,7 +729,7 @@ class IXXATBus(BusABC):
                     )
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                 # Add the number of timestamp overruns to the high word
-                self._overrunticks += self._message.dwMsgId << 32
+                self._update_timestamp()
             else:
                 log.warning(
                     "Unexpected message info type 0x%X",
