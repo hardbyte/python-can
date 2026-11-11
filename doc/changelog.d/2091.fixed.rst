@@ -1,0 +1,1 @@
+Refuse to send remote frames on the ``socketcand`` interface instead of sending them as normal frames. The socketcand protocol has no remote request flag. (:issue:`2091`)
