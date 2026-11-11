@@ -265,7 +265,10 @@ class SeeedBus(BusABC):
 
         if rx_byte_1 and ord(rx_byte_1) == 0xAA:
             try:
-                rx_byte_2 = ord(self.ser.read())
+                rx_byte_2_raw = self.ser.read()
+                if not rx_byte_2_raw:
+                    return None, self._is_filtered
+                rx_byte_2 = rx_byte_2_raw[0]
 
                 time_stamp = time()
                 if rx_byte_2 == 0x55:
@@ -286,7 +289,10 @@ class SeeedBus(BusABC):
                         arb_id = (struct.unpack("<H", s_3_4))[0]
 
                     data = bytearray(self.ser.read(length))
-                    end_packet = ord(self.ser.read())
+                    end_packet_raw = self.ser.read()
+                    if not end_packet_raw:
+                        return None, self._is_filtered
+                    end_packet = end_packet_raw[0]
                     if end_packet == 0x55:
                         msg = Message(
                             timestamp=time_stamp,
