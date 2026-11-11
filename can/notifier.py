@@ -223,7 +223,7 @@ class Notifier(AbstractContextManager["Notifier"]):
         if self._loop:
             handle_message: Callable[[Message], Any] = functools.partial(
                 self._loop.call_soon_threadsafe,
-                self._on_message_received,  # type: ignore[arg-type]
+                self._on_message_received_with_error_handling,  # type: ignore[arg-type]
             )
         else:
             handle_message = self._on_message_received
@@ -248,7 +248,16 @@ class Notifier(AbstractContextManager["Notifier"]):
 
     def _on_message_available(self, bus: BusABC) -> None:
         if msg := bus.recv(0):
+            self._on_message_received_with_error_handling(msg)
+
+    def _on_message_received_with_error_handling(self, msg: Message) -> None:
+        try:
             self._on_message_received(msg)
+        except Exception as exc:  # pylint: disable=broad-except
+            self.exception = exc
+            if not self._on_error(exc):
+                raise
+            logger.debug("suppressed exception: %s", exc)
 
     def _on_message_received(self, msg: Message) -> None:
         for callback in self.listeners:
@@ -257,7 +266,23 @@ class Notifier(AbstractContextManager["Notifier"]):
                 # Schedule coroutine and keep a reference to the task
                 task = self._loop.create_task(res)
                 self._tasks.add(task)
-                task.add_done_callback(self._tasks.discard)
+                task.add_done_callback(self._on_task_done)
+
+    def _on_task_done(self, task: asyncio.Task) -> None:
+        self._tasks.discard(task)
+        if task.cancelled():
+            return
+
+        exc = task.exception()
+        if exc is None:
+            return
+        if not isinstance(exc, Exception):
+            raise exc
+
+        self.exception = exc
+        if not self._on_error(exc):
+            raise exc
+        logger.debug("suppressed exception: %s", exc)
 
     def _on_error(self, exc: Exception) -> bool:
         """Calls ``on_error()`` for all listeners if they implement it.
