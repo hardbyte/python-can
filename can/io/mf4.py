@@ -415,9 +415,10 @@ class MF4Reader(BinaryIOMessageReader):
                         and "CAN_ErrorFrame.DataBytes" in names
                     ):
                         data_length = int(data["CAN_ErrorFrame.DataLength"][i])
-                        kv["data"] = data["CAN_ErrorFrame.DataBytes"][i][
-                            :data_length
-                        ].tobytes()
+                        # A one-record slice preserves packed scalar byte order.
+                        kv["data"] = data["CAN_ErrorFrame.DataBytes"][
+                            i : i + 1
+                        ].tobytes()[:data_length]
 
                     yield Message(**kv)
 
