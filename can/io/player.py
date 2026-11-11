@@ -136,6 +136,8 @@ class MessageSync:
         timestamps: bool = True,
         gap: float = 0.0001,
         skip: float = 60.0,
+        *,
+        skip_gaps: bool = False,
     ) -> None:
         """Creates an new **MessageSync** instance.
 
@@ -143,7 +145,11 @@ class MessageSync:
         :param timestamps: Use the messages' timestamps. If False, uses the *gap* parameter
                            as the time between messages.
         :param gap: Minimum time between sent messages in seconds
-        :param skip: Skip periods of inactivity greater than this (in seconds).
+        :param skip: Cap remaining playback waits at this many seconds. Zero
+                     disables capping and preserves the recorded delays.
+        :param skip_gaps: With recorded timestamps, remove remaining waits greater
+                          than *skip* instead of capping them. Defaults to False.
+                          Has no effect when *skip* is zero or *timestamps* is False.
 
         Example::
 
@@ -159,6 +165,7 @@ class MessageSync:
         self.timestamps = timestamps
         self.gap = gap
         self.skip = skip
+        self.skip_gaps = skip_gaps
 
     def __iter__(self) -> Generator[Message, None, None]:
         t_wakeup = playback_start_time = time.perf_counter()
@@ -180,8 +187,9 @@ class MessageSync:
             sleep_period = t_wakeup - time.perf_counter()
 
             if self.skip and sleep_period > self.skip:
-                t_skipped += sleep_period - self.skip
-                sleep_period = self.skip
+                delay = 0.0 if self.timestamps and self.skip_gaps else self.skip
+                t_skipped += sleep_period - delay
+                sleep_period = delay
 
             if sleep_period > 1e-4:
                 time.sleep(sleep_period)

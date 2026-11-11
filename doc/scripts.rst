@@ -21,6 +21,16 @@ can.player
 .. command-output:: python -m can.player -h
     :shell:
 
+By default, ``--skip S`` caps each remaining playback wait at ``S`` seconds;
+it does not remove the whole wait. Add ``--remove-gaps`` to remove waits greater
+than that threshold when replaying recorded timestamps. A wait equal to the
+threshold is retained. For example, ``--skip 1 --remove-gaps`` removes a five-second
+wait entirely, whereas ``--skip 1`` retains one second. Later recorded intervals
+are preserved relative to the shortened playback timeline.
+
+``--skip 0`` disables both behaviors. ``--remove-gaps`` has no effect with
+``--ignore-timestamps``, which keeps the existing fixed-gap playback behavior.
+
 
 can.viewer
 ----------
