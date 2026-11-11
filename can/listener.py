@@ -7,7 +7,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from queue import Empty, SimpleQueue
-from typing import Any
+from typing import Any, Self
 
 from can.bus import BusABC
 from can.message import Message
@@ -165,7 +165,7 @@ class AsyncBufferedReader(
         """
         return await self.buffer.get()
 
-    def __aiter__(self) -> AsyncIterator[Message]:
+    def __aiter__(self) -> Self:
         return self
 
     async def __anext__(self) -> Message:

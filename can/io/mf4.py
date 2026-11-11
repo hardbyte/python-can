@@ -9,7 +9,7 @@ import abc
 import heapq
 import logging
 from collections.abc import Generator, Iterator
-from datetime import datetime
+from datetime import UTC, datetime
 from hashlib import md5
 from io import BufferedIOBase, BytesIO
 from pathlib import Path
@@ -124,7 +124,7 @@ class MF4Writer(BinaryIOMessageWriter):
             )
 
         super().__init__(file, mode="w+b")
-        now = datetime.now()
+        now = datetime.now(tz=UTC)
         self._mdf = cast("MDF4", MDF(version="4.10"))
         self._mdf.header.start_time = now
         self.last_timestamp = self._start_time = now.timestamp()
@@ -311,7 +311,7 @@ class FrameIterator(abc.ABC):
         return data_raw
 
     @abc.abstractmethod
-    def __iter__(self) -> Generator[Message, None, None]:
+    def __iter__(self) -> Iterator[Message]:
         pass
 
 

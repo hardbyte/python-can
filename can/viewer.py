@@ -140,11 +140,10 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
                 if self.scroll > 0:
                     self.scroll -= 1
                     self.redraw_screen()
-            elif key == curses.KEY_DOWN:
+            elif key == curses.KEY_DOWN and self.scroll <= len(self.ids) - self.y + 1:
                 # Limit scrolling, so the maximum scrolling position is one below the last line
-                if self.scroll <= len(self.ids) - self.y + 1:
-                    self.scroll += 1
-                    self.redraw_screen()
+                self.scroll += 1
+                self.redraw_screen()
 
             # Check if screen was resized
             resized = curses.is_term_resized(self.y, self.x)
@@ -341,7 +340,7 @@ class CanViewer:  # pylint: disable=too-many-instance-attributes
         # Trigger a complete redraw
         self.draw_header()
         for ids in self.ids.values():
-            self.draw_can_bus_message(ids["msg"])
+            self.draw_can_bus_message(ids["msg"], sorting=True)
 
 
 class SmartFormatter(argparse.HelpFormatter):

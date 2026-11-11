@@ -1,0 +1,2 @@
+Ignore queued message deliveries after ``Notifier.stop()`` so they do not call
+listeners that have already been stopped or write to closed log files.

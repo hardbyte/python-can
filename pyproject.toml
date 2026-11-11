@@ -10,9 +10,9 @@ authors = [{ name = "python-can contributors" }]
 dependencies = [
     "wrapt >= 1.10, < 3",
     "packaging >= 23.1",
-    "typing_extensions>=3.10.0.0",
+    "typing_extensions>=3.10.0.0;python_version<'3.12'",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "LGPL-3.0-only"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -74,11 +74,12 @@ zlgcan = ["zlgcan"]
 candle = ["python-can-candle>=1.2.2"]
 rp1210 = ["rp1210>=1.0.1"]
 damiao = ["python-can-damiao"]
+canhub = ["python-can-hub"]
 viewer = [
     "windows-curses; platform_system == 'Windows' and platform_python_implementation=='CPython'"
 ]
 mf4 = ["asammdf>=6.0.0"]
-multicast = ["msgpack~=1.1.0"]
+multicast = ["msgpack==1.*"]
 
 [dependency-groups]
 docs = [
@@ -90,19 +91,20 @@ docs = [
     "furo",
 ]
 lint = [
-    "pylint==4.0.*",
-    "ruff==0.15.*",
-    "black==26.5.*",
-    "mypy==2.1.*",
+    "pylint==4.1.*",
+    "ruff==0.17.*",
+    "black==26.10.*",
+    "mypy==2.4.*",
 ]
 test = [
-    "pytest==9.0.*",
+    "pytest==9.2.*",
     "pytest-timeout==2.4.*",
     "pytest-modern==0.7.*;platform_system!='Windows'",
     "coveralls==4.1.*",
     "pytest-cov==7.1.*",
-    "coverage==7.14.*",
+    "coverage==7.17.*",
     "hypothesis==6.*",
+    "hypothesis<6.171",
     "parameterized==0.9.*",
 ]
 dev = [
@@ -198,6 +200,7 @@ known-first-party = ["can"]
 [tool.pylint]
 extension-pkg-allow-list = ["curses"]
 disable = [
+    "abstract-method",
     "cyclic-import",
     "duplicate-code",
     "fixme",

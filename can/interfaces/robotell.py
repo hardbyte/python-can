@@ -245,7 +245,7 @@ class robotellBus(BusABC):
 
             # check to see if we have a complete packet in the RX buffer
             termpos = self._rxbuffer.find(terminator)
-            if headpos == 0 and termpos > headpos:
+            if headpos == 0 and termpos > headpos:  # pylint: disable=chained-comparison
                 # copy packet into message structure and un-escape bytes
                 newmsg = bytearray()
                 idx = headpos + len(header)

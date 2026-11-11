@@ -1,4 +1,4 @@
-""" """
+"""ICS NeoVI CAN interface."""
 
 __all__ = [
     "ICSApiError",

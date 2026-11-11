@@ -20,6 +20,7 @@ import unittest
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from io import BytesIO
 from itertools import zip_longest
 from pathlib import Path
 from unittest.mock import patch
@@ -848,6 +849,41 @@ class TestBlfFileFormat(ReaderWriterTest):
         logfile = os.path.join(os.path.dirname(__file__), "data", filename)
         with can.BLFReader(logfile) as reader:
             return list(reader)
+
+    @parameterized.expand([0, 1, blf.OBJ_HEADER_BASE_STRUCT.size - 1])
+    def test_invalid_object_size(self, obj_size):
+        with can.BLFWriter(self.test_file_name, compression_level=0) as writer:
+            writer(can.Message(arbitration_id=0x123, data=[1, 2, 3]))
+
+        data = bytearray(Path(self.test_file_name).read_bytes())
+        # The uncompressed container starts immediately after its two headers.
+        offset = (
+            blf.FILE_HEADER_SIZE
+            + blf.OBJ_HEADER_BASE_STRUCT.size
+            + blf.LOG_CONTAINER_STRUCT.size
+        )
+        header = list(blf.OBJ_HEADER_BASE_STRUCT.unpack_from(data, offset))
+        header[3] = obj_size
+        blf.OBJ_HEADER_BASE_STRUCT.pack_into(data, offset, *header)
+
+        with can.BLFReader(BytesIO(data)) as reader:
+            with self.assertRaisesRegex(
+                blf.BLFParseError, f"Invalid object size {obj_size}"
+            ):
+                next(iter(reader))
+
+    def test_object_split_between_containers(self):
+        messages = [
+            can.Message(timestamp=1700000000, arbitration_id=0x123, data=[1, 2, 3]),
+            can.Message(timestamp=1700000001, arbitration_id=0x456, data=[4, 5, 6]),
+        ]
+        with can.BLFWriter(self.test_file_name, compression_level=0) as writer:
+            writer.max_container_size = 32
+            for message in messages:
+                writer(message)
+
+        with can.BLFReader(self.test_file_name) as reader:
+            self.assertMessagesEqual(messages, list(reader))
 
     def test_can_message(self):
         expected = can.Message(

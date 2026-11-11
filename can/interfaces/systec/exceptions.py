@@ -13,10 +13,11 @@ class UcanException(CanError, ABC):
         self.func = func
         self.arguments = arguments
 
-        message = self._error_message_mapping.get(result, "unknown")
+        result_code = result.value
+        message = self._error_message_mapping.get(result_code, "unknown")
         super().__init__(
             message=f"Function {func.__name__} (called with {arguments}): {message}",
-            error_code=result.value,
+            error_code=result_code,
         )
 
     @property
