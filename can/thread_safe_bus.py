@@ -1,4 +1,3 @@
-from contextlib import nullcontext
 from threading import RLock
 from typing import TYPE_CHECKING, Any, cast
 
@@ -29,6 +28,7 @@ class ThreadSafeBus(
     wraps around an existing interface instance. All public methods
     of that base class are now safe to be called from multiple threads.
     The send and receive methods are synchronized separately.
+    Default thread-based periodic sends share the send lock.
 
     Use this as a drop-in replacement for :class:`~can.BusABC`.
 
@@ -67,13 +67,13 @@ class ThreadSafeBus(
             "BusABC", object.__getattribute__(self, "__wrapped__")
         )
 
-        # now, BusABC.send_periodic() does not need a lock anymore, but the
-        # implementation still requires a context manager
-        self._self_wrapped._lock_send_periodic = nullcontext()  # type: ignore[assignment]
-
         # init locks for sending and receiving separately
         self._self_lock_send = RLock()
         self._self_lock_recv = RLock()
+
+        # Default periodic tasks call the wrapped backend directly, so their
+        # worker threads must share the lock used by explicit sends.
+        self._self_wrapped._lock_send_periodic = self._self_lock_send  # type: ignore[assignment]
 
     def recv(self, timeout: float | None = None) -> Message | None:
         with self._self_lock_recv:
