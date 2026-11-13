@@ -1,0 +1,1 @@
+Update Vector XL_HardwareType to include VN1670, VN5620A, VN5631, VN5632
