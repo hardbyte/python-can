@@ -64,6 +64,7 @@ CanData = ctypes.c_ubyte * 8
 
 
 class RxMessageStruct(ctypes.Structure):
+    _layout_ = "ms"
     _pack_ = 1
     _fields_ = [
         ("timestamp", ctypes.c_ulonglong),
@@ -134,7 +135,7 @@ def get_error_message(status_code: int) -> str:
 if sys.platform == "win32":
     try:
         nican = ctypes.windll.LoadLibrary("nican")
-    except Exception as e:
+    except OSError as e:
         nican = None
         logger.error("Failed to load NI-CAN driver: %s", e)
     else:

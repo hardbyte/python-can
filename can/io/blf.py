@@ -108,7 +108,7 @@ def timestamp_to_systemtime(timestamp: float | None) -> TSystemTime:
     if timestamp is None or timestamp < 631152000:
         # Probably not a Unix timestamp
         return 0, 0, 0, 0, 0, 0, 0, 0
-    t = datetime.datetime.fromtimestamp(round(timestamp, 3), tz=datetime.timezone.utc)
+    t = datetime.datetime.fromtimestamp(round(timestamp, 3), tz=datetime.UTC)
     return (
         t.year,
         t.month,
@@ -131,7 +131,7 @@ def systemtime_to_timestamp(systemtime: TSystemTime) -> float:
             systemtime[5],
             systemtime[6],
             systemtime[7] * 1000,
-            tzinfo=datetime.timezone.utc,
+            tzinfo=datetime.UTC,
         )
         return t.timestamp()
     except ValueError:
@@ -250,6 +250,8 @@ class BLFReader(BinaryIOMessageReader):
             signature, header_size, header_version, obj_size, obj_type = header
             if signature != b"LOBJ":
                 raise BLFParseError()
+            if obj_size < obj_header_base_size:
+                raise BLFParseError(f"Invalid object size {obj_size}")
 
             # Calculate position of next object
             next_pos = pos + obj_size

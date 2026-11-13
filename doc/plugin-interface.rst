@@ -85,6 +85,8 @@ The table below lists interface drivers that can be added by installing addition
 +----------------------------+----------------------------------------------------------+
 | `python-can-damiao`_       | Interface for Damiao USB-CAN adapters                    |
 +----------------------------+----------------------------------------------------------+
+| `python-can-hub`_          | Remote CAN interfaces over can-hub (QUIC/TLS/TCP/unix)   |
++----------------------------+----------------------------------------------------------+
 
 .. _python-can-canine: https://github.com/tinymovr/python-can-canine
 .. _python-can-cvector: https://github.com/zariiii9003/python-can-cvector
@@ -96,4 +98,5 @@ The table below lists interface drivers that can be added by installing addition
 .. _python-can-coe: https://c0d3.sh/smarthome/python-can-coe
 .. _RP1210: https://github.com/dfieschko/RP1210
 .. _python-can-damiao: https://github.com/gaoyichuan/python-can-damiao
+.. _python-can-hub: https://github.com/can-hub-io/can-hub/tree/main/python
 

@@ -5,8 +5,8 @@ along some internal methods.
 At the end of the file the usage of the internal methods is shown.
 """
 
+# pylint: disable=too-many-lines
 import ctypes
-import ctypes.util
 import errno
 import logging
 import select
@@ -47,6 +47,8 @@ RECEIVED_ANCILLARY_BUFFER_SIZE = (
     CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size) if CMSG_SPACE_available else 0
 )
 
+MSG_DONTROUTE = int(socket.MSG_DONTROUTE)
+
 
 # Setup BCM struct
 def bcm_header_factory(
@@ -55,7 +57,7 @@ def bcm_header_factory(
 ):
     curr_stride = 0
     results: list[
-        tuple[str, type[ctypes.c_uint8] | type[ctypes.c_uint32] | type[ctypes.c_long]]
+        tuple[str, type[ctypes.c_uint8 | ctypes.c_uint32 | ctypes.c_long]]
     ] = []
     pad_index = 0
     for field in fields:
@@ -656,7 +658,7 @@ def capture_message(sock: socket.socket, get_channel: bool = False) -> Message |
     error_state_indicator = bool(flags & constants.CANFD_ESI)
 
     # Section 4.7.1: MSG_DONTROUTE: set when the received frame was created on the local host.
-    is_rx = not bool(msg_flags & socket.MSG_DONTROUTE)
+    is_rx = not msg_flags & MSG_DONTROUTE
 
     if is_extended_frame_format:
         # log.debug("CAN: Extended")
@@ -666,22 +668,21 @@ def capture_message(sock: socket.socket, get_channel: bool = False) -> Message |
         # log.debug("CAN: Standard")
         arbitration_id = can_id & 0x000007FF
 
-    msg = Message(
-        timestamp=timestamp,
-        channel=channel,
-        arbitration_id=arbitration_id,
-        is_extended_id=is_extended_frame_format,
-        is_remote_frame=is_remote_transmission_request,
-        is_error_frame=is_error_frame,
-        is_fd=is_fd,
-        is_rx=is_rx,
-        bitrate_switch=bitrate_switch,
-        error_state_indicator=error_state_indicator,
-        dlc=can_dlc,
-        data=data,
+    # Built positionally: binding twelve keyword arguments is slower.
+    return Message(
+        timestamp,
+        arbitration_id,
+        is_extended_frame_format,
+        is_remote_transmission_request,
+        is_error_frame,
+        channel,
+        can_dlc,
+        data,
+        is_fd,
+        is_rx,
+        bitrate_switch,
+        error_state_indicator,
     )
-
-    return msg
 
 
 class SocketcanBus(BusABC):  # pylint: disable=abstract-method
@@ -786,6 +787,10 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         #     so this is always supported by the kernel
         self.socket.setsockopt(socket.SOL_SOCKET, constants.SO_TIMESTAMPNS, 1)
 
+        # Create epoll instance and register socket for read and write events
+        self._epoll = select.epoll()
+        self._epoll.register(self.socket.fileno(), select.EPOLLIN | select.EPOLLOUT)
+
         try:
             bind_socket(self.socket, channel)
             kwargs.update(
@@ -810,6 +815,9 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         for channel, bcm_socket in self._bcm_sockets.items():
             log.debug("Closing bcm socket for channel %s", channel)
             bcm_socket.close()
+        if not self._epoll.closed:
+            self._epoll.unregister(self.socket.fileno())
+            self._epoll.close()
         log.debug("Closing raw can socket")
         self.socket.close()
 
@@ -817,7 +825,9 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
         try:
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
-            ready_receive_sockets, _, _ = select.select([self.socket], [], [], timeout)
+            epoll_timeout = timeout if timeout is not None else -1
+            events = self._epoll.poll(epoll_timeout)
+            ready_receive_sockets = any(event & select.EPOLLIN for _, event in events)
         except OSError as error:
             # something bad happened (e.g. the interface went down)
             raise can.CanOperationError(
@@ -859,7 +869,8 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
 
         while time_left >= 0:
             # Wait for write availability
-            ready = select.select([], [self.socket], [], time_left)[1]
+            events = self._epoll.poll(time_left)
+            ready = any(event & select.EPOLLOUT for _, event in events)
             if not ready:
                 # Timeout
                 break

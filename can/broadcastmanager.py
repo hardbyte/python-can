@@ -108,7 +108,8 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
             The messages to be sent periodically.
         :param period: The rate in seconds at which to send the messages.
 
-        :raises ValueError: If the given messages are invalid
+        :raises TypeError: If messages is not a message, list, or tuple
+        :raises ValueError: If the messages are empty or otherwise invalid
         """
         messages = self._check_and_convert_messages(messages)
 
@@ -130,15 +131,16 @@ class CyclicSendTaskABC(CyclicTask, abc.ABC):
 
         Should be called when the cyclic task is initialized.
 
-        :raises ValueError: If the given messages are invalid
+        :raises TypeError: If messages is not a message or sequence
+        :raises ValueError: If the messages are empty or otherwise invalid
         """
-        if not isinstance(messages, (list, tuple)):
+        if not isinstance(messages, Sequence):
             if isinstance(messages, Message):
                 messages = [messages]
             else:
-                raise ValueError("Must be either a list, tuple, or a Message")
+                raise TypeError("Must be either a sequence of messages or a Message")
         if not messages:
-            raise ValueError("Must be at least a list or tuple of length 1")
+            raise ValueError("Must be a sequence of length at least 1")
         messages = tuple(messages)
 
         all_same_id = all(
@@ -172,7 +174,8 @@ class LimitedDurationCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
             Approximate duration in seconds to continue sending messages. If
             no duration is provided, the task will continue indefinitely.
 
-        :raises ValueError: If the given messages are invalid
+        :raises TypeError: If messages is not a message, list, or tuple
+        :raises ValueError: If the messages are empty or otherwise invalid
         """
         super().__init__(messages, period)
         self.duration = duration
@@ -197,7 +200,7 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
 
         Should be called when modify_data is called in the cyclic task.
 
-        :raises ValueError: If the given messages are invalid
+        :raises ValueError: If the number or arbitration ID of messages changes
         """
         if len(self.messages) != len(messages):
             raise ValueError(
@@ -223,7 +226,8 @@ class ModifiableCyclicTaskABC(CyclicSendTaskABC, abc.ABC):
             to the original number of messages originally specified for this
             task.
 
-        :raises ValueError: If the given messages are invalid
+        :raises TypeError: If messages is not a message or sequence
+        :raises ValueError: If the messages are empty or otherwise invalid
         """
         messages = self._check_and_convert_messages(messages)
         self._check_modified_messages(messages)
@@ -252,7 +256,8 @@ class MultiRateCyclicSendTaskABC(CyclicSendTaskABC, abc.ABC):
         :param initial_period:
         :param subsequent_period:
 
-        :raises ValueError: If the given messages are invalid
+        :raises TypeError: If messages is not a message or sequence
+        :raises ValueError: If the messages are empty or otherwise invalid
         """
         super().__init__(messages, subsequent_period)
         self._channel = channel
@@ -287,7 +292,8 @@ class ThreadBasedCyclicSendTask(
                          it shall return either ``True`` or ``False`` depending
                          on desired behaviour of `ThreadBasedCyclicSendTask`.
 
-        :raises ValueError: If the given messages are invalid
+        :raises TypeError: If messages is not a message or sequence
+        :raises ValueError: If the messages are empty or otherwise invalid
         """
         super().__init__(messages, period, duration)
         self.bus = bus
@@ -362,12 +368,12 @@ class ThreadBasedCyclicSendTask(
                     # Prevent calling bus.send from multiple threads
                     self.bus.send(self.messages[msg_index])
             except Exception as exc:  # pylint: disable=broad-except
-                log.exception(exc)
+                log.exception("Cyclic send task failed")
 
                 # stop if `on_error` callback was not given
                 if self.on_error is None:
                     self.stop()
-                    raise exc
+                    raise
 
                 # stop if `on_error` returns False
                 if not self.on_error(exc):

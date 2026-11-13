@@ -20,6 +20,7 @@ import unittest
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from io import BytesIO
 from itertools import zip_longest
 from pathlib import Path
 from unittest.mock import patch
@@ -27,7 +28,7 @@ from unittest.mock import patch
 from parameterized import parameterized
 
 import can.io
-from can.io import asc, blf
+from can.io import asc, blf, mf4
 
 from .data.example_data import (
     TEST_COMMENTS,
@@ -849,6 +850,41 @@ class TestBlfFileFormat(ReaderWriterTest):
         with can.BLFReader(logfile) as reader:
             return list(reader)
 
+    @parameterized.expand([0, 1, blf.OBJ_HEADER_BASE_STRUCT.size - 1])
+    def test_invalid_object_size(self, obj_size):
+        with can.BLFWriter(self.test_file_name, compression_level=0) as writer:
+            writer(can.Message(arbitration_id=0x123, data=[1, 2, 3]))
+
+        data = bytearray(Path(self.test_file_name).read_bytes())
+        # The uncompressed container starts immediately after its two headers.
+        offset = (
+            blf.FILE_HEADER_SIZE
+            + blf.OBJ_HEADER_BASE_STRUCT.size
+            + blf.LOG_CONTAINER_STRUCT.size
+        )
+        header = list(blf.OBJ_HEADER_BASE_STRUCT.unpack_from(data, offset))
+        header[3] = obj_size
+        blf.OBJ_HEADER_BASE_STRUCT.pack_into(data, offset, *header)
+
+        with can.BLFReader(BytesIO(data)) as reader:
+            with self.assertRaisesRegex(
+                blf.BLFParseError, f"Invalid object size {obj_size}"
+            ):
+                next(iter(reader))
+
+    def test_object_split_between_containers(self):
+        messages = [
+            can.Message(timestamp=1700000000, arbitration_id=0x123, data=[1, 2, 3]),
+            can.Message(timestamp=1700000001, arbitration_id=0x456, data=[4, 5, 6]),
+        ]
+        with can.BLFWriter(self.test_file_name, compression_level=0) as writer:
+            writer.max_container_size = 32
+            for message in messages:
+                writer(message)
+
+        with can.BLFReader(self.test_file_name) as reader:
+            self.assertMessagesEqual(messages, list(reader))
+
     def test_can_message(self):
         expected = can.Message(
             timestamp=2459565876.494607,
@@ -992,6 +1028,86 @@ class TestCsvFileFormat(ReaderWriterTest):
 @unittest.skipIf(asammdf is None, "MF4 is unavailable")
 class TestMF4FileFormat(ReaderWriterTest):
     """Tests can.MF4Writer and can.MF4Reader"""
+
+    @parameterized.expand(
+        [
+            ("reported_scalar", "<u4", b"\x00\x00\x00\x01", 4, False),
+            ("little_endian", "<u4", b"\x04\x03\x02\x01", 3, False),
+            ("big_endian", ">u4", b"\x01\x02\x03\x04", 3, False),
+            ("empty_scalar", "<u4", b"\x04\x03\x02\x01", 0, False),
+            ("one_byte_scalar", "u1", b"\xab", 1, False),
+            ("byte_array", "(8,)u1", bytes(range(8)), 4, False),
+            ("fd_array_truncated", "(64,)u1", bytes(range(64)), 12, True),
+            ("fd_array_full", "(64,)u1", bytes(range(64)), 64, True),
+        ]
+    )
+    def test_error_frame_payload(self, name, storage, payload, length, fd):
+        from asammdf.blocks.v4_blocks import SourceInformation
+        from asammdf.blocks.v4_constants import FLAG_CG_BUS_EVENT
+
+        # Build the file with asammdf, since MF4Writer always uses a byte array.
+        dtype = mf4.np.dtype(
+            [
+                (
+                    field,
+                    (
+                        storage
+                        if field == "CAN_ErrorFrame.DataBytes"
+                        else mf4.ERR_DTYPE[field]
+                    ),
+                )
+                for field in mf4.ERR_DTYPE.names
+            ]
+        )
+        samples = mf4.np.zeros(2, dtype=dtype)
+        payloads = [payload, payload[::-1]]
+        for index, raw in enumerate(payloads):
+            samples["CAN_ErrorFrame.DataBytes"][index] = mf4.np.frombuffer(
+                raw, dtype=mf4.np.dtype(storage)
+            )[0]
+        samples["CAN_ErrorFrame.DataLength"] = length
+        samples["CAN_ErrorFrame.ID"] = 0x12345
+        samples["CAN_ErrorFrame.IDE"] = 1
+        samples["CAN_ErrorFrame.BusChannel"] = 2
+        samples["CAN_ErrorFrame.EDL"] = int(fd)
+        samples["CAN_ErrorFrame.BRS"] = int(fd)
+        samples["CAN_ErrorFrame.ESI"] = int(fd)
+        samples["CAN_ErrorFrame.Dir"] = 1
+
+        path = Path(self.test_file_name).with_suffix(".mf4")
+        self.addCleanup(path.unlink, missing_ok=True)
+        start = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        with asammdf.MDF(version="4.10") as mdf:
+            mdf.header.start_time = start
+            mdf.append(
+                asammdf.Signal(
+                    name="CAN_ErrorFrame",
+                    samples=samples,
+                    timestamps=mf4.np.array([1.5, 2.5]),
+                    source=SourceInformation(
+                        source_type=asammdf.Source.SOURCE_BUS,
+                        bus_type=asammdf.Source.BUS_TYPE_CAN,
+                    ),
+                )
+            )
+            mdf.groups[0].channel_group.flags |= FLAG_CG_BUS_EVENT
+            mdf.save(path, overwrite=True)
+
+        with can.MF4Reader(path) as reader:
+            messages = list(reader)
+        self.assertEqual(len(messages), 2)
+        for index, msg in enumerate(messages):
+            self.assertEqual(msg.data, payloads[index][:length])
+            self.assertEqual(msg.dlc, length)
+            self.assertEqual(msg.timestamp, start.timestamp() + 1.5 + index)
+            self.assertEqual(msg.arbitration_id, 0x12345)
+            self.assertEqual(msg.channel, 2)
+            self.assertTrue(msg.is_error_frame)
+            self.assertTrue(msg.is_extended_id)
+            self.assertFalse(msg.is_rx)
+            self.assertEqual(msg.is_fd, fd)
+            self.assertEqual(msg.bitrate_switch, fd)
+            self.assertEqual(msg.error_state_indicator, fd)
 
     def _setup_instance(self):
         super()._setup_instance_helper(

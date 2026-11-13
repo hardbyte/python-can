@@ -1,0 +1,2 @@
+Fixed MF4 log reading crashing when CAN error-frame payloads are stored as packed
+scalars instead of byte arrays. Payload length and byte order are preserved.

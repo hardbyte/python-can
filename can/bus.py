@@ -10,11 +10,7 @@ from collections.abc import Callable, Iterator, Sequence
 from enum import Enum, auto
 from time import time
 from types import TracebackType
-from typing import (
-    cast,
-)
-
-from typing_extensions import Self
+from typing import Self, cast
 
 import can.typechecking
 from can.broadcastmanager import CyclicSendTaskABC, ThreadBasedCyclicSendTask
@@ -239,6 +235,8 @@ class BusABC(ABC):
             A started task instance. Note the task can be stopped (and depending on
             the backend modified) by calling the task's
             :meth:`~can.broadcastmanager.CyclicTask.stop` method.
+        :raises TypeError: If `msgs` is neither a message nor a sequence of messages
+        :raises ValueError: If `msgs` is an empty sequence
 
         .. note::
 
@@ -257,11 +255,10 @@ class BusABC(ABC):
         if isinstance(msgs, Message):
             msgs = [msgs]
         elif isinstance(msgs, Sequence):
-            # A Sequence does not necessarily provide __bool__ we need to use len()
             if len(msgs) == 0:
-                raise ValueError("Must be a sequence at least of length 1")
+                raise ValueError("Must be a sequence of length at least 1")
         else:
-            raise ValueError("Must be either a message or a sequence of messages")
+            raise TypeError("Must be either a message or a sequence of messages")
 
         # Create a backend specific task; will be patched to a _SelfRemovingCyclicTask later
         task = cast(
@@ -438,9 +435,8 @@ class BusABC(ABC):
 
         for _filter in self._filters:
             # check if this filter even applies to the message
-            if "extended" in _filter:
-                if _filter["extended"] != msg.is_extended_id:
-                    continue
+            if "extended" in _filter and _filter["extended"] != msg.is_extended_id:
+                continue
 
             # then check for the mask and id
             can_id = _filter["can_id"]

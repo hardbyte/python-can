@@ -33,9 +33,10 @@ class Ucan(UcanServer):
 
     def read_can_msg(self, channel, count, timeout):
         self._msg_received_event.clear()
-        if self.get_msg_pending(channel, PendingFlags.PENDING_FLAG_RX_DLL) == 0:
-            if not self._msg_received_event.wait(timeout):
-                return None, False
+        if self.get_msg_pending(
+            channel, PendingFlags.PENDING_FLAG_RX_DLL
+        ) == 0 and not self._msg_received_event.wait(timeout):
+            return None, False
         return super().read_can_msg(channel, 1)
 
 
@@ -103,8 +104,8 @@ class UcanBus(BusABC):
         """
         try:
             self._ucan = Ucan()
-        except CanError as error:
-            raise error
+        except CanError:
+            raise
         except Exception as exception:
             raise CanInitializationError(
                 "The SYSTEC ucan library has not been initialized."
@@ -234,7 +235,7 @@ class UcanBus(BusABC):
                             "device_number": hw_info_ex.device_number,
                         }
                     )
-        except Exception:
+        except (NameError, UcanException):
             log.warning("The SYSTEC ucan library has not been initialized.")
         return configs
 
@@ -329,5 +330,5 @@ class UcanBus(BusABC):
         super().shutdown()
         try:
             self._ucan.shutdown()
-        except Exception as exception:
+        except UcanException as exception:
             log.error(exception)

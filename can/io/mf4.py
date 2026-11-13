@@ -5,33 +5,29 @@ MF4 files represent Measurement Data Format (MDF) version 4 as specified by
 the ASAM MDF standard (see https://www.asam.net/standards/detail/mdf/)
 """
 
-from __future__ import annotations
-
 import abc
 import heapq
 import logging
-from datetime import datetime
+from collections.abc import Generator, Iterator
+from datetime import UTC, datetime
 from hashlib import md5
 from importlib import import_module
 from io import BufferedIOBase, BytesIO
 from pathlib import Path
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
 from ..message import Message
+from ..typechecking import StringPathLike
 from ..util import channel2int, len2dlc
 from .generic import BinaryIOMessageReader, BinaryIOMessageWriter
 
 logger = logging.getLogger("can.io.mf4")
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator
-    from types import ModuleType
-
     from asammdf import Signal, Source
     from asammdf.blocks.mdf_v4 import MDF4
     from asammdf.blocks.v4_blocks import ChannelGroup
-
-    from ..typechecking import StringPathLike
 
 try:
     import numpy as np
@@ -138,7 +134,7 @@ class MF4Writer(BinaryIOMessageWriter):
             )
 
         super().__init__(file, mode="w+b")
-        now = datetime.now()
+        now = datetime.now(tz=UTC)
         self._mdf = cast("MDF4", asammdf.MDF(version="4.10"))
         self._mdf.header.start_time = now
         self.last_timestamp = self._start_time = now.timestamp()
@@ -296,7 +292,9 @@ class FrameIterator(abc.ABC):
     # Number of records to request for each asammdf call
     _chunk_size = 1000
 
-    def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float, name: str):
+    def __init__(
+        self, mdf: "MDF4", group_index: int, start_timestamp: float, name: str
+    ):
         self._mdf = mdf
         self._group_index = group_index
         self._start_timestamp = start_timestamp
@@ -311,7 +309,7 @@ class FrameIterator(abc.ABC):
             if str(channel.name).startswith(f"{self._name}."):
                 self._channel_names.append(channel.name)
 
-    def _get_data(self, current_offset: int) -> Signal:
+    def _get_data(self, current_offset: int) -> "Signal":
         # NOTE: asammdf suggests using select instead of get. Select seem to miss converting some
         #       channels which get does convert as expected.
         data_raw = self._mdf.get(
@@ -325,7 +323,7 @@ class FrameIterator(abc.ABC):
         return data_raw
 
     @abc.abstractmethod
-    def __iter__(self) -> Generator[Message, None, None]:
+    def __iter__(self) -> Iterator[Message]:
         pass
 
 
@@ -340,7 +338,7 @@ class MF4Reader(BinaryIOMessageReader):
 
     class _CANDataFrameIterator(FrameIterator):
 
-        def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
+        def __init__(self, mdf: "MDF4", group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_DataFrame")
 
         def __iter__(self) -> Generator[Message, None, None]:
@@ -383,7 +381,7 @@ class MF4Reader(BinaryIOMessageReader):
 
     class _CANErrorFrameIterator(FrameIterator):
 
-        def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
+        def __init__(self, mdf: "MDF4", group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_ErrorFrame")
 
         def __iter__(self) -> Generator[Message, None, None]:
@@ -429,15 +427,16 @@ class MF4Reader(BinaryIOMessageReader):
                         and "CAN_ErrorFrame.DataBytes" in names
                     ):
                         data_length = int(data["CAN_ErrorFrame.DataLength"][i])
-                        kv["data"] = data["CAN_ErrorFrame.DataBytes"][i][
-                            :data_length
-                        ].tobytes()
+                        # A one-record slice preserves packed scalar byte order.
+                        kv["data"] = data["CAN_ErrorFrame.DataBytes"][
+                            i : i + 1
+                        ].tobytes()[:data_length]
 
                     yield Message(**kv)
 
     class _CANRemoteFrameIterator(FrameIterator):
 
-        def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
+        def __init__(self, mdf: "MDF4", group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_RemoteFrame")
 
         def __iter__(self) -> Generator[Message, None, None]:
