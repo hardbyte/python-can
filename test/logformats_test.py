@@ -1042,6 +1042,9 @@ class TestMF4FileFormat(ReaderWriterTest):
         ]
     )
     def test_error_frame_payload(self, name, storage, payload, length, fd):
+        from asammdf.blocks.v4_blocks import SourceInformation
+        from asammdf.blocks.v4_constants import FLAG_CG_BUS_EVENT
+
         # Build the file with asammdf, since MF4Writer always uses a byte array.
         dtype = mf4.np.dtype(
             [
@@ -1081,12 +1084,13 @@ class TestMF4FileFormat(ReaderWriterTest):
                     name="CAN_ErrorFrame",
                     samples=samples,
                     timestamps=mf4.np.array([1.5, 2.5]),
-                    source=mf4.SourceInformation(
-                        source_type=mf4.SOURCE_BUS, bus_type=mf4.BUS_TYPE_CAN
+                    source=SourceInformation(
+                        source_type=asammdf.Source.SOURCE_BUS,
+                        bus_type=asammdf.Source.BUS_TYPE_CAN,
                     ),
                 )
             )
-            mdf.groups[0].channel_group.flags |= mf4.FLAG_CG_BUS_EVENT
+            mdf.groups[0].channel_group.flags |= FLAG_CG_BUS_EVENT
             mdf.save(path, overwrite=True)
 
         with can.MF4Reader(path) as reader:
