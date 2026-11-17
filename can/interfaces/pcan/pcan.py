@@ -57,6 +57,7 @@ from .basic import (
     PCAN_MESSAGE_FD,
     PCAN_MESSAGE_RTR,
     PCAN_MESSAGE_STANDARD,
+    PCAN_MESSAGE_STATUS,
     PCAN_NONEBUS,
     PCAN_PARAMETER_OFF,
     PCAN_PARAMETER_ON,
@@ -514,6 +515,11 @@ class PcanBus(BusABC):
                 )
 
             if result == PCAN_ERROR_OK:
+                if pcan_msg.MSGTYPE & PCAN_MESSAGE_STATUS.value:
+                    # Keep draining queued messages on a nonblocking read.
+                    if timeout == 0 or end_time is None or time.time() < end_time:
+                        continue
+                    return None, False
                 # message received
                 break
 
