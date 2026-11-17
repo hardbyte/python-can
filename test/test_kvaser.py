@@ -50,6 +50,35 @@ class KvaserTest(unittest.TestCase):
         self.assertTrue(canlib.canOpenChannel.called)
         self.assertTrue(canlib.canBusOn.called)
 
+    def test_local_transmit_ioctl_buffer_types(self):
+        # CANlib defines TXECHO as an unsigned byte, but TXACK as unsigned int.
+        for single_handle in (False, True):
+            for receive_own_messages in (False, True):
+                with self.subTest(
+                    single_handle=single_handle,
+                    receive_own_messages=receive_own_messages,
+                ):
+                    canlib.canIoCtlInit.reset_mock()
+                    with can.Bus(
+                        channel=0,
+                        interface="kvaser",
+                        single_handle=single_handle,
+                        receive_own_messages=receive_own_messages,
+                    ):
+                        calls = {
+                            call.args[1]: call.args
+                            for call in canlib.canIoCtlInit.call_args_list
+                        }
+                        expected = int(single_handle or receive_own_messages)
+                        for function, buffer_type in (
+                            (constants.canIOCTL_SET_LOCAL_TXECHO, ctypes.c_byte),
+                            (constants.canIOCTL_SET_LOCAL_TXACK, ctypes.c_uint),
+                        ):
+                            _, _, buffer, length = calls[function]
+                            self.assertEqual(length, ctypes.sizeof(buffer_type))
+                            self.assertIsInstance(buffer._obj, buffer_type)
+                            self.assertEqual(buffer._obj.value, expected)
+
     def test_bus_creation_illegal_channel_name(self):
         # Test if the bus constructor is able to deal with non-ASCII characters
         def canGetChannelDataMock(
