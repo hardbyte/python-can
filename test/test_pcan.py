@@ -258,6 +258,58 @@ class TestPCANBus(unittest.TestCase):
         self.assertEqual(recv_msg.timestamp, 0)
         self.assertEqual(recv_msg.channel, "PCAN_USBBUS1")
 
+    @parameterized.expand([("classic", False), ("fd", True)])
+    def test_recv_skips_status_frames(self, name, fd):
+        if fd:
+            status = TPCANMsgFD(ID=1, DLC=4, MSGTYPE=PCAN_MESSAGE_STATUS.value)
+            data = TPCANMsgFD(ID=1, DLC=1, MSGTYPE=PCAN_MESSAGE_FD.value)
+            timestamp = TPCANTimestampFD()
+            read = self.mock_pcan.ReadFD
+        else:
+            status = TPCANMsg(ID=1, LEN=4, MSGTYPE=PCAN_MESSAGE_STATUS.value)
+            data = TPCANMsg(ID=1, LEN=1, MSGTYPE=PCAN_MESSAGE_STANDARD.value)
+            timestamp = TPCANTimestamp()
+            read = self.mock_pcan.Read
+        data.DATA[0] = 0xAB
+        read.side_effect = [
+            (PCAN_ERROR_OK, status, timestamp),
+            (PCAN_ERROR_OK, data, timestamp),
+            (PCAN_ERROR_OK, status, timestamp),
+            (PCAN_ERROR_QRCVEMPTY, type(status)(), timestamp),
+        ]
+        self.bus = can.Bus(interface="pcan", fd=fd)
+
+        recv_msg = self.bus.recv(timeout=0)
+        self.assertIsNotNone(recv_msg)
+        self.assertEqual(recv_msg.arbitration_id, 1)
+        self.assertEqual(recv_msg.is_fd, fd)
+        self.assertSequenceEqual(recv_msg.data, [0xAB])
+        self.assertIsNone(self.bus.recv(timeout=0))
+
+    def test_recv_status_frames_respect_timeout(self):
+        self.bus = can.Bus(interface="pcan")
+        status = TPCANMsg(LEN=4, MSGTYPE=PCAN_MESSAGE_STATUS.value)
+        timestamp = TPCANTimestamp()
+        replies = iter(
+            [(PCAN_ERROR_OK, status, timestamp)] * 3
+            + [(PCAN_ERROR_QRCVEMPTY, TPCANMsg(), timestamp)]
+        )
+        now = 0.0
+
+        def read(_channel):
+            nonlocal now
+            now += 1.0
+            return next(replies)
+
+        self.mock_pcan.Read.side_effect = read
+        with (
+            patch("can.bus.time", side_effect=lambda: now),
+            patch("can.interfaces.pcan.pcan.time") as pcan_time,
+        ):
+            pcan_time.time.side_effect = lambda: now
+            self.assertIsNone(self.bus.recv(timeout=2.0))
+        self.assertEqual(self.mock_pcan.Read.call_count, 2)
+
     @pytest.mark.timeout(3.0)
     @patch("select.select", return_value=([], [], []))
     def test_recv_no_message(self, mock_select):
