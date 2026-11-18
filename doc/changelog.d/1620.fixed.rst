@@ -1,0 +1,2 @@
+Synchronize default thread-based periodic sends with explicit sends on
+``ThreadSafeBus`` to prevent concurrent calls into the underlying backend.
