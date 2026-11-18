@@ -20,7 +20,7 @@ import unittest
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from io import BytesIO
+from io import BytesIO, StringIO
 from itertools import zip_longest
 from pathlib import Path
 from unittest.mock import patch
@@ -1318,6 +1318,30 @@ class TestTrcFileFormatGen(TestTrcFileFormatBase):
             ]
             actual = self._read_log_file(filename)
             self.assertMessagesEqual(actual, expected_messages)
+
+    @parameterized.expand(
+        [
+            ("2.0", "l", "FD 0123 Rx 12", 12),
+            ("2.0", "L", "FB 0123 Rx 9", 12),
+            ("2.1", "l", "FE 0123 Rx 64", 64),
+            ("2.1", "L", "BI 0123 Rx 15", 64),
+            ("2.1", "R,l", "DT 18FF0034 Rx FF 80", 80),  # J1939
+            ("2.1", "R,L", "DT 18FF0034 Rx FF 80", 80),
+        ]
+    )
+    def test_v2_payload_length(self, version, columns, fields, length):
+        payload = bytes(range(length))
+        trace = StringIO(
+            f";$FILEVERSION={version}\n"
+            ";$STARTTIME=44548.0\n"
+            f";$COLUMNS=N,O,T,I,d,{columns},D\n"
+            f"1 0.000 {fields} {payload.hex(' ')}\n"
+        )
+        with can.TRCReader(trace) as reader:
+            (msg,) = list(reader)
+
+        self.assertEqual(msg.dlc, length)
+        self.assertEqual(msg.data, payload)
 
     def test_not_supported_version(self):
         with tempfile.NamedTemporaryFile(mode="w") as f:
