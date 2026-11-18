@@ -1,0 +1,2 @@
+Clarify non-blocking polling with BufferedReader.get_message(timeout=0),
+and correct the documented exception when adding to a stopped reader.

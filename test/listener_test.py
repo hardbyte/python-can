@@ -159,6 +159,32 @@ class ListenerTest(BusTest):
         self.assertIsNotNone(a_listener.get_message(0.1))
 
 
+class BufferedReaderPollingTest(unittest.TestCase):
+    def test_zero_timeout_returns_none_when_empty(self):
+        reader = can.BufferedReader()
+        self.assertIsNone(reader.get_message(timeout=0))
+
+    def test_zero_timeout_drains_messages_in_order(self):
+        reader = can.BufferedReader()
+        first = can.Message(arbitration_id=1)
+        second = can.Message(arbitration_id=2)
+        reader(first)
+        reader(second)
+        self.assertIs(reader.get_message(timeout=0), first)
+        self.assertIs(reader.get_message(timeout=0), second)
+        self.assertIsNone(reader.get_message(timeout=0))
+
+    def test_stopped_reader_drains_without_waiting(self):
+        reader = can.BufferedReader()
+        message = can.Message(arbitration_id=1)
+        reader(message)
+        reader.stop()
+        self.assertIs(reader.get_message(timeout=0), message)
+        self.assertIsNone(reader.get_message(timeout=0))
+        with self.assertRaises(RuntimeError):
+            reader(message)
+
+
 def test_deprecated_loop_arg(recwarn):
     try:
         loop = asyncio.get_running_loop()
