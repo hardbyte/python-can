@@ -562,8 +562,8 @@ class KvaserBus(BusABC):
         canIoCtlInit(
             self._read_handle,
             canstat.canIOCTL_SET_LOCAL_TXACK,
-            ctypes.byref(ctypes.c_byte(local_echo)),
-            1,
+            ctypes.byref(ctypes.c_uint(local_echo)),
+            ctypes.sizeof(ctypes.c_uint),
         )
 
         if self.single_handle:

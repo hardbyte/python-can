@@ -1,0 +1,2 @@
+Correct the Kvaser local transmit acknowledgement buffer type and size to match
+CANlib's unsigned-integer argument.
