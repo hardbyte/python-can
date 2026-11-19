@@ -158,6 +158,19 @@ class ListenerTest(BusTest):
         a_listener.stop()
         self.assertIsNotNone(a_listener.get_message(0.1))
 
+    def testBufferedListenerGetMessageNowait(self):
+        listener = can.BufferedReader()
+        self.assertIsNone(listener.get_message_nowait())
+
+        first = generate_message(0xDADADA)
+        second = generate_message(0x123)
+        listener(first)
+        listener(second)
+
+        self.assertIs(listener.get_message_nowait(), first)
+        self.assertIs(listener.get_message_nowait(), second)
+        self.assertIsNone(listener.get_message_nowait())
+
 
 def test_deprecated_loop_arg(recwarn):
     try:

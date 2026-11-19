@@ -1,0 +1,1 @@
+Added ``BufferedReader.get_message_nowait()`` for explicit non-blocking reads.

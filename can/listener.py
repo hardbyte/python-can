@@ -106,6 +106,7 @@ class BufferedReader(Listener):  # pylint: disable=abstract-method
         not block after :meth:`can.BufferedReader.stop` has been called.
 
         :param timeout: The number of seconds to wait for a new message.
+            Use :meth:`get_message_nowait` for an explicit non-blocking read.
         :return: the received :class:`can.Message` or `None`, if the queue is empty.
         """
         try:
@@ -113,6 +114,17 @@ class BufferedReader(Listener):  # pylint: disable=abstract-method
                 return self.buffer.get(block=False)
             else:
                 return self.buffer.get(block=True, timeout=timeout)
+        except Empty:
+            return None
+
+    def get_message_nowait(self) -> Message | None:
+        """
+        Retrieve the oldest queued message without waiting.
+
+        :return: the received :class:`can.Message`, or ``None`` if the queue is empty.
+        """
+        try:
+            return self.buffer.get(block=False)
         except Empty:
             return None
 
