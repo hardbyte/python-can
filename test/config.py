@@ -91,8 +91,7 @@ def _can_use_multicast(group: str) -> bool:
         return False
 
 
-# UDP multicast doesn't work on macOS CI, not even for loopback addresses.
 # The probe groups are arbitrary: the kernel picks the interface by a route lookup for the whole
 # multicast range, so every group of the same family and scope gives the same result.
-TEST_UDP_MULTICAST_IPv4 = not (IS_CI and IS_OSX) and _can_use_multicast("239.255.0.1")
-TEST_UDP_MULTICAST_IPv6 = not (IS_CI and IS_OSX) and _can_use_multicast("ff11::1")
+TEST_UDP_MULTICAST_IPv4 = _can_use_multicast("239.255.0.1")
+TEST_UDP_MULTICAST_IPv6 = _can_use_multicast("ff11::1")
