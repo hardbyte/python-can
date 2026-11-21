@@ -57,6 +57,7 @@ from .basic import (
     PCAN_MESSAGE_FD,
     PCAN_MESSAGE_RTR,
     PCAN_MESSAGE_STANDARD,
+    PCAN_MESSAGE_STATUS,
     PCAN_NONEBUS,
     PCAN_PARAMETER_OFF,
     PCAN_PARAMETER_ON,
@@ -553,6 +554,12 @@ class PcanBus(BusABC):
 
             elif result & (PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY):
                 log.warning(self._get_formatted_error(result))
+                if result & ~(PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY) == 0 and not (
+                    pcan_msg.MSGTYPE
+                    & (PCAN_MESSAGE_STATUS.value | PCAN_MESSAGE_ERRFRAME.value)
+                ):
+                    # the bus state came with a received frame, keep the frame
+                    break
 
             elif result == PCAN_ERROR_ILLDATA:
                 # When there is an invalid frame on CAN bus (in our case CAN FD), PCAN first reports result PCAN_ERROR_ILLDATA
