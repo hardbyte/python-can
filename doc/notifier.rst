@@ -73,6 +73,15 @@ readers are also documented here.
 BufferedReader
 --------------
 
+Pass ``timeout=0`` to poll a buffered reader without waiting for a message::
+
+    message = reader.get_message(timeout=0)
+    if message is not None:
+        print(message)
+
+This removes the oldest queued message, if any. An empty queue returns ``None``
+without waiting. A stopped reader can still be drained in the same way.
+
 .. autoclass:: can.BufferedReader
     :members:
 
