@@ -95,6 +95,7 @@ Log (.log can-utils Logging format)
 -----------------------------------
 
 CanutilsLogWriter logs CAN data to an ASCII log file compatible with `can-utils <https://github.com/linux-can/can-utils>`_
+and preserves the requested data length of classic CAN remote frames.
 As specification following references can-utils can be used: 
 `asc2log <https://github.com/linux-can/can-utils/blob/master/asc2log.c>`_,
 `log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.

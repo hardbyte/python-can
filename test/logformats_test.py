@@ -998,6 +998,27 @@ class TestBlfFileFormat(ReaderWriterTest):
 class TestCanutilsFileFormat(ReaderWriterTest):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
+    @parameterized.expand([(0, "123#R"), (5, "123#R5"), (8, "123#R8")])
+    def test_remote_frame_dlc(self, dlc, expected_frame):
+        with can.CanutilsLogWriter(self.test_file_name) as writer:
+            writer(
+                can.Message(
+                    arbitration_id=0x123,
+                    is_extended_id=False,
+                    is_remote_frame=True,
+                    dlc=dlc,
+                    check=True,
+                )
+            )
+
+        self.assertEqual(
+            Path(self.test_file_name).read_text().split()[2], expected_frame
+        )
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            (message,) = reader
+        self.assertTrue(message.is_remote_frame)
+        self.assertEqual(message.dlc, dlc)
+
     def _setup_instance(self):
         super()._setup_instance_helper(
             can.CanutilsLogWriter,
