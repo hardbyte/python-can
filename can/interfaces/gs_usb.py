@@ -220,3 +220,6 @@ class GsUsbBus(can.BusABC):
                     gs_usb.stop()
                 except usb.core.USBError:
                     pass
+                finally:
+                    usb.util.dispose_resources(gs_usb.gs_usb)
+        usb.util.dispose_resources(self.gs_usb.gs_usb)
