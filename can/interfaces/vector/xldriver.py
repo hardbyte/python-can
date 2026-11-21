@@ -17,10 +17,11 @@ LOG = logging.getLogger(__name__)
 
 # Load Windows DLL
 DLL_NAME = "vxlapi64" if platform.architecture()[0] == "64bit" else "vxlapi"
-if dll_path := find_library(DLL_NAME):
-    _xlapi_dll = ctypes.windll.LoadLibrary(dll_path)
-else:
-    raise FileNotFoundError(f"Vector XL library not found: {DLL_NAME}")
+# attempt to load Vector XL Driver DLL in a way that accomodates DLL directories added with os.add_dll_directory()
+try:
+    _xlapi_dll = ctypes.windll.LoadLibrary(DLL_NAME)
+except:
+    raise
 
 # ctypes wrapping for API functions
 xlGetErrorString = _xlapi_dll.xlGetErrorString
