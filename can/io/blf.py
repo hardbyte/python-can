@@ -229,6 +229,13 @@ class BLFReader(BinaryIOMessageReader):
         unpack_can_fd_64_msg = CAN_FD_MSG_64_STRUCT.unpack_from
         can_fd_64_msg_size = CAN_FD_MSG_64_STRUCT.size
         unpack_can_error_ext = CAN_ERROR_EXT_STRUCT.unpack_from
+        payload_sizes = {
+            CAN_MESSAGE: CAN_MSG_STRUCT.size,
+            CAN_MESSAGE2: CAN_MSG_STRUCT.size,
+            CAN_ERROR_EXT: CAN_ERROR_EXT_STRUCT.size,
+            CAN_FD_MESSAGE: CAN_FD_MSG_STRUCT.size,
+            CAN_FD_MESSAGE_64: can_fd_64_msg_size,
+        }
 
         start_timestamp = self.start_timestamp
         max_pos = len(data)
@@ -259,6 +266,22 @@ class BLFReader(BinaryIOMessageReader):
                 # This object continues in the next container
                 return
             pos += obj_header_base_size
+
+            if header_version in (1, 2):
+                minimum_size = (
+                    obj_header_base_size
+                    + (
+                        obj_header_v1_size
+                        if header_version == 1
+                        else obj_header_v2_size
+                    )
+                    + payload_sizes.get(obj_type, 0)
+                )
+                if obj_size < minimum_size:
+                    raise BLFParseError(
+                        f"Invalid object size {obj_size} for type {obj_type} "
+                        f"(minimum {minimum_size})"
+                    )
 
             # Read rest of header
             if header_version == 1:
