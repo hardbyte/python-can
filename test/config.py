@@ -8,6 +8,8 @@ reproducible, see for example #243 and #940.
 """
 
 import platform
+import socket
+import struct
 from os import environ as environment
 
 
@@ -59,3 +61,38 @@ IS_PYPY = platform.python_implementation() == "PyPy"
 TEST_CAN_FD = True
 
 TEST_INTERFACE_SOCKETCAN = IS_LINUX and env("TEST_SOCKETCAN")
+
+
+def _can_use_multicast(group: str) -> bool:
+    """Check whether the host can send a datagram to the multicast ``group`` and receive it back.
+
+    This mirrors what :class:`~can.interfaces.udp_multicast.UdpMulticastBus` does: join the group
+    on an interface chosen by the kernel and rely on multicast loopback. It fails, for example, in
+    containers without an IPv6 multicast route or on hosts whose firewall drops incoming multicast.
+    """
+    is_ipv6 = ":" in group
+    family = socket.AF_INET6 if is_ipv6 else socket.AF_INET
+    probe = b"python-can multicast probe"
+    try:
+        with socket.socket(family, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(0.5)
+            sock.bind(("", 0))
+            port = sock.getsockname()[1]
+            if is_ipv6:
+                # interface index 0 lets the kernel choose the interface by route lookup
+                request = socket.inet_pton(family, group) + struct.pack("@I", 0)
+                sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, request)
+            else:
+                request = socket.inet_aton(group) + struct.pack("@I", socket.INADDR_ANY)
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, request)
+            sock.sendto(probe, (group, port))
+            return sock.recv(len(probe)) == probe
+    except OSError:  # includes the timeout
+        return False
+
+
+# UDP multicast doesn't work on macOS CI, not even for loopback addresses.
+# The probe groups are arbitrary: the kernel picks the interface by a route lookup for the whole
+# multicast range, so every group of the same family and scope gives the same result.
+TEST_UDP_MULTICAST_IPv4 = not (IS_CI and IS_OSX) and _can_use_multicast("239.255.0.1")
+TEST_UDP_MULTICAST_IPv6 = not (IS_CI and IS_OSX) and _can_use_multicast("ff11::1")
