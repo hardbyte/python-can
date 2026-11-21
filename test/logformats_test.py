@@ -607,6 +607,27 @@ class TestAscFileFormat(ReaderWriterTest):
     def test_read_ignore_comments(self):
         _msg_list = self._read_log_file("logfile.asc")
 
+    def test_first_message_after_header_comment_is_not_dropped(self):
+        content = (
+            "date Mon Oct 12 06:42:09 PM 2026\n"
+            "base hex timestamps absolute\n"
+            "// version 7.0.0\n"
+            "0.000000 1 123 Rx d 8 01 02 03 04 05 06 07 08\n"
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".asc", delete=False) as logfile:
+            logfile.write(content)
+            logfile_name = logfile.name
+
+        try:
+            with can.ASCReader(logfile_name) as reader:
+                messages = list(reader)
+        finally:
+            os.unlink(logfile_name)
+
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0].arbitration_id, 0x123)
+        self.assertEqual(messages[0].data, b"\x01\x02\x03\x04\x05\x06\x07\x08")
+
     def test_read_no_triggerblock(self):
         _msg_list = self._read_log_file("issue_1256.asc")
 

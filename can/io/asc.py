@@ -80,7 +80,11 @@ class ASCReader(TextIOMessageReader):
         self.internal_events_logged = False
 
     def _extract_header(self) -> None:
-        for _line in self.file:
+        while True:
+            position = self.file.tell()
+            _line = self.file.readline()
+            if not _line:
+                break
             line = _line.strip()
 
             datetime_match = re.match(
@@ -121,6 +125,9 @@ class ASCReader(TextIOMessageReader):
                 self.internal_events_logged = events_match.group("no_events") is None
                 break
 
+            # The first data line can immediately follow a header comment.
+            # Rewind so __iter__ parses it instead of consuming and discarding it.
+            self.file.seek(position)
             break
 
     @staticmethod
