@@ -34,7 +34,7 @@ which is automatically installed with the `multicast` extra keyword::
 Supported Platforms
 -------------------
 
-It should work on most Unix systems (including Linux with kernel 2.6.22+ and macOS) but currently not on Windows.
+It should work on most Unix systems (including Linux with kernel 2.6.22+ and macOS) and Windows 10+.
 
 Example
 -------
