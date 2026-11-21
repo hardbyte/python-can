@@ -20,7 +20,7 @@ import unittest
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from io import BytesIO
+from io import BytesIO, StringIO
 from itertools import zip_longest
 from pathlib import Path
 from unittest.mock import patch
@@ -510,7 +510,7 @@ class TestAscFileFormat(ReaderWriterTest):
         actual = self._read_log_file("test_CanRemoteMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
 
-    def test_read_can_fd_remote_message(self):
+    def test_read_classic_remote_message_in_canfd_record(self):
         expected_messages = [
             can.Message(
                 timestamp=30.300981,
@@ -518,13 +518,38 @@ class TestAscFileFormat(ReaderWriterTest):
                 channel=2,
                 dlc=5,
                 is_rx=False,
-                is_fd=True,
                 is_remote_frame=True,
-                error_state_indicator=True,
             )
         ]
         actual = self._read_log_file("test_CanFdRemoteMessage.asc")
         self.assertMessagesEqual(actual, expected_messages)
+
+    def test_roundtrip_empty_can_fd_data(self):
+        msg = can.Message(is_fd=True, bitrate_switch=True, channel=0, check=True)
+        with can.ASCWriter(self.test_file_name) as writer:
+            writer.on_message_received(msg)
+        with can.ASCReader(self.test_file_name) as reader:
+            (actual,) = reader
+        self.assertTrue(msg.equals(actual, timestamp_delta=None))
+
+    @parameterized.expand(
+        [
+            ("empty_data", "0 0 0 0 0", False, 0, b""),
+            ("empty_remote", "0 0 0 0 10", True, 0, b""),
+            ("data", "1 1 AB 0 0 0", False, 1, b"\xab"),
+        ]
+    )
+    def test_classic_frame_in_canfd_record(self, _, fields, remote, dlc, data):
+        stream = StringIO(
+            "base hex timestamps absolute\ninternal events logged\n"
+            f"0.100000 CANFD 1 Rx 123 0 0 {fields}\n"
+        )
+        with can.ASCReader(stream) as reader:
+            (actual,) = reader
+        self.assertFalse(actual.is_fd)
+        self.assertEqual(actual.is_remote_frame, remote)
+        self.assertEqual(actual.dlc, dlc)
+        self.assertEqual(actual.data, data)
 
     def test_read_can_fd_message(self):
         expected_messages = [
