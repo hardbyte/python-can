@@ -47,6 +47,9 @@ RECEIVED_ANCILLARY_BUFFER_SIZE = (
     CMSG_SPACE(RECEIVED_TIMESTAMP_STRUCT.size) if CMSG_SPACE_available else 0
 )
 
+# Delay between send attempts while the device queue is full (ENOBUFS)
+ENOBUFS_RETRY_DELAY = 0.001
+
 MSG_DONTROUTE = int(socket.MSG_DONTROUTE)
 
 
@@ -875,7 +878,18 @@ class SocketcanBus(BusABC):  # pylint: disable=abstract-method
                 # Timeout
                 break
             channel = str(msg.channel) if msg.channel else None
-            sent = self._send_once(data, channel)
+            try:
+                sent = self._send_once(data, channel)
+            except can.CanOperationError as error:
+                if error.error_code != errno.ENOBUFS:
+                    raise
+                # The device queue is full even though the socket reported it
+                # as writable. Wait a little and retry until the timeout expires.
+                time_left = timeout - (time.time() - started)
+                if time_left <= 0:
+                    raise
+                time.sleep(min(ENOBUFS_RETRY_DELAY, time_left))
+                continue
             if sent == len(data):
                 return
             # Not all data were sent, try again with remaining data
