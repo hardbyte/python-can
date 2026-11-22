@@ -791,3 +791,24 @@ def test_sample_point_too_high(create, sample_point) -> None:
     """
     with pytest.raises(ValueError, match="sample_point"):
         create(sample_point)
+
+
+def test_oscillator_tolerance_exact_time_quantum() -> None:
+    """
+    Test Scope:
+        BitTiming.oscillator_tolerance uses the exact time quantum, also when it
+        is not an integer number of nanoseconds.
+    Preconditions:
+        None.
+    Events:
+        Calculate the oscillator tolerance of an 80 MHz timing with brp=1
+        (time quantum 12.5 ns), tseg1=63, tseg2=16 and sjw=16 for a node loop
+        delay of 250 ns and a bus length of 10 m.
+    Evaluate:
+        The round trip delay of 600 ns needs 48 time quanta of propagation
+        segment, leaving Phase_Seg1 = 15. The limiting condition is then
+        min(Phase_Seg1, Phase_Seg2) / (2 * (13 * nbt - Phase_Seg2)) = 15 / 2048.
+    """
+    timing = can.BitTiming(f_clock=80_000_000, brp=1, tseg1=63, tseg2=16, sjw=16)
+    osc_tol = timing.oscillator_tolerance(node_loop_delay_ns=250, bus_length_m=10.0)
+    assert osc_tol == pytest.approx(100 * 15 / 2048)

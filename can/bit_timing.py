@@ -423,7 +423,9 @@ class BitTiming(Mapping[str, int]):
             node_loop_delay_ns + delay_per_meter * bus_length_m
         )
 
-        prop_seg = math.ceil(bidirectional_propagation_delay_ns / self.tq)
+        # use the exact time quantum, self.tq is rounded to integer nanoseconds
+        tq_ns = self.brp * 1_000_000_000 / self.f_clock
+        prop_seg = math.ceil(bidirectional_propagation_delay_ns / tq_ns)
         nom_phase_seg1 = self.tseg1 - prop_seg
         nom_phase_seg2 = self.tseg2
         df_clock_list = [
@@ -1075,7 +1077,9 @@ class BitTimingFd(Mapping[str, int]):
             node_loop_delay_ns + delay_per_meter * bus_length_m
         )
 
-        prop_seg = math.ceil(bidirectional_propagation_delay_ns / self.nom_tq)
+        # use the exact time quantum, self.nom_tq is rounded to integer nanoseconds
+        nom_tq_ns = self.nom_brp * 1_000_000_000 / self.f_clock
+        prop_seg = math.ceil(bidirectional_propagation_delay_ns / nom_tq_ns)
         nom_phase_seg1 = self.nom_tseg1 - prop_seg
         nom_phase_seg2 = self.nom_tseg2
 
