@@ -60,9 +60,11 @@ class BitTiming(Mapping[str, int]):
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
         :param bool strict:
-            If True, restrict bit timings to the minimum required range as defined in
-            ISO 11898. This can be used to ensure compatibility across a wide variety
-            of CAN hardware.
+            If True, restrict bit timings to the minimum configuration ranges, which
+            every CAN controller compliant with ISO 11898-1 has to support, and
+            require a sample point of at least 50%. This can be used to ensure
+            compatibility across a wide variety of CAN hardware. If False, only the
+            structural requirements are checked.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -148,9 +150,11 @@ class BitTiming(Mapping[str, int]):
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
         :param bool strict:
-            If True, restrict bit timings to the minimum required range as defined in
-            ISO 11898. This can be used to ensure compatibility across a wide variety
-            of CAN hardware.
+            If True, restrict bit timings to the minimum configuration ranges, which
+            every CAN controller compliant with ISO 11898-1 has to support, and
+            require a sample point of at least 50%. This can be used to ensure
+            compatibility across a wide variety of CAN hardware. If False, only the
+            structural requirements are checked.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -222,6 +226,8 @@ class BitTiming(Mapping[str, int]):
         cls, f_clock: int, bitrate: int, sample_point: float = 69.0
     ) -> Iterator["BitTiming"]:
         """Create a :class:`~can.BitTiming` iterator with all the solutions for a sample point.
+
+        All returned timings are valid in strict mode.
 
         :param int f_clock:
             The CAN system clock frequency in Hz.
@@ -603,9 +609,11 @@ class BitTimingFd(Mapping[str, int]):
             The Synchronization Jump Width for the data phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
         :param bool strict:
-            If True, restrict bit timings to the minimum required range as defined in
-            ISO 11898. This can be used to ensure compatibility across a wide variety
-            of CAN hardware.
+            If True, restrict bit timings to the minimum configuration ranges, which
+            every CAN controller compliant with ISO 11898-1 has to support, and
+            require a sample point of at least 50%. This can be used to ensure
+            compatibility across a wide variety of CAN hardware. If False, only the
+            structural requirements are checked.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -749,9 +757,11 @@ class BitTimingFd(Mapping[str, int]):
             The Synchronization Jump Width for the data phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
         :param bool strict:
-            If True, restrict bit timings to the minimum required range as defined in
-            ISO 11898. This can be used to ensure compatibility across a wide variety
-            of CAN hardware.
+            If True, restrict bit timings to the minimum configuration ranges, which
+            every CAN controller compliant with ISO 11898-1 has to support, and
+            require a sample point of at least 50%. This can be used to ensure
+            compatibility across a wide variety of CAN hardware. If False, only the
+            structural requirements are checked.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -800,6 +810,8 @@ class BitTimingFd(Mapping[str, int]):
         data_sample_point: float,
     ) -> Iterator["BitTimingFd"]:
         """Create an :class:`~can.BitTimingFd` iterator with all the solutions for a sample point.
+
+        All returned timings are valid in strict mode.
 
         :param int f_clock:
             The CAN system clock frequency in Hz.
