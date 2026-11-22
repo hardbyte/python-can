@@ -167,7 +167,12 @@ class CanutilsLogWriter(TextIOMessageWriter):
         framestr = f"({timestamp:f}) {channel}"
 
         if msg.is_error_frame:
-            framestr += f" {CAN_ERR_FLAG | (msg.arbitration_id & 0x1FFFFFFF):08X}#"
+            error_class = msg.arbitration_id & 0x1FFFFFFF
+            if not error_class:
+                # no SocketCAN error class bits: write CAN_ERR_BUSERROR,
+                # so older readers still recognise the line as an error frame
+                error_class = CAN_ERR_BUSERROR
+            framestr += f" {CAN_ERR_FLAG | error_class:08X}#"
         elif msg.is_extended_id:
             framestr += f" {msg.arbitration_id:08X}#"
         else:
