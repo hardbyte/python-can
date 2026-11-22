@@ -12,6 +12,7 @@ from can import (
     Message,
 )
 from can.typechecking import CanFilters
+from can.util import _warn_listen_only_deprecated
 
 from .constants import *
 from .exceptions import UcanException
@@ -91,10 +92,6 @@ class UcanBus(BusABC):
             be used, in case only one module is connected to the computer).
             Default is 255.
 
-        :param can.bus.BusState state:
-            BusState of the channel.
-            Default is ACTIVE.
-
         :param bool receive_own_messages:
             If messages transmitted should also be received back.
             Default is False.
@@ -135,9 +132,13 @@ class UcanBus(BusABC):
         if bitrate not in self.BITRATES:
             raise ValueError(f"Invalid bitrate {bitrate}")
 
-        state = kwargs.get("state", BusState.ACTIVE)
-        if state is not BusState.ACTIVE and state is not BusState.PASSIVE:
-            raise ValueError("BusState must be Active or Passive")
+        state = kwargs.get("state")
+        if state is not None:
+            _warn_listen_only_deprecated("The 'state' argument", "'listen_only'")
+            if state is not BusState.ACTIVE and state is not BusState.PASSIVE:
+                raise ValueError("BusState must be Active or Passive")
+            if listen_only and state is BusState.ACTIVE:
+                raise ValueError("'listen_only' and 'state' contradict each other")
         self._listen_only = listen_only or state is BusState.PASSIVE
 
         # get parameters
@@ -343,6 +344,7 @@ class UcanBus(BusABC):
 
     @state.setter
     def state(self, new_state):
+        _warn_listen_only_deprecated("Setting 'bus.state'", "'bus.listen_only'")
         if new_state is BusState.ACTIVE or new_state is BusState.PASSIVE:
             self.listen_only = new_state is BusState.PASSIVE
 

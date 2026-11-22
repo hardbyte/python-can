@@ -77,6 +77,23 @@ class CantactTest(unittest.TestCase):
             bus.send(can.Message(arbitration_id=0x123))
         cantact.MockInterface.send.assert_not_called()
 
+    def test_monitor_deprecated(self):
+        """
+        Test Scope:
+            The deprecated monitor argument of the CANtact interface.
+        Preconditions:
+            A mocked CANtact device.
+        Events:
+            Create a bus with monitor set to True.
+        Evaluate:
+            A DeprecationWarning is emitted and monitor mode is switched on.
+        """
+        cantact.MockInterface.set_monitor.reset_mock()
+        with self.assertWarns(DeprecationWarning):
+            can.Bus(channel=0, interface="cantact", monitor=True, _testing=True)
+
+        cantact.MockInterface.set_monitor.assert_called_with(0, True)
+
     def test_shutdown(self):
         bus = can.Bus(channel=0, interface="cantact", _testing=True)
         bus.shutdown()

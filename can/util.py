@@ -428,6 +428,25 @@ def _rename_kwargs(
             warnings.warn(deprecation_notice, DeprecationWarning, stacklevel=3)
 
 
+def _warn_listen_only_deprecated(
+    deprecated_usage: str, replacement: str | None = "'listen_only=True'"
+) -> None:
+    """Emit the deprecation warning for a legacy way to request listen-only mode.
+
+    :param deprecated_usage:
+        Description of the deprecated usage, e.g. ``"The 'monitor' argument"``.
+    :param replacement:
+        Description of what to use instead, or ``None`` if there is no replacement.
+    """
+    message = (
+        f"{deprecated_usage} is deprecated since python-can v4.7.0, and "
+        f"scheduled for removal in python-can v5.0.0."
+    )
+    if replacement is not None:
+        message += f" Use {replacement} instead."
+    warnings.warn(message, DeprecationWarning, stacklevel=3)
+
+
 T2 = TypeVar("T2", BitTiming, BitTimingFd)
 
 

@@ -111,6 +111,14 @@ created, see :class:`~can.BusABC`. Of the built-in interfaces, ``cantact``,
 ``kvaser``, ``nixnet``, ``pcan``, ``seeedstudio``, ``slcan``, ``systec``,
 ``vector`` and ``virtual`` support it.
 
+.. deprecated:: 4.7.0
+    The interface specific ways to request listen-only mode are deprecated in favour
+    of ``listen_only``: the ``monitor`` argument of ``cantact``, the ``driver_mode``
+    argument of ``kvaser``, the ``"silent"`` and ``"loopback_and_silent"`` operation
+    modes of ``seeedstudio``, the ``state`` argument and setting ``bus.state`` for
+    ``pcan`` and ``systec``, and the ``--passive`` and ``--active`` arguments of
+    ``can.logger``.
+
 Bus API
 '''''''
 

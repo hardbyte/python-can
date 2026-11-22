@@ -266,10 +266,21 @@ class SystecTest(unittest.TestCase):
         assert not bus.listen_only
         assert bus.state is can.BusState.ACTIVE
 
-    @staticmethod
-    def test_bus_passive_state():
+    def test_bus_passive_state(self):
+        """
+        Test Scope:
+            The deprecated way to request listen-only mode with state PASSIVE.
+        Preconditions:
+            A mocked SYS TEC DLL.
+        Events:
+            Create a bus with state PASSIVE.
+        Evaluate:
+            A DeprecationWarning is emitted and the channel is initialized in
+            listen-only mode.
+        """
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(interface="systec", channel=0, state=can.BusState.PASSIVE)
+        with self.assertWarns(DeprecationWarning):
+            bus = can.Bus(interface="systec", channel=0, state=can.BusState.PASSIVE)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             0,

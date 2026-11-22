@@ -15,6 +15,7 @@ from typing import Any
 import can
 from can import BusABC, CanProtocol, Message
 from can.typechecking import CanFilters
+from can.util import _warn_listen_only_deprecated
 
 logger = logging.getLogger("seeedbus")
 
@@ -84,7 +85,7 @@ class SeeedBus(BusABC):
             STD or EXT, to select standard or extended messages
 
         :param operation_mode
-            normal, loopback, silent or loopback_and_silent.
+            normal or loopback.
 
         :param bitrate
             CAN bus bit rate, selected from available list.
@@ -122,6 +123,7 @@ class SeeedBus(BusABC):
         self.bit_rate = bitrate
         self.frame_type = frame_type
         if operation_mode in ("silent", "loopback_and_silent"):
+            _warn_listen_only_deprecated(f"The operation_mode '{operation_mode}'")
             listen_only = True
         elif listen_only and operation_mode == "loopback":
             raise ValueError("'listen_only' cannot be combined with loopback mode")

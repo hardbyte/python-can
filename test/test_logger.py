@@ -66,22 +66,69 @@ class TestLoggerScriptModule(unittest.TestCase):
         self.mock_logger.assert_called_once()
 
     def test_log_virtual_active(self):
+        """
+        Test Scope:
+            The deprecated --active argument of the logger script.
+        Preconditions:
+            A mocked virtual bus and logger, the bus reports listen-only mode
+            as if it was configured in a configuration file.
+        Events:
+            Run the logger with --active.
+        Evaluate:
+            A DeprecationWarning is emitted, the bus is created without a
+            listen_only argument, listen-only mode is switched off and the
+            state is left untouched.
+        """
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
+        self.mock_virtual_bus.listen_only = True
+        state_before = self.mock_virtual_bus.state
 
         sys.argv = self.baseargs + ["--active"]
-        can.logger.main()
+        with self.assertWarns(DeprecationWarning):
+            can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
-        self.assertEqual(self.mock_virtual_bus.state, can.BusState.ACTIVE)
+        self.assertNotIn("listen_only", self.MockVirtualBus.call_args.kwargs)
+        self.assertIs(self.mock_virtual_bus.listen_only, False)
+        self.assertIs(self.mock_virtual_bus.state, state_before)
 
     def test_log_virtual_passive(self):
+        """
+        Test Scope:
+            The deprecated --passive argument of the logger script.
+        Preconditions:
+            A mocked virtual bus and logger.
+        Events:
+            Run the logger with --passive.
+        Evaluate:
+            A DeprecationWarning is emitted and the bus is created in
+            listen-only mode.
+        """
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])
 
         sys.argv = self.baseargs + ["--passive"]
-        can.logger.main()
+        with self.assertWarns(DeprecationWarning):
+            can.logger.main()
         self.assertSuccessfullCleanup()
         self.mock_logger.assert_called_once()
-        self.assertEqual(self.mock_virtual_bus.state, can.BusState.PASSIVE)
+        self.assertIs(self.MockVirtualBus.call_args.kwargs["listen_only"], True)
+
+    def test_active_not_allowed_with_listen_only(self):
+        """
+        Test Scope:
+            Combining the deprecated --active argument with --listen-only.
+        Preconditions:
+            A mocked virtual bus.
+        Events:
+            Run the logger with --active and --listen-only.
+        Evaluate:
+            The logger exits with a usage error and no bus is created.
+        """
+        sys.argv = self.baseargs + ["--active", "--listen-only"]
+        with self.assertRaises(SystemExit) as exit_info, mock.patch("sys.stderr"):
+            can.logger.main()
+        self.assertEqual(exit_info.exception.code, 2)
+        self.MockVirtualBus.assert_not_called()
 
     def test_log_virtual_with_config(self):
         self.mock_virtual_bus.recv = Mock(side_effect=[self.testmsg, KeyboardInterrupt])

@@ -2,9 +2,9 @@ import argparse
 import errno
 import sys
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from can import BusState, Logger, SizedRotatingLogger
+from can import Logger, SizedRotatingLogger
 from can.cli import (
     _add_extra_args,
     _parse_additional_config,
@@ -13,6 +13,7 @@ from can.cli import (
     create_bus_from_namespace,
 )
 from can.typechecking import TAdditionalCliArgs
+from can.util import _warn_listen_only_deprecated
 
 if TYPE_CHECKING:
     from can.io import BaseRotatingLogger
@@ -69,14 +70,9 @@ def _parse_logger_args(
     )
 
     state_group = logger_group.add_mutually_exclusive_group(required=False)
-    state_group.add_argument(
-        "--active",
-        help="Start the bus as active, this is applied by default.",
-        action="store_true",
-    )
-    state_group.add_argument(
-        "--passive", help="Start the bus as passive.", action="store_true"
-    )
+    # deprecated, hidden from the help output
+    state_group.add_argument("--active", help=argparse.SUPPRESS, action="store_true")
+    state_group.add_argument("--passive", help=argparse.SUPPRESS, action="store_true")
 
     # handle remaining arguments
     _add_extra_args(logger_group)
@@ -90,19 +86,31 @@ def _parse_logger_args(
         raise SystemExit(errno.EINVAL)
 
     results, unknown_args = parser.parse_known_args(args)
+    if results.active and "listen_only" in results:
+        parser.error("argument --active: not allowed with argument --listen-only")
     additional_config = _parse_additional_config([*results.extra_args, *unknown_args])
     return results, additional_config
 
 
 def main() -> None:
     results, additional_config = _parse_logger_args(sys.argv[1:])
-    bus = create_bus_from_namespace(results)
+    bus_kwargs: dict[str, Any] = {}
+    if results.active:
+        _warn_listen_only_deprecated("The '--active' argument", replacement=None)
+    elif results.passive:
+        _warn_listen_only_deprecated("The '--passive' argument", "'--listen-only'")
+        bus_kwargs["listen_only"] = True
+
+    bus = create_bus_from_namespace(results, **bus_kwargs)
     _set_logging_level_from_namespace(results)
 
-    if results.active:
-        bus.state = BusState.ACTIVE
-    elif results.passive:
-        bus.state = BusState.PASSIVE
+    # --active used to set bus.state = BusState.ACTIVE after opening the bus,
+    # which overrides a listen-only mode from the configuration, e.g.
+    # "state = PASSIVE" for pcan or systec. Keep that behaviour until --active
+    # is removed in 5.0.0; --active together with --listen-only is rejected
+    # by the argument parser, so this only undoes a configured listen-only mode.
+    if results.active and bus.listen_only:
+        bus.listen_only = False
 
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
     print(f"Can Logger (Started on {datetime.now(tz=UTC)})")

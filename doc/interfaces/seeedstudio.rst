@@ -61,8 +61,9 @@ FRAMETYPE
 OPERATIONMODE
  - "normal"
  - "loopback"
- - "silent"
- - "loopback_and_silent"
+ - "silent" (deprecated since 4.7.0, use ``listen_only=True`` instead)
+ - "loopback_and_silent" (deprecated since 4.7.0, use ``listen_only=True`` instead;
+   behaves like "silent", since sending raises in listen-only mode)
 
 LISTEN_ONLY
  Open the device in :ref:`listen-only mode <listen_only>`. Cannot be combined

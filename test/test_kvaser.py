@@ -344,6 +344,29 @@ class KvaserTest(unittest.TestCase):
 
         bus.shutdown()
 
+    def test_driver_mode_silent_deprecated(self):
+        """
+        Test Scope:
+            The deprecated driver_mode argument of the Kvaser interface.
+        Preconditions:
+            A mocked CANLIB.
+        Events:
+            Create a bus with driver_mode set to silent.
+        Evaluate:
+            A DeprecationWarning is emitted and the bus output is set to silent.
+        """
+        canlib.canSetBusOutputControl.reset_mock()
+        with self.assertWarns(DeprecationWarning):
+            bus = can.Bus(
+                interface="kvaser", channel=0, driver_mode=canlib.DRIVER_MODE_SILENT
+            )
+
+        self.assertEqual(
+            canlib.canSetBusOutputControl.call_args[0][1], constants.canDRIVER_SILENT
+        )
+
+        bus.shutdown()
+
     @staticmethod
     def canGetNumberOfChannels(count):
         count._obj.value = 2

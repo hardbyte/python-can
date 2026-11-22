@@ -16,7 +16,11 @@ from can.exceptions import (
     error_check,
 )
 from can.typechecking import AutoDetectedConfig
-from can.util import check_or_adjust_timing_clock, deprecated_args_alias
+from can.util import (
+    _warn_listen_only_deprecated,
+    check_or_adjust_timing_clock,
+    deprecated_args_alias,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +59,6 @@ class CantactBus(BusABC):
         channel: int,
         bitrate: int = 500_000,
         poll_interval: float = 0.01,
-        monitor: bool = False,
         timing: BitTiming | BitTimingFd | None = None,
         listen_only: bool = False,
         **kwargs: Any,
@@ -65,8 +68,6 @@ class CantactBus(BusABC):
             Channel number (zero indexed, labeled on multi-channel devices)
         :param int bitrate:
             Bitrate in bits/s
-        :param bool monitor:
-            If true, operate in listen-only monitoring mode
         :param timing:
             Optional :class:`~can.BitTiming` instance to use for custom bit timing setting.
             If this argument is set then it overrides the bitrate argument. The
@@ -77,7 +78,12 @@ class CantactBus(BusABC):
             If true, operate in listen-only monitoring mode. In this mode,
             :meth:`send` raises :class:`~can.exceptions.CanOperationError`.
         """
-        listen_only = listen_only or monitor
+        if "monitor" in kwargs:
+            _warn_listen_only_deprecated("The 'monitor' argument")
+            monitor = bool(kwargs["monitor"])
+            if listen_only and not monitor:
+                raise ValueError("'listen_only' and 'monitor' contradict each other")
+            listen_only = listen_only or monitor
         self._listen_only = listen_only
 
         if kwargs.get("_testing", False):

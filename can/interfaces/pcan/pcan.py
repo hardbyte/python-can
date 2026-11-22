@@ -21,7 +21,12 @@ from can import (
     CanProtocol,
     Message,
 )
-from can.util import check_or_adjust_timing_clock, dlc2len, len2dlc
+from can.util import (
+    _warn_listen_only_deprecated,
+    check_or_adjust_timing_clock,
+    dlc2len,
+    len2dlc,
+)
 
 from .basic import (
     FEATURE_FD_CAPABLE,
@@ -126,7 +131,6 @@ class PcanBus(BusABC):
         self,
         channel: str = "PCAN_USBBUS1",
         device_id: int | None = None,
-        state: BusState = BusState.ACTIVE,
         timing: BitTiming | BitTimingFd | None = None,
         bitrate: int = 500000,
         receive_own_messages: bool = False,
@@ -151,10 +155,6 @@ class PcanBus(BusABC):
             The constructor searches all connected interfaces and initializes the
             first one that matches the parameter value. If no device is found,
             an exception is raised.
-
-        :param can.bus.BusState state:
-            BusState of the channel.
-            Default is ACTIVE
 
         :param timing:
             An instance of :class:`~can.BitTiming` or :class:`~can.BitTimingFd`
@@ -280,8 +280,13 @@ class PcanBus(BusABC):
 
         self.check_api_version()
 
-        if state not in [BusState.ACTIVE, BusState.PASSIVE]:
-            raise ValueError("BusState must be Active or Passive")
+        state = kwargs.pop("state", None)
+        if state is not None:
+            _warn_listen_only_deprecated("The 'state' argument", "'listen_only'")
+            if state not in [BusState.ACTIVE, BusState.PASSIVE]:
+                raise ValueError("BusState must be Active or Passive")
+            if listen_only and state is BusState.ACTIVE:
+                raise ValueError("'listen_only' and 'state' contradict each other")
         self._listen_only = listen_only or state is BusState.PASSIVE
         self._apply_listen_only_mode()
 
@@ -368,7 +373,6 @@ class PcanBus(BusABC):
 
         super().__init__(
             channel=channel,
-            state=state,
             bitrate=bitrate,
             **kwargs,
         )
@@ -720,6 +724,7 @@ class PcanBus(BusABC):
 
     @state.setter
     def state(self, new_state):
+        _warn_listen_only_deprecated("Setting 'bus.state'", "'bus.listen_only'")
         if new_state is BusState.ACTIVE or new_state is BusState.PASSIVE:
             self.listen_only = new_state is BusState.PASSIVE
 

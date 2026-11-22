@@ -49,7 +49,9 @@ Optional parameters:
 * ``rx_buffer_entries`` (default 4096) The maximum number of entries in the receive buffer
 * ``tx_buffer_entries`` (default 4096) The maximum number of entries in the transmit buffer
 * ``listen_only`` (default False) Open the channel in :ref:`listen-only mode <listen_only>`
-* ``state`` (default BusState.ACTIVE) BusState of the channel
+* ``state`` (default BusState.ACTIVE) BusState of the channel.
+  Deprecated since 4.7.0, use ``listen_only`` instead.
+  In ``BusState.PASSIVE``, sending raises :class:`~can.exceptions.CanOperationError`.
 * ``receive_own_messages`` (default False) If messages transmitted should also be received back
 
 
