@@ -1,2 +1,0 @@
-Load MF4 dependencies when a reader or writer is created so importing
-``asammdf`` before ``can`` does not permanently disable MF4 support.
