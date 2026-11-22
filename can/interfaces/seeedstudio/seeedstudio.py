@@ -10,9 +10,11 @@ import io
 import logging
 import struct
 from time import time
+from typing import Any
 
 import can
 from can import BusABC, CanProtocol, Message
+from can.typechecking import CanFilters
 
 logger = logging.getLogger("seeedbus")
 
@@ -57,15 +59,15 @@ class SeeedBus(BusABC):
 
     def __init__(
         self,
-        channel,
-        baudrate=2000000,
-        timeout=0.1,
-        frame_type="STD",
-        operation_mode="normal",
-        bitrate=500000,
-        can_filters=None,
-        **kwargs,
-    ):
+        channel: str,
+        baudrate: int = 2000000,
+        timeout: float = 0.1,
+        frame_type: str = "STD",
+        operation_mode: str = "normal",
+        bitrate: int = 500000,
+        can_filters: CanFilters | None = None,
+        **kwargs: Any,
+    ) -> None:
         """
         :param str channel:
             The serial device to open. For example "/dev/ttyS1" or
