@@ -1,0 +1,1 @@
+Fix PCAN parameter buffer sizes so only the 11-bit and 29-bit acceptance filters use 64-bit buffers.
