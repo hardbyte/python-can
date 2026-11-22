@@ -181,7 +181,8 @@ class CanutilsLogWriter(TextIOMessageWriter):
             eol = " R\n" if msg.is_rx else " T\n"
 
         if msg.is_remote_frame:
-            framestr += f"R{eol}"
+            remote_dlc = str(msg.dlc) if 0 < msg.dlc <= 8 else ""
+            framestr += f"R{remote_dlc}{eol}"
         else:
             if msg.is_fd:
                 fd_flags = 0
