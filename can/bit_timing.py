@@ -74,14 +74,20 @@ class BitTiming(Mapping[str, int]):
             "sjw": sjw,
             "nof_samples": nof_samples,
         }
+        self._validate()
         if strict:
-            self._validate()
             self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
-        if not 1 <= self.brp <= 64:
-            raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
+        _validate_positive("f_clock", self.f_clock)
+        _validate_segments(
+            brp=self.brp, tseg1=self.tseg1, tseg2=self.tseg2, sjw=self.sjw
+        )
 
+        if self.nof_samples not in (1, 3):
+            raise ValueError("nof_samples must be 1 or 3")
+
+    def _restrict_to_minimum_range(self) -> None:
         if not 1 <= self.tseg1 <= 16:
             raise ValueError(f"tseg1 (={self.tseg1}) must be in [1...16].")
 
@@ -91,21 +97,12 @@ class BitTiming(Mapping[str, int]):
         if not 1 <= self.sjw <= 4:
             raise ValueError(f"sjw (={self.sjw}) must be in [1...4].")
 
-        if self.sjw > self.tseg2:
-            raise ValueError(
-                f"sjw (={self.sjw}) must not be greater than tseg2 (={self.tseg2})."
-            )
-
         if self.sample_point < 50.0:
             raise ValueError(
                 f"The sample point must be greater than or equal to 50% "
                 f"(sample_point={self.sample_point:.2f}%)."
             )
 
-        if self.nof_samples not in (1, 3):
-            raise ValueError("nof_samples must be 1 or 3")
-
-    def _restrict_to_minimum_range(self) -> None:
         if not 8 <= self.nbt <= 25:
             raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
 
@@ -155,6 +152,7 @@ class BitTiming(Mapping[str, int]):
         :raises ValueError:
             if the arguments are invalid.
         """
+        _validate_positive("bitrate", bitrate)
         try:
             brp = round(f_clock / (bitrate * (1 + tseg1 + tseg2)))
         except ZeroDivisionError:
@@ -232,6 +230,7 @@ class BitTiming(Mapping[str, int]):
         :raises ValueError:
             if the arguments are invalid.
         """
+        _validate_positive("bitrate", bitrate)
 
         if sample_point < 50.0:
             raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
@@ -250,7 +249,7 @@ class BitTiming(Mapping[str, int]):
             tseg1 = min(tseg1, nbt - 2)
 
             tseg2 = nbt - tseg1 - 1
-            sjw = min(tseg2, 4)
+            sjw = min(tseg1, tseg2, 4)
 
             try:
                 bt = BitTiming(
@@ -367,12 +366,32 @@ class BitTiming(Mapping[str, int]):
 
     @property
     def btr0(self) -> int:
-        """Bit timing register 0 for SJA1000."""
+        """Bit timing register 0 for SJA1000.
+
+        :raises ValueError:
+            if brp or sjw do not fit into the register.
+        """
+        if self.brp > 64:
+            raise ValueError(f"brp (={self.brp}) cannot be encoded in BTR0 (max. 64).")
+        if self.sjw > 4:
+            raise ValueError(f"sjw (={self.sjw}) cannot be encoded in BTR0 (max. 4).")
         return (self.sjw - 1) << 6 | self.brp - 1
 
     @property
     def btr1(self) -> int:
-        """Bit timing register 1 for SJA1000."""
+        """Bit timing register 1 for SJA1000.
+
+        :raises ValueError:
+            if tseg1 or tseg2 do not fit into the register.
+        """
+        if self.tseg1 > 16:
+            raise ValueError(
+                f"tseg1 (={self.tseg1}) cannot be encoded in BTR1 (max. 16)."
+            )
+        if self.tseg2 > 8:
+            raise ValueError(
+                f"tseg2 (={self.tseg2}) cannot be encoded in BTR1 (max. 8)."
+            )
         sam = 1 if self.nof_samples == 3 else 0
         return sam << 7 | (self.tseg2 - 1) << 4 | self.tseg1 - 1
 
@@ -442,13 +461,17 @@ class BitTiming(Mapping[str, int]):
             )
         # adapt synchronization jump width, so it has the same size relative to bit time as self
         sjw = round(self.sjw / self.nbt * bt.nbt)
-        sjw = max(1, min(4, bt.tseg2, sjw))
+        sjw = max(1, min(4, bt.tseg1, bt.tseg2, sjw))
         bt._data["sjw"] = sjw  # pylint: disable=protected-access
         bt._data["nof_samples"] = self.nof_samples  # pylint: disable=protected-access
         bt._validate()  # pylint: disable=protected-access
         return bt
 
     def __str__(self) -> str:
+        try:
+            btr = f"{self.btr0:02X}{self.btr1:02X}h"
+        except ValueError:
+            btr = "n/a"
         segments = [
             f"BR: {self.bitrate:_} bit/s",
             f"SP: {self.sample_point:.2f}%",
@@ -456,7 +479,7 @@ class BitTiming(Mapping[str, int]):
             f"TSEG1: {self.tseg1}",
             f"TSEG2: {self.tseg2}",
             f"SJW: {self.sjw}",
-            f"BTR: {self.btr0:02X}{self.btr1:02X}h",
+            f"BTR: {btr}",
             f"CLK: {self.f_clock / 1e6:.0f}MHz",
         ]
         return ", ".join(segments)
@@ -592,37 +615,26 @@ class BitTimingFd(Mapping[str, int]):
             self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
-        for param, value in self._data.items():
-            if value < 0:  # type: ignore[operator]
-                err_msg = f"'{param}' (={value}) must not be negative."
-                raise ValueError(err_msg)
-
-        if self.nom_brp < 1:
-            raise ValueError(
-                f"nominal bitrate prescaler (={self.nom_brp}) must be at least 1."
-            )
-
-        if self.data_brp < 1:
-            raise ValueError(
-                f"data bitrate prescaler (={self.data_brp}) must be at least 1."
-            )
+        _validate_positive("f_clock", self.f_clock)
+        _validate_segments(
+            brp=self.nom_brp,
+            tseg1=self.nom_tseg1,
+            tseg2=self.nom_tseg2,
+            sjw=self.nom_sjw,
+            prefix="nom_",
+        )
+        _validate_segments(
+            brp=self.data_brp,
+            tseg1=self.data_tseg1,
+            tseg2=self.data_tseg2,
+            sjw=self.data_sjw,
+            prefix="data_",
+        )
 
         if self.data_bitrate < self.nom_bitrate:
             raise ValueError(
                 f"data_bitrate (={self.data_bitrate}) must be greater than or "
                 f"equal to nom_bitrate (={self.nom_bitrate})"
-            )
-
-        if self.nom_sjw > self.nom_tseg2:
-            raise ValueError(
-                f"nom_sjw (={self.nom_sjw}) must not be "
-                f"greater than nom_tseg2 (={self.nom_tseg2})."
-            )
-
-        if self.data_sjw > self.data_tseg2:
-            raise ValueError(
-                f"data_sjw (={self.data_sjw}) must not be "
-                f"greater than data_tseg2 (={self.data_tseg2})."
             )
 
         if self.nom_sample_point < 50.0:
@@ -723,6 +735,8 @@ class BitTimingFd(Mapping[str, int]):
         :raises ValueError:
             if the arguments are invalid.
         """
+        _validate_positive("nom_bitrate", nom_bitrate)
+        _validate_positive("data_bitrate", data_bitrate)
         try:
             nom_brp = round(f_clock / (nom_bitrate * (1 + nom_tseg1 + nom_tseg2)))
             data_brp = round(f_clock / (data_bitrate * (1 + data_tseg1 + data_tseg2)))
@@ -780,6 +794,9 @@ class BitTimingFd(Mapping[str, int]):
         :raises ValueError:
             if the arguments are invalid.
         """
+        _validate_positive("nom_bitrate", nom_bitrate)
+        _validate_positive("data_bitrate", data_bitrate)
+
         if nom_sample_point < 50.0:
             raise ValueError(
                 f"nom_sample_point (={nom_sample_point}) must not be below 50%."
@@ -806,7 +823,7 @@ class BitTimingFd(Mapping[str, int]):
             nom_tseg1 = min(nom_tseg1, nbt - sync_seg - 2)
             nom_tseg2 = nbt - nom_tseg1 - 1
 
-            nom_sjw = min(nom_tseg2, 128)
+            nom_sjw = min(nom_tseg1, nom_tseg2, 128)
 
             for data_brp in range(1, 257):
                 dbt = round(int(f_clock / (data_bitrate * data_brp)))
@@ -822,7 +839,7 @@ class BitTimingFd(Mapping[str, int]):
                 data_tseg1 = min(data_tseg1, dbt - sync_seg - 2)
                 data_tseg2 = dbt - data_tseg1 - 1
 
-                data_sjw = min(data_tseg2, 16)
+                data_sjw = min(data_tseg1, data_tseg2, 16)
 
                 try:
                     bt = BitTimingFd(
@@ -1116,10 +1133,10 @@ class BitTimingFd(Mapping[str, int]):
             )
         # adapt synchronization jump width, so it has the same size relative to bit time as self
         nom_sjw = round(self.nom_sjw / self.nbt * bt.nbt)
-        nom_sjw = max(1, min(bt.nom_tseg2, nom_sjw))
+        nom_sjw = max(1, min(bt.nom_tseg1, bt.nom_tseg2, nom_sjw))
         bt._data["nom_sjw"] = nom_sjw  # pylint: disable=protected-access
         data_sjw = round(self.data_sjw / self.dbt * bt.dbt)
-        data_sjw = max(1, min(bt.data_tseg2, data_sjw))
+        data_sjw = max(1, min(bt.data_tseg1, bt.data_tseg2, data_sjw))
         bt._data["data_sjw"] = data_sjw  # pylint: disable=protected-access
         bt._validate()  # pylint: disable=protected-access
         return bt
@@ -1163,6 +1180,29 @@ class BitTimingFd(Mapping[str, int]):
 
     def __hash__(self) -> int:
         return tuple(self._data.values()).__hash__()
+
+
+def _validate_positive(name: str, value: int) -> None:
+    """Raise a :class:`ValueError` if *value* is not greater than zero."""
+    if value <= 0:
+        raise ValueError(f"{name} (={value}) must be greater than 0.")
+
+
+def _validate_segments(
+    brp: int, tseg1: int, tseg2: int, sjw: int, prefix: str = ""
+) -> None:
+    """Check the structural requirements that every bit timing must fulfil."""
+    for name, value in (("brp", brp), ("tseg1", tseg1), ("tseg2", tseg2), ("sjw", sjw)):
+        if value < 1:
+            raise ValueError(f"{prefix}{name} (={value}) must be at least 1.")
+
+    # SJW must not exceed either phase buffer segment; Phase_Seg1 is part of tseg1
+    for name, value in (("tseg1", tseg1), ("tseg2", tseg2)):
+        if sjw > value:
+            raise ValueError(
+                f"{prefix}sjw (={sjw}) must not be greater than "
+                f"{prefix}{name} (={value})."
+            )
 
 
 def _oscillator_tolerance_condition_1(nom_sjw: int, nbt: int) -> float:

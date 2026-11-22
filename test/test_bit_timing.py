@@ -548,3 +548,148 @@ def test_recreate_with_f_clock():
     assert (fd_timing_80mhz.data_sjw / fd_timing_80mhz.dbt) == pytest.approx(
         fd_timing_60mhz.data_sjw / fd_timing_60mhz.dbt, abs=1e-2
     )
+
+
+_CLASSIC_KWARGS = {"f_clock": 8_000_000, "brp": 1, "tseg1": 5, "tseg2": 2, "sjw": 1}
+_FD_KWARGS = {
+    "f_clock": 80_000_000,
+    "nom_brp": 1,
+    "nom_tseg1": 59,
+    "nom_tseg2": 20,
+    "nom_sjw": 10,
+    "data_brp": 1,
+    "data_tseg1": 6,
+    "data_tseg2": 3,
+    "data_sjw": 2,
+}
+
+
+@pytest.mark.parametrize(
+    ("cls", "base", "overrides", "match"),
+    [
+        (can.BitTiming, _CLASSIC_KWARGS, {"f_clock": 0}, "f_clock"),
+        (can.BitTiming, _CLASSIC_KWARGS, {"brp": 0}, "brp"),
+        (can.BitTiming, _CLASSIC_KWARGS, {"tseg1": 0}, "tseg1"),
+        (can.BitTiming, _CLASSIC_KWARGS, {"tseg2": 0}, "tseg2"),
+        (can.BitTiming, _CLASSIC_KWARGS, {"sjw": 0}, "sjw"),
+        (can.BitTiming, _CLASSIC_KWARGS, {"sjw": 3}, "tseg2"),
+        (can.BitTiming, _CLASSIC_KWARGS, {"tseg1": 1, "tseg2": 4, "sjw": 2}, "tseg1"),
+        (can.BitTiming, _CLASSIC_KWARGS, {"nof_samples": 2}, "nof_samples"),
+        (can.BitTimingFd, _FD_KWARGS, {"f_clock": 0}, "f_clock"),
+        (can.BitTimingFd, _FD_KWARGS, {"nom_brp": 0}, "nom_brp"),
+        (can.BitTimingFd, _FD_KWARGS, {"nom_tseg2": 0}, "nom_tseg2"),
+        (can.BitTimingFd, _FD_KWARGS, {"nom_sjw": 21}, "nom_tseg2"),
+        (can.BitTimingFd, _FD_KWARGS, {"data_sjw": 0}, "data_sjw"),
+        (
+            can.BitTimingFd,
+            _FD_KWARGS,
+            {"data_tseg1": 1, "data_tseg2": 8, "data_sjw": 2},
+            "data_tseg1",
+        ),
+    ],
+)
+def test_invalid_structure(cls, base, overrides, match) -> None:
+    """
+    Test Scope:
+        BitTiming and BitTimingFd reject structurally invalid parameters,
+        also when strict is False.
+    Preconditions:
+        A valid set of constructor arguments for the respective class.
+    Events:
+        Construct the class with one or more arguments replaced by an invalid value.
+    Evaluate:
+        A ValueError naming the offending parameter is raised.
+    """
+    with pytest.raises(ValueError, match=match):
+        cls(**{**base, **overrides})
+
+
+@pytest.mark.parametrize(
+    ("overrides", "register"),
+    [
+        ({"brp": 100}, "btr0"),
+        ({"tseg1": 10, "tseg2": 5, "sjw": 5}, "btr0"),
+        ({"tseg1": 20}, "btr1"),
+        ({"tseg1": 10, "tseg2": 9}, "btr1"),
+    ],
+)
+def test_btr_not_encodable(overrides, register) -> None:
+    """
+    Test Scope:
+        A non-strict BitTiming with values beyond the SJA1000 register range
+        can be created, but cannot be converted to BTR registers.
+    Preconditions:
+        None.
+    Events:
+        Construct a non-strict BitTiming with brp, sjw, tseg1 or tseg2 out of
+        register range, read the register property and convert the timing to str.
+    Evaluate:
+        The register property raises a ValueError and the string representation
+        shows "BTR: n/a".
+    """
+    timing = can.BitTiming(**{**_CLASSIC_KWARGS, **overrides})
+    with pytest.raises(ValueError):
+        getattr(timing, register)
+    assert "BTR: n/a" in str(timing)
+
+
+@pytest.mark.parametrize(
+    "create",
+    [
+        lambda: can.BitTiming.from_bitrate_and_segments(
+            f_clock=8_000_000, bitrate=0, tseg1=5, tseg2=2, sjw=1
+        ),
+        lambda: can.BitTiming.from_sample_point(f_clock=8_000_000, bitrate=-1),
+        lambda: list(
+            can.BitTiming.iterate_from_sample_point(f_clock=8_000_000, bitrate=0)
+        ),
+        lambda: can.BitTimingFd.from_bitrate_and_segments(
+            f_clock=80_000_000,
+            nom_bitrate=0,
+            nom_tseg1=59,
+            nom_tseg2=20,
+            nom_sjw=10,
+            data_bitrate=8_000_000,
+            data_tseg1=6,
+            data_tseg2=3,
+            data_sjw=2,
+        ),
+        lambda: can.BitTimingFd.from_sample_point(
+            f_clock=80_000_000,
+            nom_bitrate=500_000,
+            nom_sample_point=80.0,
+            data_bitrate=-1,
+            data_sample_point=80.0,
+        ),
+        lambda: list(
+            can.BitTimingFd.iterate_from_sample_point(
+                f_clock=80_000_000,
+                nom_bitrate=0,
+                nom_sample_point=80.0,
+                data_bitrate=2_000_000,
+                data_sample_point=80.0,
+            )
+        ),
+    ],
+    ids=[
+        "from_bitrate_and_segments",
+        "from_sample_point",
+        "iterate_from_sample_point",
+        "fd_from_bitrate_and_segments",
+        "fd_from_sample_point",
+        "fd_iterate_from_sample_point",
+    ],
+)
+def test_invalid_bitrate(create) -> None:
+    """
+    Test Scope:
+        The factory methods and solvers reject bitrates that are not positive.
+    Preconditions:
+        None.
+    Events:
+        Call a factory method or solver with a bitrate of 0 or below.
+    Evaluate:
+        A ValueError naming the bitrate is raised.
+    """
+    with pytest.raises(ValueError, match="bitrate"):
+        create()
