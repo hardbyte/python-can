@@ -258,6 +258,45 @@ class TestPCANBus(unittest.TestCase):
         self.assertEqual(recv_msg.timestamp, 0)
         self.assertEqual(recv_msg.channel, "PCAN_USBBUS1")
 
+    @parameterized.expand(
+        [
+            ("buslight", PCAN_ERROR_BUSLIGHT),
+            ("busheavy", PCAN_ERROR_BUSHEAVY),
+            ("both", PCAN_ERROR_BUSLIGHT | PCAN_ERROR_BUSHEAVY),
+        ]
+    )
+    def test_recv_bus_load_flags_keep_the_frame(self, name, result):
+        data = (ctypes.c_ubyte * 8)(*range(8))
+        msg = TPCANMsg(ID=0xC0FFEF, LEN=8, MSGTYPE=PCAN_MESSAGE_EXTENDED, DATA=data)
+        self.mock_pcan.Read = Mock(return_value=(result, msg, TPCANTimestamp()))
+        self.mock_pcan.GetErrorText = Mock(return_value=(PCAN_ERROR_OK, b"bus load"))
+        self.bus = can.Bus(interface="pcan")
+
+        recv_msg = self.bus.recv(timeout=0)
+        self.assertIsNotNone(recv_msg)
+        self.assertEqual(recv_msg.arbitration_id, msg.ID)
+        self.assertSequenceEqual(recv_msg.data, msg.DATA)
+        self.assertFalse(recv_msg.is_error_frame)
+
+    @parameterized.expand(
+        [
+            ("status", PCAN_ERROR_BUSHEAVY, PCAN_MESSAGE_STATUS.value),
+            ("error_frame", PCAN_ERROR_BUSHEAVY, PCAN_MESSAGE_ERRFRAME.value),
+            (
+                "other_error",
+                PCAN_ERROR_BUSHEAVY | PCAN_ERROR_QOVERRUN,
+                PCAN_MESSAGE_STANDARD.value,
+            ),
+        ]
+    )
+    def test_recv_bus_load_flags_drop_other_reads(self, name, result, msgtype):
+        msg = TPCANMsg(ID=0x123, LEN=0, MSGTYPE=msgtype)
+        self.mock_pcan.Read = Mock(return_value=(result, msg, TPCANTimestamp()))
+        self.mock_pcan.GetErrorText = Mock(return_value=(PCAN_ERROR_OK, b"bus load"))
+        self.bus = can.Bus(interface="pcan")
+
+        self.assertIsNone(self.bus.recv(timeout=0))
+
     @pytest.mark.timeout(3.0)
     @patch("select.select", return_value=([], [], []))
     def test_recv_no_message(self, mock_select):
