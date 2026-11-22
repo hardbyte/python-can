@@ -17,7 +17,7 @@ from typing import Any, TextIO
 
 from ..message import Message
 from ..typechecking import StringPathLike
-from ..util import channel2int, len2dlc
+from ..util import channel2int, dlc2len
 from .generic import TextIOMessageReader, TextIOMessageWriter
 
 logger = logging.getLogger("can.io.trc")
@@ -190,25 +190,24 @@ class TRCReader(TextIOMessageReader):
         type_ = cols[self.columns["T"]]
         bus = self.columns.get("B", None)
 
+        msg = Message()
+        msg.is_fd = type_ in {"FD", "FB", "FE", "BI"}
         if "l" in self.columns:
-            length = int(cols[self.columns["l"]])
-            dlc = len2dlc(length)
+            msg.dlc = int(cols[self.columns["l"]])
         elif "L" in self.columns:
             dlc = int(cols[self.columns["L"]])
+            msg.dlc = dlc2len(dlc) if msg.is_fd and 0 <= dlc <= 15 else dlc
         else:
             raise ValueError("No length/dlc columns present.")
 
-        msg = Message()
         msg.timestamp = float(cols[self.columns["O"]]) / 1000 + self._start_time
         msg.arbitration_id = int(cols[self.columns["I"]], 16)
         msg.is_extended_id = len(cols[self.columns["I"]]) > 4
         msg.channel = int(cols[bus]) if bus is not None else 1
-        msg.dlc = dlc
         msg.is_remote_frame = type_ in {"RR"}
-        if dlc and not msg.is_remote_frame:
+        if msg.dlc and not msg.is_remote_frame:
             msg.data = bytearray.fromhex(cols[self.columns["D"]])
         msg.is_rx = cols[self.columns["d"]] == "Rx"
-        msg.is_fd = type_ in {"FD", "FB", "FE", "BI"}
         msg.bitrate_switch = type_ in {"FB", "FE"}
         msg.error_state_indicator = type_ in {"FE", "BI"}
 
