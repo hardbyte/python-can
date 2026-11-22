@@ -1,0 +1,2 @@
+Prevent configuration loading from modifying caller-owned dictionaries,
+including ``can.rc``, when normalizing the legacy ``bustype`` key.

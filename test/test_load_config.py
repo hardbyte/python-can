@@ -44,6 +44,31 @@ class LoadConfigTest(unittest.TestCase):
     def _dict_to_env(self, d):
         return {f"CAN_{k.upper()}": str(v) for k, v in d.items()}
 
+    def _load_config_isolated(self, config=None, rc=None):
+        missing_file = f"{self.test_dir}/missing.conf"
+        with (
+            unittest.mock.patch.object(can, "rc", rc if rc is not None else {}),
+            unittest.mock.patch.dict("os.environ", {}, clear=True),
+        ):
+            return can.util.load_config(path=missing_file, config=config)
+
+    def test_legacy_bustype_does_not_modify_config_argument(self):
+        for extra in ({}, {"interface": ""}, {"interface": "virtual"}):
+            with self.subTest(interface=extra.get("interface", "<missing>")):
+                original = {"bustype": "virtual", "channel": "0", **extra}
+                supplied = original.copy()
+                result = self._load_config_isolated(config=supplied)
+                self.assertEqual(result, {"interface": "virtual", "channel": 0})
+                self.assertEqual(supplied, original)
+
+    def test_legacy_bustype_does_not_modify_can_rc(self):
+        original = {"bustype": "virtual", "channel": "0"}
+        rc = original.copy()
+        for _ in range(2):
+            result = self._load_config_isolated(rc=rc)
+            self.assertEqual(result, {"interface": "virtual", "channel": 0})
+        self.assertEqual(rc, original)
+
     def test_config_default(self):
         tmp_config = self._gen_configration_file(["default"])
         config = can.util.load_config(path=tmp_config)
