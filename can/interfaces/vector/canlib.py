@@ -95,7 +95,7 @@ class VectorBus(BusABC):
         sjw_dbr: int = 2,
         tseg1_dbr: int = 6,
         tseg2_dbr: int = 3,
-        listen_only: bool | None = False,
+        listen_only: bool = False,
         **kwargs: Any,
     ) -> None:
         """

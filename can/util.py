@@ -241,6 +241,9 @@ def _create_bus_config(config: dict[str, Any]) -> typechecking.BusConfig:
     if "fd" in config:
         config["fd"] = config["fd"] not in (0, False)
 
+    if "listen_only" in config:
+        config["listen_only"] = config["listen_only"] not in (0, False)
+
     if "state" in config and not isinstance(config["state"], can.BusState):
         try:
             config["state"] = can.BusState[config["state"]]

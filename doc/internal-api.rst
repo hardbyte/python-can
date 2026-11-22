@@ -41,8 +41,9 @@ They **might** implement the following:
     * :meth:`~can.BusABC._detect_available_configs` to allow the interface
       to report which configurations are currently available for new
       connections.
-    * :meth:`~can.BusABC.state` property to allow reading and/or changing
-      the bus state.
+    * :meth:`~can.BusABC.state` property to allow reading the bus state.
+      Listen-only mode is requested through a ``listen_only`` constructor
+      parameter instead, see :ref:`listen_only`.
 
 .. note::
 
