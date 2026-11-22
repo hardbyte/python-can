@@ -815,3 +815,79 @@ def test_from_sample_point_follows_strict_rules() -> None:
             data_sample_point=sp,
         )
         assert fd_timing.nom_sjw <= fd_timing.nom_tseg1 - 1
+
+
+def test_from_sample_point_prefers_accurate_bitrate() -> None:
+    """
+    Test Scope:
+        BitTiming.from_sample_point finds solutions whose prescaler and bit time
+        only match the requested bitrate within the tolerance, and prefers an
+        exact bitrate over a closer sample point.
+    Preconditions:
+        None.
+    Events:
+        Request 12 kbit/s and 20 kbit/s from an 8 MHz clock.
+    Evaluate:
+        A 12 kbit/s timing within the tolerance of 1/256 is found and the
+        20 kbit/s timing matches the requested bitrate exactly.
+    """
+    timing = can.BitTiming.from_sample_point(
+        f_clock=8_000_000, bitrate=12_000, sample_point=75.0
+    )
+    assert abs(timing.bitrate - 12_000) <= 12_000 / 256
+
+    timing = can.BitTiming.from_sample_point(
+        f_clock=8_000_000, bitrate=20_000, sample_point=61.0
+    )
+    assert timing.f_clock / (timing.nbt * timing.brp) == 20_000
+
+
+@pytest.mark.parametrize("sample_point", [100.0, 150.0])
+@pytest.mark.parametrize(
+    "create",
+    [
+        lambda sp: can.BitTiming.from_sample_point(
+            f_clock=8_000_000, bitrate=500_000, sample_point=sp
+        ),
+        lambda sp: list(
+            can.BitTiming.iterate_from_sample_point(
+                f_clock=8_000_000, bitrate=500_000, sample_point=sp
+            )
+        ),
+        lambda sp: can.BitTimingFd.from_sample_point(
+            f_clock=80_000_000,
+            nom_bitrate=500_000,
+            nom_sample_point=sp,
+            data_bitrate=2_000_000,
+            data_sample_point=80.0,
+        ),
+        lambda sp: list(
+            can.BitTimingFd.iterate_from_sample_point(
+                f_clock=80_000_000,
+                nom_bitrate=500_000,
+                nom_sample_point=80.0,
+                data_bitrate=2_000_000,
+                data_sample_point=sp,
+            )
+        ),
+    ],
+    ids=[
+        "from_sample_point",
+        "iterate_from_sample_point",
+        "fd_from_sample_point",
+        "fd_iterate_from_sample_point",
+    ],
+)
+def test_sample_point_too_high(create, sample_point) -> None:
+    """
+    Test Scope:
+        The solvers reject sample points of 100% or more.
+    Preconditions:
+        None.
+    Events:
+        Call a solver with a sample point of 100% or above.
+    Evaluate:
+        A ValueError naming the sample point is raised.
+    """
+    with pytest.raises(ValueError, match="sample_point"):
+        create(sample_point)

@@ -228,17 +228,19 @@ class BitTiming(Mapping[str, int]):
         :param int bitrate:
             Bitrate in bit/s.
         :param float sample_point:
-            The sample point value in percent.
+            The sample point value in percent, in the range [50...100).
         :raises ValueError:
             if the arguments are invalid.
         """
         _validate_positive("bitrate", bitrate)
 
-        if sample_point < 50.0:
-            raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
+        if not 50.0 <= sample_point < 100.0:
+            raise ValueError(
+                f"sample_point (={sample_point}) must be in the range [50...100)%."
+            )
 
         for brp in range(1, 65):
-            nbt = int(f_clock / (bitrate * brp))
+            nbt = round(f_clock / (bitrate * brp))
             if nbt < 8:
                 break
 
@@ -273,7 +275,9 @@ class BitTiming(Mapping[str, int]):
         """Create a :class:`~can.BitTiming` instance for a sample point.
 
         This function tries to find bit timings, which are close to the requested
-        sample point. It does not take physical bus properties into account, so the
+        sample point. If several solutions exist, the one with the most accurate
+        bitrate is preferred, then the one closest to the requested sample point.
+        It does not take physical bus properties into account, so the
         calculated bus timings might not work properly for you.
 
         The :func:`oscillator_tolerance` function might be helpful to evaluate the
@@ -284,13 +288,15 @@ class BitTiming(Mapping[str, int]):
         :param int bitrate:
             Bitrate in bit/s.
         :param float sample_point:
-            The sample point value in percent.
+            The sample point value in percent, in the range [50...100).
         :raises ValueError:
             if the arguments are invalid.
         """
 
-        if sample_point < 50.0:
-            raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
+        if not 50.0 <= sample_point < 100.0:
+            raise ValueError(
+                f"sample_point (={sample_point}) must be in the range [50...100)%."
+            )
 
         possible_solutions: list[BitTiming] = list(
             cls.iterate_from_sample_point(f_clock, bitrate, sample_point)
@@ -299,16 +305,16 @@ class BitTiming(Mapping[str, int]):
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
 
-        # sort solutions
-        for key, reverse in (
-            # prefer low prescaler
-            (lambda x: x.brp, False),
-            # prefer low sample point deviation from requested values
-            (lambda x: abs(x.sample_point - sample_point), False),
-        ):
-            possible_solutions.sort(key=key, reverse=reverse)
-
-        return possible_solutions[0]
+        # prefer the most accurate bitrate, then the lowest sample point deviation,
+        # then the lowest prescaler
+        return min(
+            possible_solutions,
+            key=lambda x: (
+                abs(x.f_clock / (x.nbt * x.brp) - bitrate),
+                abs(x.sample_point - sample_point),
+                x.brp,
+            ),
+        )
 
     @property
     def f_clock(self) -> int:
@@ -798,31 +804,33 @@ class BitTimingFd(Mapping[str, int]):
         :param int nom_bitrate:
             Nominal bitrate in bit/s.
         :param float nom_sample_point:
-            The sample point value of the arbitration phase in percent.
+            The sample point value of the arbitration phase in percent,
+            in the range [50...100).
         :param int data_bitrate:
             Data bitrate in bit/s.
         :param float data_sample_point:
-            The sample point value of the data phase in percent.
+            The sample point value of the data phase in percent,
+            in the range [50...100).
         :raises ValueError:
             if the arguments are invalid.
         """
         _validate_positive("nom_bitrate", nom_bitrate)
         _validate_positive("data_bitrate", data_bitrate)
 
-        if nom_sample_point < 50.0:
+        if not 50.0 <= nom_sample_point < 100.0:
             raise ValueError(
-                f"nom_sample_point (={nom_sample_point}) must not be below 50%."
+                f"nom_sample_point (={nom_sample_point}) must be in the range [50...100)%."
             )
 
-        if data_sample_point < 50.0:
+        if not 50.0 <= data_sample_point < 100.0:
             raise ValueError(
-                f"data_sample_point (={data_sample_point}) must not be below 50%."
+                f"data_sample_point (={data_sample_point}) must be in the range [50...100)%."
             )
 
         sync_seg = 1
 
         for nom_brp in range(1, 257):
-            nbt = int(f_clock / (nom_bitrate * nom_brp))
+            nbt = round(f_clock / (nom_bitrate * nom_brp))
             if nbt < 1:
                 break
 
@@ -838,7 +846,7 @@ class BitTimingFd(Mapping[str, int]):
             nom_sjw = min(nom_tseg1 - 1, nom_tseg2, 128)
 
             for data_brp in range(1, 257):
-                dbt = round(int(f_clock / (data_bitrate * data_brp)))
+                dbt = round(f_clock / (data_bitrate * data_brp))
                 if dbt < 1:
                     break
 
@@ -882,7 +890,10 @@ class BitTimingFd(Mapping[str, int]):
         """Create a :class:`~can.BitTimingFd` instance for a sample point.
 
         This function tries to find bit timings, which are close to the requested
-        sample points. It does not take physical bus properties into account, so the
+        sample points. If several solutions exist, the one with the most accurate
+        bitrates is preferred, then the one closest to the requested sample points,
+        then one using the same prescaler for both phases.
+        It does not take physical bus properties into account, so the
         calculated bus timings might not work properly for you.
 
         The :func:`oscillator_tolerance` function might be helpful to evaluate the
@@ -893,22 +904,24 @@ class BitTimingFd(Mapping[str, int]):
         :param int nom_bitrate:
             Nominal bitrate in bit/s.
         :param float nom_sample_point:
-            The sample point value of the arbitration phase in percent.
+            The sample point value of the arbitration phase in percent,
+            in the range [50...100).
         :param int data_bitrate:
             Data bitrate in bit/s.
         :param float data_sample_point:
-            The sample point value of the data phase in percent.
+            The sample point value of the data phase in percent,
+            in the range [50...100).
         :raises ValueError:
             if the arguments are invalid.
         """
-        if nom_sample_point < 50.0:
+        if not 50.0 <= nom_sample_point < 100.0:
             raise ValueError(
-                f"nom_sample_point (={nom_sample_point}) must not be below 50%."
+                f"nom_sample_point (={nom_sample_point}) must be in the range [50...100)%."
             )
 
-        if data_sample_point < 50.0:
+        if not 50.0 <= data_sample_point < 100.0:
             raise ValueError(
-                f"data_sample_point (={data_sample_point}) must not be below 50%."
+                f"data_sample_point (={data_sample_point}) must be in the range [50...100)%."
             )
 
         possible_solutions: list[BitTimingFd] = list(
@@ -931,24 +944,19 @@ class BitTimingFd(Mapping[str, int]):
         if same_prescaler:
             possible_solutions = same_prescaler
 
-        # sort solutions
-        for key, reverse in (
-            # prefer low prescaler
-            (lambda x: x.nom_brp + x.data_brp, False),
-            # prefer same prescaler for arbitration and data
-            (lambda x: abs(x.nom_brp - x.data_brp), False),
-            # prefer low sample point deviation from requested values
-            (
-                lambda x: (
-                    abs(x.nom_sample_point - nom_sample_point)
-                    + abs(x.data_sample_point - data_sample_point)
-                ),
-                False,
+        # prefer the most accurate bitrates, then the lowest sample point deviation,
+        # then the same prescaler for arbitration and data, then low prescalers
+        return min(
+            possible_solutions,
+            key=lambda x: (
+                abs(x.f_clock / (x.nbt * x.nom_brp) - nom_bitrate) / nom_bitrate
+                + abs(x.f_clock / (x.dbt * x.data_brp) - data_bitrate) / data_bitrate,
+                abs(x.nom_sample_point - nom_sample_point)
+                + abs(x.data_sample_point - data_sample_point),
+                abs(x.nom_brp - x.data_brp),
+                x.nom_brp + x.data_brp,
             ),
-        ):
-            possible_solutions.sort(key=key, reverse=reverse)
-
-        return possible_solutions[0]
+        )
 
     @property
     def f_clock(self) -> int:
