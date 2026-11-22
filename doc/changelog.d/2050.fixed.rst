@@ -1,2 +1,1 @@
-Correct the Kvaser local transmit acknowledgement buffer type and size to match
-CANlib's unsigned-integer argument.
+Fix ``canERR_PARAM`` raised when opening a Kvaser channel with Linux CANlib, a regression introduced in 4.6.0.
