@@ -1141,6 +1141,7 @@ class MF4ImportTest(unittest.TestCase):
         """)
 
 
+@unittest.skipIf(asammdf is None, "MF4 is unavailable")
 class TestMF4FileFormat(ReaderWriterTest):
     """Tests can.MF4Writer and can.MF4Reader"""
 
