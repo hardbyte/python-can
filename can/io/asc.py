@@ -6,6 +6,7 @@ Example .asc files:
     - under `test/data/logfile.asc`
 """
 
+import itertools
 import logging
 import re
 from collections.abc import Generator
@@ -79,12 +80,8 @@ class ASCReader(TextIOMessageReader):
         self.timestamps_format: str | None = None
         self.internal_events_logged = False
 
-    def _extract_header(self) -> None:
-        while True:
-            position = self.file.tell()
-            _line = self.file.readline()
-            if not _line:
-                break
+    def _extract_header(self) -> str | None:
+        for _line in self.file:
             line = _line.strip()
 
             datetime_match = re.match(
@@ -123,12 +120,10 @@ class ASCReader(TextIOMessageReader):
 
             if events_match:
                 self.internal_events_logged = events_match.group("no_events") is None
-                break
+                return None
 
-            # The first data line can immediately follow a header comment.
-            # Rewind so __iter__ parses it instead of consuming and discarding it.
-            self.file.seek(position)
-            break
+            return _line
+        return None
 
     @staticmethod
     def _datetime_to_timestamp(datetime_string: str, tz: tzinfo | None) -> float:
@@ -289,9 +284,14 @@ class ASCReader(TextIOMessageReader):
         return Message(**msg_kwargs)
 
     def __iter__(self) -> Generator[Message, None, None]:
-        self._extract_header()
+        first_line = self._extract_header()
+        lines = (
+            self.file
+            if first_line is None
+            else itertools.chain([first_line], self.file)
+        )
 
-        for _line in self.file:
+        for _line in lines:
             line = _line.strip()
 
             if trigger_match := ASC_TRIGGER_REGEX.match(line):
