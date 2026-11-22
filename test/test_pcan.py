@@ -319,9 +319,7 @@ class TestPCANBus(unittest.TestCase):
                     MSGTYPE=PCAN_MESSAGE_STANDARD,
                     DATA=(ctypes.c_ubyte * 8)(),
                 ),
-                TPCANTimestamp(
-                    millis=millis, millis_overflow=overflow, micros=micros
-                ),
+                TPCANTimestamp(millis=millis, millis_overflow=overflow, micros=micros),
             )
         msg = self.bus.recv(timeout=0)
         self.assertIsNotNone(msg)
