@@ -1156,6 +1156,7 @@ class TestMF4FileFormat(ReaderWriterTest):
             ("fd_array_full", "(64,)u1", bytes(range(64)), 64, True),
         ]
     )
+    @unittest.skipIf(asammdf is None, "MF4 is unavailable")
     def test_error_frame_payload(self, name, storage, payload, length, fd):
         from asammdf.blocks.v4_blocks import SourceInformation
         from asammdf.blocks.v4_constants import FLAG_CG_BUS_EVENT
