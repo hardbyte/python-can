@@ -693,8 +693,8 @@ def test_from_sample_point_follows_strict_rules() -> None:
     Preconditions:
         None.
     Events:
-        Call BitTiming.from_sample_point and BitTimingFd.from_sample_point for
-        sample points from 50% to 99%.
+        Call BitTiming.from_sample_point for sample points from 50% to 99% and
+        BitTimingFd.from_sample_point for sample points from 50% to 99% in steps of 7%.
     Evaluate:
         tseg2 is at least 2 for classic CAN and SJW is less than tseg1 for
         classic CAN and the arbitration phase of CAN FD.
@@ -728,18 +728,27 @@ def test_from_sample_point_prefers_accurate_bitrate() -> None:
     Events:
         Request 12 kbit/s and 20 kbit/s from an 8 MHz clock.
     Evaluate:
-        A 12 kbit/s timing within the tolerance of 1/256 is found and the
-        20 kbit/s timing matches the requested bitrate exactly.
+        A 12 kbit/s timing within the tolerance of 1/256 is found. The 20 kbit/s
+        timing matches the requested bitrate exactly, although another candidate
+        is closer to the requested sample point.
     """
     timing = can.BitTiming.from_sample_point(
         f_clock=8_000_000, bitrate=12_000, sample_point=75.0
     )
     assert abs(timing.bitrate - 12_000) <= 12_000 / 256
 
+    candidates = list(
+        can.BitTiming.iterate_from_sample_point(
+            f_clock=8_000_000, bitrate=20_000, sample_point=61.0
+        )
+    )
     timing = can.BitTiming.from_sample_point(
         f_clock=8_000_000, bitrate=20_000, sample_point=61.0
     )
     assert timing.f_clock / (timing.nbt * timing.brp) == 20_000
+    assert any(
+        abs(c.sample_point - 61.0) < abs(timing.sample_point - 61.0) for c in candidates
+    )
 
 
 @pytest.mark.parametrize("sample_point", [100.0, 150.0])
@@ -812,3 +821,51 @@ def test_oscillator_tolerance_exact_time_quantum() -> None:
     timing = can.BitTiming(f_clock=80_000_000, brp=1, tseg1=63, tseg2=16, sjw=16)
     osc_tol = timing.oscillator_tolerance(node_loop_delay_ns=250, bus_length_m=10.0)
     assert osc_tol == pytest.approx(100 * 15 / 2048)
+
+
+def test_fd_from_sample_point_prefers_accurate_bitrate() -> None:
+    """
+    Test Scope:
+        BitTimingFd.from_sample_point prefers an accurate bitrate over a shared
+        prescaler, and a shared prescaler over a closer sample point.
+    Preconditions:
+        None.
+    Events:
+        Request 250 kbit/s / 1.212121 Mbit/s from an 80 MHz clock, where only
+        separate prescalers give an exact nominal bitrate. Request 125 kbit/s /
+        1 Mbit/s from a 20 MHz clock, where separate prescalers would reach the
+        requested sample points more closely.
+    Evaluate:
+        The first timing has the exact nominal bitrate. The second timing uses
+        the same prescaler for both phases, although an exact candidate with
+        separate prescalers is closer to the requested sample points.
+    """
+    timing = can.BitTimingFd.from_sample_point(
+        f_clock=80_000_000,
+        nom_bitrate=250_000,
+        nom_sample_point=80.0,
+        data_bitrate=1_212_121,
+        data_sample_point=75.0,
+    )
+    assert timing.f_clock / (timing.nbt * timing.nom_brp) == 250_000
+
+    args = {
+        "f_clock": 20_000_000,
+        "nom_bitrate": 125_000,
+        "nom_sample_point": 75.0,
+        "data_bitrate": 1_000_000,
+        "data_sample_point": 75.0,
+    }
+    timing = can.BitTimingFd.from_sample_point(**args)
+    assert timing.nom_brp == timing.data_brp
+
+    def sample_point_deviation(t: can.BitTimingFd) -> float:
+        return abs(t.nom_sample_point - 75.0) + abs(t.data_sample_point - 75.0)
+
+    assert any(
+        c.nom_brp != c.data_brp
+        and c.nom_bitrate == 125_000
+        and c.data_bitrate == 1_000_000
+        and sample_point_deviation(c) < sample_point_deviation(timing)
+        for c in can.BitTimingFd.iterate_from_sample_point(**args)
+    )

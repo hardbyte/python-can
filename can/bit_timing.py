@@ -873,6 +873,8 @@ class BitTimingFd(Mapping[str, int]):
                 data_tseg1 = min(data_tseg1, dbt - sync_seg - 2)
                 data_tseg2 = dbt - data_tseg1 - 1
 
+                # unlike the arbitration phase, the data phase may have no
+                # propagation segment, so SJW may be as large as data_tseg1
                 data_sjw = min(data_tseg1, data_tseg2, 16)
 
                 try:
@@ -905,8 +907,8 @@ class BitTimingFd(Mapping[str, int]):
 
         This function tries to find bit timings, which are close to the requested
         sample points. If several solutions exist, the one with the most accurate
-        bitrates is preferred, then the one closest to the requested sample points,
-        then one using the same prescaler for both phases.
+        bitrates is preferred, then one using the same prescaler for both phases,
+        then the one closest to the requested sample points.
         It does not take physical bus properties into account, so the
         calculated bus timings might not work properly for you.
 
@@ -951,20 +953,15 @@ class BitTimingFd(Mapping[str, int]):
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
 
-        # prefer using the same prescaler for arbitration and data phase
-        same_prescaler = list(
-            filter(lambda x: x.nom_brp == x.data_brp, possible_solutions)
-        )
-        if same_prescaler:
-            possible_solutions = same_prescaler
-
-        # prefer the most accurate bitrates, then the lowest sample point deviation,
-        # then the same prescaler for arbitration and data, then low prescalers
+        # prefer the most accurate bitrates, then the same prescaler for arbitration
+        # and data phase (same time quantum, optimal clock tolerance), then the
+        # lowest sample point deviation, then low prescalers
         return min(
             possible_solutions,
             key=lambda x: (
                 abs(x.f_clock / (x.nbt * x.nom_brp) - nom_bitrate) / nom_bitrate
                 + abs(x.f_clock / (x.dbt * x.data_brp) - data_bitrate) / data_bitrate,
+                x.nom_brp != x.data_brp,
                 abs(x.nom_sample_point - nom_sample_point)
                 + abs(x.data_sample_point - data_sample_point),
                 abs(x.nom_brp - x.data_brp),
