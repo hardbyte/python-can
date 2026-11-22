@@ -1188,11 +1188,75 @@ class TestCanutilsFileFormat(ReaderWriterTest):
         super()._setup_instance_helper(
             can.CanutilsLogWriter,
             can.CanutilsLogReader,
+            # error frames without class bits are written as bus errors,
+            # see test_write_error_frame_without_class
+            check_error_frames=False,
             check_fd=True,
             test_append=True,
             check_comments=False,
             preserves_channel=False,
             adds_default_channel="vcan0",
+        )
+
+    def test_read_error_frames(self):
+        # error frames as candump -L writes them: CAN_ERR_FLAG plus the error
+        # class in the identifier, followed by the eight error data bytes
+        with open(self.test_file_name, "w", encoding="ascii") as file:
+            file.write("(1.000000) can0 20000004#0004000000000000\n")
+            file.write("(2.000000) can1 20000080#0000000000000000\n")
+
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            messages = list(reader)
+
+        expected = [
+            can.Message(
+                timestamp=1.0,
+                arbitration_id=0x004,
+                is_error_frame=True,
+                data=bytes.fromhex("0004000000000000"),
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=2.0,
+                arbitration_id=0x080,
+                is_error_frame=True,
+                data=bytes(8),
+                channel="can1",
+            ),
+        ]
+        self.assertEqual(len(messages), len(expected))
+        for actual, wanted in zip(messages, expected):
+            self.assertTrue(wanted.equals(actual), f"{actual!r} != {wanted!r}")
+
+    def test_write_error_frame_class(self):
+        message = can.Message(
+            timestamp=1.0,
+            arbitration_id=0x204,
+            is_error_frame=True,
+            data=bytes.fromhex("0004000000000102"),
+            channel="can1",
+        )
+        with can.CanutilsLogWriter(self.test_file_name) as writer:
+            writer(message)
+
+        with open(self.test_file_name, encoding="ascii") as file:
+            self.assertEqual(file.read(), "(1.000000) can1 20000204#0004000000000102\n")
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            (read_back,) = reader
+        self.assertTrue(message.equals(read_back), f"{read_back!r}")
+
+    def test_write_error_frame_without_class(self):
+        message = can.Message(timestamp=1.0, is_error_frame=True, channel="can0")
+        with can.CanutilsLogWriter(self.test_file_name) as writer:
+            writer(message)
+
+        with open(self.test_file_name, encoding="ascii") as file:
+            self.assertEqual(file.read(), "(1.000000) can0 20000080#\n")
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            (read_back,) = reader
+        self.assertMessageEqual(
+            can.Message(timestamp=1.0, arbitration_id=0x080, is_error_frame=True),
+            read_back,
         )
 
 

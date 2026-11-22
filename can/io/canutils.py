@@ -100,23 +100,21 @@ class CanutilsLogReader(TextIOMessageReader):
                 for i in range(0, len(data), 2):
                     data_bin.append(int(data[i : (i + 2)], 16))
 
-            if can_id & CAN_ERR_FLAG and can_id & CAN_ERR_BUSERROR:
-                msg = Message(timestamp=timestamp, is_error_frame=True)
-            else:
-                msg = Message(
-                    timestamp=timestamp,
-                    arbitration_id=can_id & 0x1FFFFFFF,
-                    is_extended_id=is_extended,
-                    is_remote_frame=is_remote_frame,
-                    is_fd=is_fd,
-                    is_rx=is_rx,
-                    bitrate_switch=brs,
-                    error_state_indicator=esi,
-                    dlc=dlc,
-                    data=data_bin,
-                    channel=channel,
-                )
-            yield msg
+            # error frames carry their error class bits in the identifier
+            yield Message(
+                timestamp=timestamp,
+                arbitration_id=can_id & 0x1FFFFFFF,
+                is_extended_id=is_extended,
+                is_remote_frame=is_remote_frame,
+                is_error_frame=bool(can_id & CAN_ERR_FLAG),
+                is_fd=is_fd,
+                is_rx=is_rx,
+                bitrate_switch=brs,
+                error_state_indicator=esi,
+                dlc=dlc,
+                data=data_bin,
+                channel=channel,
+            )
 
         self.stop()
 
@@ -169,7 +167,12 @@ class CanutilsLogWriter(TextIOMessageWriter):
         framestr = f"({timestamp:f}) {channel}"
 
         if msg.is_error_frame:
-            framestr += f" {CAN_ERR_FLAG | CAN_ERR_BUSERROR:08X}#"
+            error_class = msg.arbitration_id & 0x1FFFFFFF
+            if not error_class:
+                # no SocketCAN error class bits: write CAN_ERR_BUSERROR,
+                # so older readers still recognise the line as an error frame
+                error_class = CAN_ERR_BUSERROR
+            framestr += f" {CAN_ERR_FLAG | error_class:08X}#"
         elif msg.is_extended_id:
             framestr += f" {msg.arbitration_id:08X}#"
         else:
