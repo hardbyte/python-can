@@ -13,12 +13,12 @@ class BitTiming(Mapping[str, int]):
     The class can be constructed in multiple ways, depending on the information
     available. The preferred way is using CAN clock frequency, prescaler, tseg1, tseg2 and sjw::
 
-        can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=1, sjw=1)
+        can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
 
     Alternatively you can set the bitrate instead of the bit rate prescaler::
 
         can.BitTiming.from_bitrate_and_segments(
-            f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=1, sjw=1
+            f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1
         )
 
     It is also possible to specify BTR registers::
@@ -60,9 +60,11 @@ class BitTiming(Mapping[str, int]):
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
         :param bool strict:
-            If True, restrict bit timings to the minimum required range as defined in
-            ISO 11898. This can be used to ensure compatibility across a wide variety
-            of CAN hardware.
+            If True, restrict bit timings to the minimum configuration ranges, which
+            every CAN controller compliant with ISO 11898-1 has to support, and
+            require a sample point of at least 50%. This can be used to ensure
+            compatibility across a wide variety of CAN hardware. If False, only the
+            structural requirements are checked.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -74,27 +76,30 @@ class BitTiming(Mapping[str, int]):
             "sjw": sjw,
             "nof_samples": nof_samples,
         }
+        self._validate()
         if strict:
-            self._validate()
             self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
-        if not 1 <= self.brp <= 64:
-            raise ValueError(f"bitrate prescaler (={self.brp}) must be in [1...64].")
+        _validate_positive("f_clock", self.f_clock)
+        _validate_segments(
+            brp=self.brp, tseg1=self.tseg1, tseg2=self.tseg2, sjw=self.sjw
+        )
 
-        if not 1 <= self.tseg1 <= 16:
-            raise ValueError(f"tseg1 (={self.tseg1}) must be in [1...16].")
+        if self.nof_samples not in (1, 3):
+            raise ValueError("nof_samples must be 1 or 3")
 
-        if not 1 <= self.tseg2 <= 8:
-            raise ValueError(f"tseg2 (={self.tseg2}) must be in [1...8].")
+    def _restrict_to_minimum_range(self) -> None:
+        if not 2 <= self.tseg1 <= 16:
+            raise ValueError(f"tseg1 (={self.tseg1}) must be in [2...16].")
+
+        if not 2 <= self.tseg2 <= 8:
+            raise ValueError(f"tseg2 (={self.tseg2}) must be in [2...8].")
 
         if not 1 <= self.sjw <= 4:
             raise ValueError(f"sjw (={self.sjw}) must be in [1...4].")
 
-        if self.sjw > self.tseg2:
-            raise ValueError(
-                f"sjw (={self.sjw}) must not be greater than tseg2 (={self.tseg2})."
-            )
+        _validate_sjw_with_prop_seg(sjw=self.sjw, tseg1=self.tseg1)
 
         if self.sample_point < 50.0:
             raise ValueError(
@@ -102,10 +107,6 @@ class BitTiming(Mapping[str, int]):
                 f"(sample_point={self.sample_point:.2f}%)."
             )
 
-        if self.nof_samples not in (1, 3):
-            raise ValueError("nof_samples must be 1 or 3")
-
-    def _restrict_to_minimum_range(self) -> None:
         if not 8 <= self.nbt <= 25:
             raise ValueError(f"nominal bit time (={self.nbt}) must be in [8...25].")
 
@@ -149,12 +150,15 @@ class BitTiming(Mapping[str, int]):
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
         :param bool strict:
-            If True, restrict bit timings to the minimum required range as defined in
-            ISO 11898. This can be used to ensure compatibility across a wide variety
-            of CAN hardware.
+            If True, restrict bit timings to the minimum configuration ranges, which
+            every CAN controller compliant with ISO 11898-1 has to support, and
+            require a sample point of at least 50%. This can be used to ensure
+            compatibility across a wide variety of CAN hardware. If False, only the
+            structural requirements are checked.
         :raises ValueError:
             if the arguments are invalid.
         """
+        _validate_positive("bitrate", bitrate)
         try:
             brp = round(f_clock / (bitrate * (1 + tseg1 + tseg2)))
         except ZeroDivisionError:
@@ -185,18 +189,22 @@ class BitTiming(Mapping[str, int]):
     ) -> "BitTiming":
         """Create a :class:`~can.BitTiming` instance from registers btr0 and btr1.
 
+        The registers are expected in the SJA1000-compatible (82C200) layout.
+        A combined 16-bit value, as used e.g. by PCAN, can be split with
+        ``btr0, btr1 = divmod(value, 256)``.
+
         :param int f_clock:
             The CAN system clock frequency in Hz.
         :param int btr0:
-            The BTR0 register value used by many CAN controllers.
+            The 8-bit BTR0 register value (0...255).
         :param int btr1:
-            The BTR1 register value used by many CAN controllers.
+            The 8-bit BTR1 register value (0...255).
         :raises ValueError:
             if the arguments are invalid.
         """
-        if not 0 <= btr0 < 2**16:
+        if not 0 <= btr0 < 2**8:
             raise ValueError(f"Invalid btr0 value. ({btr0})")
-        if not 0 <= btr1 < 2**16:
+        if not 0 <= btr1 < 2**8:
             raise ValueError(f"Invalid btr1 value. ({btr1})")
 
         brp = (btr0 & 0x3F) + 1
@@ -219,21 +227,26 @@ class BitTiming(Mapping[str, int]):
     ) -> Iterator["BitTiming"]:
         """Create a :class:`~can.BitTiming` iterator with all the solutions for a sample point.
 
+        All returned timings are valid in strict mode.
+
         :param int f_clock:
             The CAN system clock frequency in Hz.
         :param int bitrate:
             Bitrate in bit/s.
-        :param int sample_point:
-            The sample point value in percent.
+        :param float sample_point:
+            The sample point value in percent, in the range [50...100).
         :raises ValueError:
             if the arguments are invalid.
         """
+        _validate_positive("bitrate", bitrate)
 
-        if sample_point < 50.0:
-            raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
+        if not 50.0 <= sample_point < 100.0:
+            raise ValueError(
+                f"sample_point (={sample_point}) must be in the range [50...100)%."
+            )
 
         for brp in range(1, 65):
-            nbt = int(f_clock / (bitrate * brp))
+            nbt = round(f_clock / (bitrate * brp))
             if nbt < 8:
                 break
 
@@ -242,11 +255,11 @@ class BitTiming(Mapping[str, int]):
                 continue
 
             tseg1 = round(sample_point / 100 * nbt) - 1
-            # limit tseg1, so tseg2 is at least 1 TQ
-            tseg1 = min(tseg1, nbt - 2)
+            # limit tseg1, so tseg2 is at least 2 TQ
+            tseg1 = min(tseg1, nbt - 3)
 
             tseg2 = nbt - tseg1 - 1
-            sjw = min(tseg2, 4)
+            sjw = min(tseg1 - 1, tseg2, 4)
 
             try:
                 bt = BitTiming(
@@ -268,7 +281,9 @@ class BitTiming(Mapping[str, int]):
         """Create a :class:`~can.BitTiming` instance for a sample point.
 
         This function tries to find bit timings, which are close to the requested
-        sample point. It does not take physical bus properties into account, so the
+        sample point. If several solutions exist, the one with the most accurate
+        bitrate is preferred, then the one closest to the requested sample point.
+        It does not take physical bus properties into account, so the
         calculated bus timings might not work properly for you.
 
         The :func:`oscillator_tolerance` function might be helpful to evaluate the
@@ -278,14 +293,16 @@ class BitTiming(Mapping[str, int]):
             The CAN system clock frequency in Hz.
         :param int bitrate:
             Bitrate in bit/s.
-        :param int sample_point:
-            The sample point value in percent.
+        :param float sample_point:
+            The sample point value in percent, in the range [50...100).
         :raises ValueError:
             if the arguments are invalid.
         """
 
-        if sample_point < 50.0:
-            raise ValueError(f"sample_point (={sample_point}) must not be below 50%.")
+        if not 50.0 <= sample_point < 100.0:
+            raise ValueError(
+                f"sample_point (={sample_point}) must be in the range [50...100)%."
+            )
 
         possible_solutions: list[BitTiming] = list(
             cls.iterate_from_sample_point(f_clock, bitrate, sample_point)
@@ -294,16 +311,16 @@ class BitTiming(Mapping[str, int]):
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
 
-        # sort solutions
-        for key, reverse in (
-            # prefer low prescaler
-            (lambda x: x.brp, False),
-            # prefer low sample point deviation from requested values
-            (lambda x: abs(x.sample_point - sample_point), False),
-        ):
-            possible_solutions.sort(key=key, reverse=reverse)
-
-        return possible_solutions[0]
+        # prefer the most accurate bitrate, then the lowest sample point deviation,
+        # then the lowest prescaler
+        return min(
+            possible_solutions,
+            key=lambda x: (
+                abs(x.f_clock / (x.nbt * x.brp) - bitrate),
+                abs(x.sample_point - sample_point),
+                x.brp,
+            ),
+        )
 
     @property
     def f_clock(self) -> int:
@@ -363,12 +380,32 @@ class BitTiming(Mapping[str, int]):
 
     @property
     def btr0(self) -> int:
-        """Bit timing register 0 for SJA1000."""
+        """Bit timing register 0 for SJA1000.
+
+        :raises ValueError:
+            if brp or sjw do not fit into the register.
+        """
+        if self.brp > 64:
+            raise ValueError(f"brp (={self.brp}) cannot be encoded in BTR0 (max. 64).")
+        if self.sjw > 4:
+            raise ValueError(f"sjw (={self.sjw}) cannot be encoded in BTR0 (max. 4).")
         return (self.sjw - 1) << 6 | self.brp - 1
 
     @property
     def btr1(self) -> int:
-        """Bit timing register 1 for SJA1000."""
+        """Bit timing register 1 for SJA1000.
+
+        :raises ValueError:
+            if tseg1 or tseg2 do not fit into the register.
+        """
+        if self.tseg1 > 16:
+            raise ValueError(
+                f"tseg1 (={self.tseg1}) cannot be encoded in BTR1 (max. 16)."
+            )
+        if self.tseg2 > 8:
+            raise ValueError(
+                f"tseg2 (={self.tseg2}) cannot be encoded in BTR1 (max. 8)."
+            )
         sam = 1 if self.nof_samples == 3 else 0
         return sam << 7 | (self.tseg2 - 1) << 4 | self.tseg1 - 1
 
@@ -383,13 +420,18 @@ class BitTiming(Mapping[str, int]):
             Transceiver loop delay in nanoseconds.
         :param float bus_length_m:
             Bus length in meters.
+        :returns:
+            The maximum permissible oscillator tolerance in percent. A value of 0.0
+            means that the propagation delay does not fit into time segment 1.
         """
         delay_per_meter = 5
         bidirectional_propagation_delay_ns = 2 * (
             node_loop_delay_ns + delay_per_meter * bus_length_m
         )
 
-        prop_seg = math.ceil(bidirectional_propagation_delay_ns / self.tq)
+        # use the exact time quantum, self.tq is rounded to integer nanoseconds
+        tq_ns = self.brp * 1_000_000_000 / self.f_clock
+        prop_seg = math.ceil(bidirectional_propagation_delay_ns / tq_ns)
         nom_phase_seg1 = self.tseg1 - prop_seg
         nom_phase_seg2 = self.tseg2
         df_clock_list = [
@@ -435,13 +477,17 @@ class BitTiming(Mapping[str, int]):
             )
         # adapt synchronization jump width, so it has the same size relative to bit time as self
         sjw = round(self.sjw / self.nbt * bt.nbt)
-        sjw = max(1, min(4, bt.tseg2, sjw))
+        sjw = max(1, min(4, bt.tseg1 - 1, bt.tseg2, sjw))
         bt._data["sjw"] = sjw  # pylint: disable=protected-access
         bt._data["nof_samples"] = self.nof_samples  # pylint: disable=protected-access
         bt._validate()  # pylint: disable=protected-access
         return bt
 
     def __str__(self) -> str:
+        try:
+            btr = f"{self.btr0:02X}{self.btr1:02X}h"
+        except ValueError:
+            btr = "n/a"
         segments = [
             f"BR: {self.bitrate:_} bit/s",
             f"SP: {self.sample_point:.2f}%",
@@ -449,7 +495,7 @@ class BitTiming(Mapping[str, int]):
             f"TSEG1: {self.tseg1}",
             f"TSEG2: {self.tseg2}",
             f"SJW: {self.sjw}",
-            f"BTR: {self.btr0:02X}{self.btr1:02X}h",
+            f"BTR: {btr}",
             f"CLK: {self.f_clock / 1e6:.0f}MHz",
         ]
         return ", ".join(segments)
@@ -563,9 +609,11 @@ class BitTimingFd(Mapping[str, int]):
             The Synchronization Jump Width for the data phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
         :param bool strict:
-            If True, restrict bit timings to the minimum required range as defined in
-            ISO 11898. This can be used to ensure compatibility across a wide variety
-            of CAN hardware.
+            If True, restrict bit timings to the minimum configuration ranges, which
+            every CAN controller compliant with ISO 11898-1 has to support, and
+            require a sample point of at least 50%. This can be used to ensure
+            compatibility across a wide variety of CAN hardware. If False, only the
+            structural requirements are checked.
         :raises ValueError:
             if the arguments are invalid.
         """
@@ -585,20 +633,21 @@ class BitTimingFd(Mapping[str, int]):
             self._restrict_to_minimum_range()
 
     def _validate(self) -> None:
-        for param, value in self._data.items():
-            if value < 0:  # type: ignore[operator]
-                err_msg = f"'{param}' (={value}) must not be negative."
-                raise ValueError(err_msg)
-
-        if self.nom_brp < 1:
-            raise ValueError(
-                f"nominal bitrate prescaler (={self.nom_brp}) must be at least 1."
-            )
-
-        if self.data_brp < 1:
-            raise ValueError(
-                f"data bitrate prescaler (={self.data_brp}) must be at least 1."
-            )
+        _validate_positive("f_clock", self.f_clock)
+        _validate_segments(
+            brp=self.nom_brp,
+            tseg1=self.nom_tseg1,
+            tseg2=self.nom_tseg2,
+            sjw=self.nom_sjw,
+            prefix="nom_",
+        )
+        _validate_segments(
+            brp=self.data_brp,
+            tseg1=self.data_tseg1,
+            tseg2=self.data_tseg2,
+            sjw=self.data_sjw,
+            prefix="data_",
+        )
 
         if self.data_bitrate < self.nom_bitrate:
             raise ValueError(
@@ -606,37 +655,19 @@ class BitTimingFd(Mapping[str, int]):
                 f"equal to nom_bitrate (={self.nom_bitrate})"
             )
 
-        if self.nom_sjw > self.nom_tseg2:
-            raise ValueError(
-                f"nom_sjw (={self.nom_sjw}) must not be "
-                f"greater than nom_tseg2 (={self.nom_tseg2})."
-            )
-
-        if self.data_sjw > self.data_tseg2:
-            raise ValueError(
-                f"data_sjw (={self.data_sjw}) must not be "
-                f"greater than data_tseg2 (={self.data_tseg2})."
-            )
-
-        if self.nom_sample_point < 50.0:
-            raise ValueError(
-                f"The arbitration sample point must be greater than or equal to 50% "
-                f"(nom_sample_point={self.nom_sample_point:.2f}%)."
-            )
-
-        if self.data_sample_point < 50.0:
-            raise ValueError(
-                f"The data sample point must be greater than or equal to 50% "
-                f"(data_sample_point={self.data_sample_point:.2f}%)."
-            )
-
     def _restrict_to_minimum_range(self) -> None:
         # restrict to minimum required range as defined in ISO 11898
+        if not 1 <= self.nom_brp <= 32:
+            raise ValueError(f"nom_brp (={self.nom_brp}) must be in [1...32].")
+
+        if not 1 <= self.data_brp <= 32:
+            raise ValueError(f"data_brp (={self.data_brp}) must be in [1...32].")
+
         if not 8 <= self.nbt <= 80:
             raise ValueError(f"Nominal bit time (={self.nbt}) must be in [8...80]")
 
         if not 5 <= self.dbt <= 25:
-            raise ValueError(f"Nominal bit time (={self.dbt}) must be in [5...25]")
+            raise ValueError(f"Data bit time (={self.dbt}) must be in [5...25]")
 
         if not 1 <= self.data_tseg1 <= 16:
             raise ValueError(f"data_tseg1 (={self.data_tseg1}) must be in [1...16].")
@@ -667,6 +698,22 @@ class BitTimingFd(Mapping[str, int]):
 
             if not 1 <= self.nom_sjw <= 16:
                 raise ValueError(f"nom_sjw (={self.nom_sjw}) must be in [1...16].")
+
+        _validate_sjw_with_prop_seg(
+            sjw=self.nom_sjw, tseg1=self.nom_tseg1, prefix="nom_"
+        )
+
+        if self.nom_sample_point < 50.0:
+            raise ValueError(
+                f"The arbitration sample point must be greater than or equal to 50% "
+                f"(nom_sample_point={self.nom_sample_point:.2f}%)."
+            )
+
+        if self.data_sample_point < 50.0:
+            raise ValueError(
+                f"The data sample point must be greater than or equal to 50% "
+                f"(data_sample_point={self.data_sample_point:.2f}%)."
+            )
 
     @classmethod
     def from_bitrate_and_segments(  # pylint: disable=too-many-arguments
@@ -710,12 +757,16 @@ class BitTimingFd(Mapping[str, int]):
             The Synchronization Jump Width for the data phase. This value determines
             the maximum number of time quanta that the controller can resynchronize every bit.
         :param bool strict:
-            If True, restrict bit timings to the minimum required range as defined in
-            ISO 11898. This can be used to ensure compatibility across a wide variety
-            of CAN hardware.
+            If True, restrict bit timings to the minimum configuration ranges, which
+            every CAN controller compliant with ISO 11898-1 has to support, and
+            require a sample point of at least 50%. This can be used to ensure
+            compatibility across a wide variety of CAN hardware. If False, only the
+            structural requirements are checked.
         :raises ValueError:
             if the arguments are invalid.
         """
+        _validate_positive("nom_bitrate", nom_bitrate)
+        _validate_positive("data_bitrate", data_bitrate)
         try:
             nom_brp = round(f_clock / (nom_bitrate * (1 + nom_tseg1 + nom_tseg2)))
             data_brp = round(f_clock / (data_bitrate * (1 + data_tseg1 + data_tseg2)))
@@ -760,33 +811,40 @@ class BitTimingFd(Mapping[str, int]):
     ) -> Iterator["BitTimingFd"]:
         """Create an :class:`~can.BitTimingFd` iterator with all the solutions for a sample point.
 
+        All returned timings are valid in strict mode.
+
         :param int f_clock:
             The CAN system clock frequency in Hz.
         :param int nom_bitrate:
             Nominal bitrate in bit/s.
-        :param int nom_sample_point:
-            The sample point value of the arbitration phase in percent.
+        :param float nom_sample_point:
+            The sample point value of the arbitration phase in percent,
+            in the range [50...100).
         :param int data_bitrate:
             Data bitrate in bit/s.
-        :param int data_sample_point:
-            The sample point value of the data phase in percent.
+        :param float data_sample_point:
+            The sample point value of the data phase in percent,
+            in the range [50...100).
         :raises ValueError:
             if the arguments are invalid.
         """
-        if nom_sample_point < 50.0:
+        _validate_positive("nom_bitrate", nom_bitrate)
+        _validate_positive("data_bitrate", data_bitrate)
+
+        if not 50.0 <= nom_sample_point < 100.0:
             raise ValueError(
-                f"nom_sample_point (={nom_sample_point}) must not be below 50%."
+                f"nom_sample_point (={nom_sample_point}) must be in the range [50...100)%."
             )
 
-        if data_sample_point < 50.0:
+        if not 50.0 <= data_sample_point < 100.0:
             raise ValueError(
-                f"data_sample_point (={data_sample_point}) must not be below 50%."
+                f"data_sample_point (={data_sample_point}) must be in the range [50...100)%."
             )
 
         sync_seg = 1
 
         for nom_brp in range(1, 257):
-            nbt = int(f_clock / (nom_bitrate * nom_brp))
+            nbt = round(f_clock / (nom_bitrate * nom_brp))
             if nbt < 1:
                 break
 
@@ -799,10 +857,10 @@ class BitTimingFd(Mapping[str, int]):
             nom_tseg1 = min(nom_tseg1, nbt - sync_seg - 2)
             nom_tseg2 = nbt - nom_tseg1 - 1
 
-            nom_sjw = min(nom_tseg2, 128)
+            nom_sjw = min(nom_tseg1 - 1, nom_tseg2, 128)
 
             for data_brp in range(1, 257):
-                dbt = round(int(f_clock / (data_bitrate * data_brp)))
+                dbt = round(f_clock / (data_bitrate * data_brp))
                 if dbt < 1:
                     break
 
@@ -815,7 +873,9 @@ class BitTimingFd(Mapping[str, int]):
                 data_tseg1 = min(data_tseg1, dbt - sync_seg - 2)
                 data_tseg2 = dbt - data_tseg1 - 1
 
-                data_sjw = min(data_tseg2, 16)
+                # unlike the arbitration phase, the data phase may have no
+                # propagation segment, so SJW may be as large as data_tseg1
+                data_sjw = min(data_tseg1, data_tseg2, 16)
 
                 try:
                     bt = BitTimingFd(
@@ -846,7 +906,10 @@ class BitTimingFd(Mapping[str, int]):
         """Create a :class:`~can.BitTimingFd` instance for a sample point.
 
         This function tries to find bit timings, which are close to the requested
-        sample points. It does not take physical bus properties into account, so the
+        sample points. If several solutions exist, the one with the most accurate
+        bitrates is preferred, then one using the same prescaler for both phases,
+        then the one closest to the requested sample points.
+        It does not take physical bus properties into account, so the
         calculated bus timings might not work properly for you.
 
         The :func:`oscillator_tolerance` function might be helpful to evaluate the
@@ -856,23 +919,25 @@ class BitTimingFd(Mapping[str, int]):
             The CAN system clock frequency in Hz.
         :param int nom_bitrate:
             Nominal bitrate in bit/s.
-        :param int nom_sample_point:
-            The sample point value of the arbitration phase in percent.
+        :param float nom_sample_point:
+            The sample point value of the arbitration phase in percent,
+            in the range [50...100).
         :param int data_bitrate:
             Data bitrate in bit/s.
-        :param int data_sample_point:
-            The sample point value of the data phase in percent.
+        :param float data_sample_point:
+            The sample point value of the data phase in percent,
+            in the range [50...100).
         :raises ValueError:
             if the arguments are invalid.
         """
-        if nom_sample_point < 50.0:
+        if not 50.0 <= nom_sample_point < 100.0:
             raise ValueError(
-                f"nom_sample_point (={nom_sample_point}) must not be below 50%."
+                f"nom_sample_point (={nom_sample_point}) must be in the range [50...100)%."
             )
 
-        if data_sample_point < 50.0:
+        if not 50.0 <= data_sample_point < 100.0:
             raise ValueError(
-                f"data_sample_point (={data_sample_point}) must not be below 50%."
+                f"data_sample_point (={data_sample_point}) must be in the range [50...100)%."
             )
 
         possible_solutions: list[BitTimingFd] = list(
@@ -888,31 +953,21 @@ class BitTimingFd(Mapping[str, int]):
         if not possible_solutions:
             raise ValueError("No suitable bit timings found.")
 
-        # prefer using the same prescaler for arbitration and data phase
-        same_prescaler = list(
-            filter(lambda x: x.nom_brp == x.data_brp, possible_solutions)
-        )
-        if same_prescaler:
-            possible_solutions = same_prescaler
-
-        # sort solutions
-        for key, reverse in (
-            # prefer low prescaler
-            (lambda x: x.nom_brp + x.data_brp, False),
-            # prefer same prescaler for arbitration and data
-            (lambda x: abs(x.nom_brp - x.data_brp), False),
-            # prefer low sample point deviation from requested values
-            (
-                lambda x: (
-                    abs(x.nom_sample_point - nom_sample_point)
-                    + abs(x.data_sample_point - data_sample_point)
-                ),
-                False,
+        # prefer the most accurate bitrates, then the same prescaler for arbitration
+        # and data phase (same time quantum, optimal clock tolerance), then the
+        # lowest sample point deviation, then low prescalers
+        return min(
+            possible_solutions,
+            key=lambda x: (
+                abs(x.f_clock / (x.nbt * x.nom_brp) - nom_bitrate) / nom_bitrate
+                + abs(x.f_clock / (x.dbt * x.data_brp) - data_bitrate) / data_bitrate,
+                x.nom_brp != x.data_brp,
+                abs(x.nom_sample_point - nom_sample_point)
+                + abs(x.data_sample_point - data_sample_point),
+                abs(x.nom_brp - x.data_brp),
+                x.nom_brp + x.data_brp,
             ),
-        ):
-            possible_solutions.sort(key=key, reverse=reverse)
-
-        return possible_solutions[0]
+        )
 
     @property
     def f_clock(self) -> int:
@@ -1022,13 +1077,18 @@ class BitTimingFd(Mapping[str, int]):
             Transceiver loop delay in nanoseconds.
         :param float bus_length_m:
             Bus length in meters.
+        :returns:
+            The maximum permissible oscillator tolerance in percent. A value of 0.0
+            means that the propagation delay does not fit into time segment 1.
         """
         delay_per_meter = 5
         bidirectional_propagation_delay_ns = 2 * (
             node_loop_delay_ns + delay_per_meter * bus_length_m
         )
 
-        prop_seg = math.ceil(bidirectional_propagation_delay_ns / self.nom_tq)
+        # use the exact time quantum, self.nom_tq is rounded to integer nanoseconds
+        nom_tq_ns = self.nom_brp * 1_000_000_000 / self.f_clock
+        prop_seg = math.ceil(bidirectional_propagation_delay_ns / nom_tq_ns)
         nom_phase_seg1 = self.nom_tseg1 - prop_seg
         nom_phase_seg2 = self.nom_tseg2
 
@@ -1106,10 +1166,10 @@ class BitTimingFd(Mapping[str, int]):
             )
         # adapt synchronization jump width, so it has the same size relative to bit time as self
         nom_sjw = round(self.nom_sjw / self.nbt * bt.nbt)
-        nom_sjw = max(1, min(bt.nom_tseg2, nom_sjw))
+        nom_sjw = max(1, min(bt.nom_tseg1 - 1, bt.nom_tseg2, nom_sjw))
         bt._data["nom_sjw"] = nom_sjw  # pylint: disable=protected-access
         data_sjw = round(self.data_sjw / self.dbt * bt.dbt)
-        data_sjw = max(1, min(bt.data_tseg2, data_sjw))
+        data_sjw = max(1, min(bt.data_tseg1, bt.data_tseg2, data_sjw))
         bt._data["data_sjw"] = data_sjw  # pylint: disable=protected-access
         bt._validate()  # pylint: disable=protected-access
         return bt
@@ -1153,6 +1213,42 @@ class BitTimingFd(Mapping[str, int]):
 
     def __hash__(self) -> int:
         return tuple(self._data.values()).__hash__()
+
+
+def _validate_positive(name: str, value: int) -> None:
+    """Raise a :class:`ValueError` if *value* is not greater than zero."""
+    if value <= 0:
+        raise ValueError(f"{name} (={value}) must be greater than 0.")
+
+
+def _validate_segments(
+    brp: int, tseg1: int, tseg2: int, sjw: int, prefix: str = ""
+) -> None:
+    """Check the structural requirements that every bit timing must fulfil."""
+    for name, value in (("brp", brp), ("tseg1", tseg1), ("tseg2", tseg2), ("sjw", sjw)):
+        if value < 1:
+            raise ValueError(f"{prefix}{name} (={value}) must be at least 1.")
+
+    # SJW must not exceed either phase buffer segment; Phase_Seg1 is part of tseg1
+    for name, value in (("tseg1", tseg1), ("tseg2", tseg2)):
+        if sjw > value:
+            raise ValueError(
+                f"{prefix}sjw (={sjw}) must not be greater than "
+                f"{prefix}{name} (={value})."
+            )
+
+
+def _validate_sjw_with_prop_seg(sjw: int, tseg1: int, prefix: str = "") -> None:
+    """Check SJW against Phase_Seg1 for bit times with a propagation segment.
+
+    In the nominal bit time, tseg1 contains at least one time quantum of
+    propagation segment, so Phase_Seg1 and therefore SJW is at most ``tseg1 - 1``.
+    """
+    if sjw > tseg1 - 1:
+        raise ValueError(
+            f"{prefix}sjw (={sjw}) must be less than {prefix}tseg1 (={tseg1}), "
+            f"because {prefix}tseg1 contains at least one quantum of propagation segment."
+        )
 
 
 def _oscillator_tolerance_condition_1(nom_sjw: int, nbt: int) -> float:

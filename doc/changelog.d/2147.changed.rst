@@ -1,0 +1,1 @@
+``BitTiming`` and ``BitTimingFd`` now always validate the basic bit timing structure and refuse to encode out-of-range BTR registers, ``strict=True`` follows the minimum configuration ranges of ISO 11898-1, and ``from_sample_point()`` prefers the most accurate bitrate.

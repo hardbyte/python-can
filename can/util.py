@@ -2,7 +2,6 @@
 Utilities and configuration file parsing.
 """
 
-import contextlib
 import copy
 import functools
 import json
@@ -253,9 +252,12 @@ def _create_bus_config(config: dict[str, Any]) -> typechecking.BusConfig:
 
 def _dict2timing(data: dict[str, Any]) -> BitTiming | BitTimingFd | None:
     """Try to instantiate a :class:`~can.BitTiming` or :class:`~can.BitTimingFd` from
-    a dictionary. Return `None` if not possible."""
+    a dictionary. Return `None` if not possible.
 
-    with contextlib.suppress(ValueError, TypeError):
+    If all parameters are present but do not form a valid bit timing, a warning
+    is logged before returning `None`."""
+
+    try:
         if set(typechecking.BitTimingFdDict.__annotations__).issubset(data):
             return BitTimingFd(
                 **{
@@ -264,7 +266,7 @@ def _dict2timing(data: dict[str, Any]) -> BitTiming | BitTimingFd | None:
                 },
                 strict=False,
             )
-        elif set(typechecking.BitTimingDict.__annotations__).issubset(data):
+        if set(typechecking.BitTimingDict.__annotations__).issubset(data):
             return BitTiming(
                 **{
                     key: int(data[key])
@@ -272,6 +274,8 @@ def _dict2timing(data: dict[str, Any]) -> BitTiming | BitTimingFd | None:
                 },
                 strict=False,
             )
+    except (ValueError, TypeError) as exc:
+        log.warning("Ignoring invalid bit timing parameters: %s", exc)
 
     return None
 
