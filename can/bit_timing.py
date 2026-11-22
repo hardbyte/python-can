@@ -13,12 +13,12 @@ class BitTiming(Mapping[str, int]):
     The class can be constructed in multiple ways, depending on the information
     available. The preferred way is using CAN clock frequency, prescaler, tseg1, tseg2 and sjw::
 
-        can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=1, sjw=1)
+        can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
 
     Alternatively you can set the bitrate instead of the bit rate prescaler::
 
         can.BitTiming.from_bitrate_and_segments(
-            f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=1, sjw=1
+            f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1
         )
 
     It is also possible to specify BTR registers::
@@ -223,7 +223,7 @@ class BitTiming(Mapping[str, int]):
             The CAN system clock frequency in Hz.
         :param int bitrate:
             Bitrate in bit/s.
-        :param int sample_point:
+        :param float sample_point:
             The sample point value in percent.
         :raises ValueError:
             if the arguments are invalid.
@@ -278,7 +278,7 @@ class BitTiming(Mapping[str, int]):
             The CAN system clock frequency in Hz.
         :param int bitrate:
             Bitrate in bit/s.
-        :param int sample_point:
+        :param float sample_point:
             The sample point value in percent.
         :raises ValueError:
             if the arguments are invalid.
@@ -383,6 +383,9 @@ class BitTiming(Mapping[str, int]):
             Transceiver loop delay in nanoseconds.
         :param float bus_length_m:
             Bus length in meters.
+        :returns:
+            The maximum permissible oscillator tolerance in percent. A value of 0.0
+            means that the propagation delay does not fit into time segment 1.
         """
         delay_per_meter = 5
         bidirectional_propagation_delay_ns = 2 * (
@@ -636,7 +639,7 @@ class BitTimingFd(Mapping[str, int]):
             raise ValueError(f"Nominal bit time (={self.nbt}) must be in [8...80]")
 
         if not 5 <= self.dbt <= 25:
-            raise ValueError(f"Nominal bit time (={self.dbt}) must be in [5...25]")
+            raise ValueError(f"Data bit time (={self.dbt}) must be in [5...25]")
 
         if not 1 <= self.data_tseg1 <= 16:
             raise ValueError(f"data_tseg1 (={self.data_tseg1}) must be in [1...16].")
@@ -764,11 +767,11 @@ class BitTimingFd(Mapping[str, int]):
             The CAN system clock frequency in Hz.
         :param int nom_bitrate:
             Nominal bitrate in bit/s.
-        :param int nom_sample_point:
+        :param float nom_sample_point:
             The sample point value of the arbitration phase in percent.
         :param int data_bitrate:
             Data bitrate in bit/s.
-        :param int data_sample_point:
+        :param float data_sample_point:
             The sample point value of the data phase in percent.
         :raises ValueError:
             if the arguments are invalid.
@@ -856,11 +859,11 @@ class BitTimingFd(Mapping[str, int]):
             The CAN system clock frequency in Hz.
         :param int nom_bitrate:
             Nominal bitrate in bit/s.
-        :param int nom_sample_point:
+        :param float nom_sample_point:
             The sample point value of the arbitration phase in percent.
         :param int data_bitrate:
             Data bitrate in bit/s.
-        :param int data_sample_point:
+        :param float data_sample_point:
             The sample point value of the data phase in percent.
         :raises ValueError:
             if the arguments are invalid.
@@ -1022,6 +1025,9 @@ class BitTimingFd(Mapping[str, int]):
             Transceiver loop delay in nanoseconds.
         :param float bus_length_m:
             Bus length in meters.
+        :returns:
+            The maximum permissible oscillator tolerance in percent. A value of 0.0
+            means that the propagation delay does not fit into time segment 1.
         """
         delay_per_meter = 5
         bidirectional_propagation_delay_ns = 2 * (
