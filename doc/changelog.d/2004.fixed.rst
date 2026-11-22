@@ -1,0 +1,1 @@
+Retry SocketcanBus.send() while the device transmit queue is full (ENOBUFS) instead of failing before the timeout has expired.
