@@ -235,6 +235,25 @@ def test_from_btr():
     assert timing.btr1 == 0x14
 
 
+@pytest.mark.parametrize(
+    ("btr0", "btr1"),
+    [(0x100, 0x14), (0x00, 0x100), (-1, 0x14), (0x00, -1)],
+)
+def test_from_btr_out_of_range(btr0: int, btr1: int) -> None:
+    """
+    Test Scope:
+        BitTiming.from_registers rejects register values that do not fit into 8 bits.
+    Preconditions:
+        None.
+    Events:
+        Call BitTiming.from_registers with btr0 or btr1 outside of 0...255.
+    Evaluate:
+        A ValueError is raised.
+    """
+    with pytest.raises(ValueError):
+        can.BitTiming.from_registers(f_clock=8_000_000, btr0=btr0, btr1=btr1)
+
+
 def test_btr_persistence():
     f_clock = 8_000_000
     for btr0btr1 in PCAN_BITRATES.values():

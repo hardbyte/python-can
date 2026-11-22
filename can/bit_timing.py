@@ -185,18 +185,22 @@ class BitTiming(Mapping[str, int]):
     ) -> "BitTiming":
         """Create a :class:`~can.BitTiming` instance from registers btr0 and btr1.
 
+        The registers are expected in the SJA1000-compatible (82C200) layout.
+        A combined 16-bit value, as used e.g. by PCAN, can be split with
+        ``btr0, btr1 = divmod(value, 256)``.
+
         :param int f_clock:
             The CAN system clock frequency in Hz.
         :param int btr0:
-            The BTR0 register value used by many CAN controllers.
+            The 8-bit BTR0 register value (0...255).
         :param int btr1:
-            The BTR1 register value used by many CAN controllers.
+            The 8-bit BTR1 register value (0...255).
         :raises ValueError:
             if the arguments are invalid.
         """
-        if not 0 <= btr0 < 2**16:
+        if not 0 <= btr0 < 2**8:
             raise ValueError(f"Invalid btr0 value. ({btr0})")
-        if not 0 <= btr1 < 2**16:
+        if not 0 <= btr1 < 2**8:
             raise ValueError(f"Invalid btr1 value. ({btr1})")
 
         brp = (btr0 & 0x3F) + 1
