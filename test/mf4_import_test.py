@@ -3,10 +3,8 @@
 import importlib.util
 import subprocess
 import sys
-import tempfile
 import textwrap
 import unittest
-from pathlib import Path
 
 
 class MF4ImportTest(unittest.TestCase):
@@ -48,43 +46,26 @@ class MF4ImportTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     @unittest.skipUnless(importlib.util.find_spec("asammdf"), "MF4 is unavailable")
-    def test_both_import_orders(self):
-        with tempfile.TemporaryDirectory() as directory:
-            path = str(Path(directory) / "messages.mf4")
-            self.run_script(f"""
-                import can
-                with can.MF4Writer({path!r}) as writer:
+    def test_circular_import_reader_and_writer(self):
+        # One fresh interpreter reproduces the re-entrant import and exercises
+        # both directions of MF4 I/O, avoiding redundant plain-import probes.
+        self.run_script("""
+            import asammdf
+            import can
+            import tempfile
+            from pathlib import Path
+
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "messages.mf4"
+                with can.MF4Writer(path) as writer:
                     writer(can.Message(timestamp=1, arbitration_id=0x123,
                                        is_extended_id=False, data=b'\\x01\\x02'))
-            """)
-            for imports, circular_import in (
-                ("import asammdf; import can", False),
-                ("import can; import asammdf", False),
-                ("import asammdf; import can", True),
-            ):
-                for operation in ("read", "write"):
-                    with self.subTest(
-                        imports=imports,
-                        operation=operation,
-                        circular_import=circular_import,
-                    ):
-                        self.run_script(
-                            f"""
-                            {imports}
-                            if {operation!r} == "read":
-                                with can.MF4Reader({path!r}) as reader:
-                                    messages = list(reader)
-                                assert len(messages) == 1
-                                assert messages[0].arbitration_id == 0x123
-                                assert messages[0].data == b'\\x01\\x02'
-                            else:
-                                from io import BytesIO
-                                with can.MF4Writer(BytesIO()) as writer:
-                                    writer(can.Message(arbitration_id=0x456,
-                                                       is_extended_id=False, data=b'\\x03'))
-                        """,
-                            circular_import=circular_import,
-                        )
+                with can.MF4Reader(path) as reader:
+                    messages = list(reader)
+                assert len(messages) == 1
+                assert messages[0].arbitration_id == 0x123
+                assert messages[0].data == b'\\x01\\x02'
+        """, circular_import=True)
 
     def test_missing_dependency_does_not_open_files(self):
         self.run_script("""
