@@ -24,6 +24,7 @@ from can import (
     BusABC,
     CanInitializationError,
     CanInterfaceNotImplementedError,
+    CanOperationError,
     CanProtocol,
     Message,
 )
@@ -150,7 +151,8 @@ class VectorBus(BusABC):
         :param tseg2_dbr:
             Bus timing value tseg2 (data)
         :param listen_only:
-            if the bus should be set to listen only mode.
+            if the bus should be set to listen only mode. In listen only mode,
+            :meth:`send` raises :class:`~can.exceptions.CanOperationError`.
 
         :raise ~can.exceptions.CanInterfaceNotImplementedError:
             If the current operating system is not supported or the driver could not be loaded.
@@ -836,6 +838,8 @@ class VectorBus(BusABC):
         """
 
     def send(self, msg: Message, timeout: float | None = None) -> None:
+        if self._listen_only:
+            raise CanOperationError("Cannot send in listen-only mode")
         self._send_sequence([msg])
 
     def _send_sequence(self, msgs: Sequence[Message]) -> int:
