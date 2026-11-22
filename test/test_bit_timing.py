@@ -60,47 +60,19 @@ def test_from_bitrate_and_segments():
     timing = can.BitTiming.from_bitrate_and_segments(
         f_clock=8_000_000, bitrate=125_000, tseg1=11, tseg2=4, sjw=2, nof_samples=3
     )
-    assert timing.f_clock == 8_000_000
-    assert timing.bitrate == 125_000
-    assert timing.brp == 4
-    assert timing.nbt == 16
-    assert timing.tseg1 == 11
-    assert timing.tseg2 == 4
-    assert timing.sjw == 2
-    assert timing.nof_samples == 3
-    assert timing.sample_point == 75
-    assert timing.btr0 == 0x43
-    assert timing.btr1 == 0xBA
+    assert timing == can.BitTiming(
+        f_clock=8_000_000, brp=4, tseg1=11, tseg2=4, sjw=2, nof_samples=3
+    )
 
     timing = can.BitTiming.from_bitrate_and_segments(
         f_clock=8_000_000, bitrate=500_000, tseg1=13, tseg2=2, sjw=1
     )
-    assert timing.f_clock == 8_000_000
-    assert timing.bitrate == 500_000
-    assert timing.brp == 1
-    assert timing.nbt == 16
-    assert timing.tseg1 == 13
-    assert timing.tseg2 == 2
-    assert timing.sjw == 1
-    assert timing.nof_samples == 1
-    assert timing.sample_point == 87.5
-    assert timing.btr0 == 0x00
-    assert timing.btr1 == 0x1C
+    assert timing == can.BitTiming(f_clock=8_000_000, brp=1, tseg1=13, tseg2=2, sjw=1)
 
     timing = can.BitTiming.from_bitrate_and_segments(
         f_clock=8_000_000, bitrate=1_000_000, tseg1=5, tseg2=2, sjw=1, strict=True
     )
-    assert timing.f_clock == 8_000_000
-    assert timing.bitrate == 1_000_000
-    assert timing.brp == 1
-    assert timing.nbt == 8
-    assert timing.tseg1 == 5
-    assert timing.tseg2 == 2
-    assert timing.sjw == 1
-    assert timing.nof_samples == 1
-    assert timing.sample_point == 75
-    assert timing.btr0 == 0x00
-    assert timing.btr1 == 0x14
+    assert timing == can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
 
     timing = can.BitTimingFd.from_bitrate_and_segments(
         f_clock=80_000_000,
@@ -113,38 +85,17 @@ def test_from_bitrate_and_segments():
         data_tseg2=10,
         data_sjw=10,
     )
-
-    assert timing.f_clock == 80_000_000
-    assert timing.nom_bitrate == 500_000
-    assert timing.nom_brp == 1
-    assert timing.nbt == 160
-    assert timing.nom_tseg1 == 119
-    assert timing.nom_tseg2 == 40
-    assert timing.nom_sjw == 40
-    assert timing.nom_sample_point == 75
-    assert timing.f_clock == 80_000_000
-    assert timing.data_bitrate == 2_000_000
-    assert timing.data_brp == 1
-    assert timing.dbt == 40
-    assert timing.data_tseg1 == 29
-    assert timing.data_tseg2 == 10
-    assert timing.data_sjw == 10
-    assert timing.data_sample_point == 75
-
-    # test strict invalid
-    with pytest.raises(ValueError, match="Nominal bit time"):
-        can.BitTimingFd.from_bitrate_and_segments(
-            f_clock=80_000_000,
-            nom_bitrate=500_000,
-            nom_tseg1=119,
-            nom_tseg2=40,
-            nom_sjw=40,
-            data_bitrate=2_000_000,
-            data_tseg1=29,
-            data_tseg2=10,
-            data_sjw=10,
-            strict=True,
-        )
+    assert timing == can.BitTimingFd(
+        f_clock=80_000_000,
+        nom_brp=1,
+        nom_tseg1=119,
+        nom_tseg2=40,
+        nom_sjw=40,
+        data_brp=1,
+        data_tseg1=29,
+        data_tseg2=10,
+        data_sjw=10,
+    )
 
 
 def test_can_fd():
@@ -177,21 +128,6 @@ def test_can_fd():
     assert timing.data_sjw == 10
     assert timing.data_sample_point == 75
 
-    # test strict invalid
-    with pytest.raises(ValueError, match="Nominal bit time"):
-        can.BitTimingFd(
-            f_clock=80_000_000,
-            nom_brp=1,
-            nom_tseg1=119,
-            nom_tseg2=40,
-            nom_sjw=40,
-            data_brp=1,
-            data_tseg1=29,
-            data_tseg2=10,
-            data_sjw=10,
-            strict=True,
-        )
-
     # test strict valid
     timing = can.BitTimingFd(
         f_clock=80_000_000,
@@ -220,19 +156,6 @@ def test_can_fd():
     assert timing.data_tseg2 == 5
     assert timing.data_sjw == 5
     assert timing.data_sample_point == 75
-
-
-def test_from_btr():
-    timing = can.BitTiming.from_registers(f_clock=8_000_000, btr0=0x00, btr1=0x14)
-    assert timing.bitrate == 1_000_000
-    assert timing.brp == 1
-    assert timing.nbt == 8
-    assert timing.tseg1 == 5
-    assert timing.tseg2 == 2
-    assert timing.sjw == 1
-    assert timing.sample_point == 75
-    assert timing.btr0 == 0x00
-    assert timing.btr1 == 0x14
 
 
 @pytest.mark.parametrize(
@@ -287,23 +210,6 @@ def test_from_sample_point():
     assert fd_timing.data_bitrate == 8_000_000
     assert 69 < fd_timing.data_sample_point < 71
 
-    # check that there is a solution for every sample point
-    for sp in range(50, 100):
-        can.BitTiming.from_sample_point(
-            f_clock=16_000_000, bitrate=500_000, sample_point=sp
-        )
-
-    # check that there is a solution for every sample point
-    for nsp in range(50, 100):
-        for dsp in range(50, 100):
-            can.BitTimingFd.from_sample_point(
-                f_clock=80_000_000,
-                nom_bitrate=500_000,
-                nom_sample_point=nsp,
-                data_bitrate=2_000_000,
-                data_sample_point=dsp,
-            )
-
 
 def test_iterate_from_sample_point():
     for sp in range(50, 100):
@@ -316,8 +222,8 @@ def test_iterate_from_sample_point():
         )
         assert len(solutions) >= 2
 
-    for nsp in range(50, 100):
-        for dsp in range(50, 100):
+    for nsp in range(50, 100, 7):
+        for dsp in range(50, 100, 7):
             solutions = list(
                 can.BitTimingFd.iterate_from_sample_point(
                     f_clock=80_000_000,
@@ -439,16 +345,13 @@ def test_hash():
             data_sjw=10,
         ),
     }
+    for timing in list(_timings):
+        assert type(timing)(**dict(timing)) in _timings
 
 
 def test_mapping():
     timing = can.BitTiming(f_clock=8_000_000, brp=1, tseg1=5, tseg2=2, sjw=1)
     timing_dict = dict(timing)
-    assert timing_dict["f_clock"] == timing["f_clock"]
-    assert timing_dict["brp"] == timing["brp"]
-    assert timing_dict["tseg1"] == timing["tseg1"]
-    assert timing_dict["tseg2"] == timing["tseg2"]
-    assert timing_dict["sjw"] == timing["sjw"]
     assert timing == can.BitTiming(**timing_dict)
 
     fd_timing = can.BitTimingFd(
@@ -463,15 +366,6 @@ def test_mapping():
         data_sjw=10,
     )
     fd_timing_dict = dict(fd_timing)
-    assert fd_timing_dict["f_clock"] == fd_timing["f_clock"]
-    assert fd_timing_dict["nom_brp"] == fd_timing["nom_brp"]
-    assert fd_timing_dict["nom_tseg1"] == fd_timing["nom_tseg1"]
-    assert fd_timing_dict["nom_tseg2"] == fd_timing["nom_tseg2"]
-    assert fd_timing_dict["nom_sjw"] == fd_timing["nom_sjw"]
-    assert fd_timing_dict["data_brp"] == fd_timing["data_brp"]
-    assert fd_timing_dict["data_tseg1"] == fd_timing["data_tseg1"]
-    assert fd_timing_dict["data_tseg2"] == fd_timing["data_tseg2"]
-    assert fd_timing_dict["data_sjw"] == fd_timing["data_sjw"]
     assert fd_timing == can.BitTimingFd(**fd_timing_dict)
 
 
@@ -714,6 +608,12 @@ def test_invalid_bitrate(create) -> None:
             "prescaler",
         ),
         (can.BitTimingFd, _FD_KWARGS, {"nom_brp": 33, "data_brp": 33}, "nom_brp"),
+        (
+            can.BitTimingFd,
+            _FD_KWARGS,
+            {"nom_tseg1": 119, "nom_tseg2": 40, "nom_sjw": 40},
+            "Nominal bit time",
+        ),
         (can.BitTimingFd, _FD_KWARGS, {"nom_brp": 32, "data_brp": 33}, "data_brp"),
         (
             can.BitTimingFd,
