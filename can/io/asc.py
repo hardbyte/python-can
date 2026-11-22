@@ -21,6 +21,8 @@ _LOCAL_TZ: Final = datetime.now(UTC).astimezone().tzinfo
 
 CAN_MSG_EXT = 0x80000000
 CAN_ID_MASK = 0x1FFFFFFF
+ASC_FLAG_REMOTE_FRAME = 0x10
+ASC_FLAG_FD_FRAME = 0x1000
 BASE_HEX = 16
 BASE_DEC = 10
 ASC_TRIGGER_REGEX: Final = re.compile(
@@ -189,14 +191,10 @@ class ASCReader(TextIOMessageReader):
             raise ValueError('base should be either "hex" or "dec"')
         return BASE_DEC if base == "dec" else BASE_HEX
 
-    def _process_data_string(
-        self, data_str: str, data_length: int, msg_kwargs: dict[str, Any]
-    ) -> None:
-        frame = bytearray()
-        data = data_str.split()
-        for byte in data[:data_length]:
-            frame.append(int(byte, self._converted_base))
-        msg_kwargs["data"] = frame
+    def _parse_data(self, fields: list[str], data_length: int) -> bytearray:
+        return bytearray(
+            int(byte, self._converted_base) for byte in fields[:data_length]
+        )
 
     def _process_classic_can_frame(
         self, line: str, msg_kwargs: dict[str, Any]
@@ -230,7 +228,7 @@ class ASCReader(TextIOMessageReader):
 
                 dlc = dlc2len(int(dlc_str, self._converted_base))
                 msg_kwargs["dlc"] = dlc
-                self._process_data_string(data, min(8, dlc), msg_kwargs)
+                msg_kwargs["data"] = self._parse_data(data.split(), min(8, dlc))
 
         return Message(**msg_kwargs)
 
@@ -259,12 +257,25 @@ class ASCReader(TextIOMessageReader):
                 )
 
             self._extract_can_id(can_id_str, msg_kwargs)
-            msg_kwargs["bitrate_switch"] = brs == "1"
-            msg_kwargs["error_state_indicator"] = esi == "1"
             dlc = int(dlc_str, self._converted_base)
             data_length = int(data_length_str)
-            if data_length == 0:
-                # CAN remote Frame
+            fields = data.split()
+            # The CANFD record layout also carries classic CAN data and remote frames.
+            # The flags follow the payload, message duration and message length.
+            try:
+                flags = int(fields[data_length + 2], BASE_HEX)
+            except (IndexError, ValueError):
+                # Preserve the existing interpretation of records without a flags field.
+                is_fd = True
+                is_remote = data_length == 0
+            else:
+                # Some older logs omit the FD bit even for payloads over eight bytes.
+                is_fd = bool(flags & ASC_FLAG_FD_FRAME) or data_length > 8
+                is_remote = not is_fd and bool(flags & ASC_FLAG_REMOTE_FRAME)
+            msg_kwargs["is_fd"] = is_fd
+            msg_kwargs["bitrate_switch"] = is_fd and brs == "1"
+            msg_kwargs["error_state_indicator"] = is_fd and esi == "1"
+            if is_remote:
                 msg_kwargs["is_remote_frame"] = True
                 msg_kwargs["dlc"] = dlc
             else:
@@ -277,7 +288,7 @@ class ASCReader(TextIOMessageReader):
                     )
                 msg_kwargs["dlc"] = data_length
 
-            self._process_data_string(data, data_length, msg_kwargs)
+            msg_kwargs["data"] = self._parse_data(fields, data_length)
 
         return Message(**msg_kwargs)
 
@@ -500,8 +511,7 @@ class ASCWriter(TextIOMessageWriter):
         if msg.is_extended_id:
             arb_id += "x"
         if msg.is_fd:
-            flags = 0
-            flags |= 1 << 12
+            flags = ASC_FLAG_FD_FRAME
             if msg.bitrate_switch:
                 flags |= 1 << 13
             if msg.error_state_indicator:
