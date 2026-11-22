@@ -910,6 +910,109 @@ class TestBlfFileFormat(ReaderWriterTest):
         with can.BLFReader(self.test_file_name) as reader:
             self.assertMessagesEqual(messages, list(reader))
 
+    def _prepend_blf_object(self, header_version, obj_type, obj_size):
+        with can.BLFWriter(self.test_file_name, compression_level=0) as writer:
+            writer(can.Message(arbitration_id=0x456, data=range(8)))
+
+        data = bytearray(Path(self.test_file_name).read_bytes())
+        container_offset = blf.FILE_HEADER_SIZE + blf.OBJ_HEADER_BASE_STRUCT.size
+        offset = container_offset + blf.LOG_CONTAINER_STRUCT.size
+        header_size = blf.OBJ_HEADER_BASE_STRUCT.size + (
+            blf.OBJ_HEADER_V2_STRUCT.size
+            if header_version == 2
+            else blf.OBJ_HEADER_V1_STRUCT.size
+        )
+        obj = blf.OBJ_HEADER_BASE_STRUCT.pack(
+            b"LOBJ", header_size, header_version, obj_size, obj_type
+        ) + bytes(obj_size - blf.OBJ_HEADER_BASE_STRUCT.size)
+        padding = bytes(obj_size % 4)
+        data[offset:offset] = obj + padding
+        added_size = len(obj) + len(padding)
+        container = list(
+            blf.OBJ_HEADER_BASE_STRUCT.unpack_from(data, blf.FILE_HEADER_SIZE)
+        )
+        container[3] += added_size
+        blf.OBJ_HEADER_BASE_STRUCT.pack_into(data, blf.FILE_HEADER_SIZE, *container)
+        method, size = blf.LOG_CONTAINER_STRUCT.unpack_from(data, container_offset)
+        blf.LOG_CONTAINER_STRUCT.pack_into(
+            data, container_offset, method, size + added_size
+        )
+        file_header = list(blf.FILE_HEADER_STRUCT.unpack_from(data))
+        file_header[10] += added_size
+        file_header[11] += added_size
+        file_header[12] += 1
+        blf.FILE_HEADER_STRUCT.pack_into(data, 0, *file_header)
+        return BytesIO(data)
+
+    @parameterized.expand(
+        (version, obj_type, payload.size)
+        for version in (1, 2)
+        for obj_type, payload in (
+            (blf.CAN_MESSAGE, blf.CAN_MSG_STRUCT),
+            (blf.CAN_MESSAGE2, blf.CAN_MSG_STRUCT),
+            (blf.CAN_ERROR_EXT, blf.CAN_ERROR_EXT_STRUCT),
+            (blf.CAN_FD_MESSAGE, blf.CAN_FD_MSG_STRUCT),
+            (blf.CAN_FD_MESSAGE_64, blf.CAN_FD_MSG_64_STRUCT),
+        )
+    )
+    def test_truncated_object_payload(self, version, obj_type, payload_size):
+        header_size = blf.OBJ_HEADER_BASE_STRUCT.size + (
+            blf.OBJ_HEADER_V1_STRUCT.size
+            if version == 1
+            else blf.OBJ_HEADER_V2_STRUCT.size
+        )
+        # The next object's bytes must not complete this object's payload.
+        obj_size = header_size + payload_size - 4
+        with can.BLFReader(
+            self._prepend_blf_object(version, obj_type, obj_size)
+        ) as reader:
+            with self.assertRaisesRegex(blf.BLFParseError, "Invalid object size"):
+                next(iter(reader))
+
+    @parameterized.expand(
+        (version, obj_type, payload.size)
+        for version in (1, 2)
+        for obj_type, payload in (
+            (blf.CAN_MESSAGE, blf.CAN_MSG_STRUCT),
+            (blf.CAN_MESSAGE2, blf.CAN_MSG_STRUCT),
+            (blf.CAN_ERROR_EXT, blf.CAN_ERROR_EXT_STRUCT),
+            (blf.CAN_FD_MESSAGE, blf.CAN_FD_MSG_STRUCT),
+            (blf.CAN_FD_MESSAGE_64, blf.CAN_FD_MSG_64_STRUCT),
+        )
+    )
+    def test_minimum_object_payload(self, version, obj_type, payload_size):
+        header_size = blf.OBJ_HEADER_BASE_STRUCT.size + (
+            blf.OBJ_HEADER_V1_STRUCT.size
+            if version == 1
+            else blf.OBJ_HEADER_V2_STRUCT.size
+        )
+        with can.BLFReader(
+            self._prepend_blf_object(version, obj_type, header_size + payload_size)
+        ) as reader:
+            messages = list(reader)
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0].data, bytearray())
+        self.assertEqual(messages[1].arbitration_id, 0x456)
+        self.assertEqual(messages[1].data, bytearray(range(8)))
+
+    @parameterized.expand([(1, 28), (2, 36)])
+    def test_truncated_object_header(self, version, obj_size):
+        with can.BLFReader(
+            self._prepend_blf_object(version, blf.CAN_MESSAGE, obj_size)
+        ) as reader:
+            with self.assertRaisesRegex(blf.BLFParseError, "Invalid object size"):
+                next(iter(reader))
+
+    @parameterized.expand([(3, blf.CAN_MESSAGE, 32), (1, 0xFFFF, 32)])
+    def test_skip_unknown_object(self, version, obj_type, obj_size):
+        with can.BLFReader(
+            self._prepend_blf_object(version, obj_type, obj_size)
+        ) as reader:
+            messages = list(reader)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0].arbitration_id, 0x456)
+        self.assertEqual(messages[0].data, bytearray(range(8)))
+
     def test_can_message(self):
         expected = can.Message(
             timestamp=2459565876.494607,
