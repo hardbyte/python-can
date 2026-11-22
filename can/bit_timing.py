@@ -88,14 +88,16 @@ class BitTiming(Mapping[str, int]):
             raise ValueError("nof_samples must be 1 or 3")
 
     def _restrict_to_minimum_range(self) -> None:
-        if not 1 <= self.tseg1 <= 16:
-            raise ValueError(f"tseg1 (={self.tseg1}) must be in [1...16].")
+        if not 2 <= self.tseg1 <= 16:
+            raise ValueError(f"tseg1 (={self.tseg1}) must be in [2...16].")
 
-        if not 1 <= self.tseg2 <= 8:
-            raise ValueError(f"tseg2 (={self.tseg2}) must be in [1...8].")
+        if not 2 <= self.tseg2 <= 8:
+            raise ValueError(f"tseg2 (={self.tseg2}) must be in [2...8].")
 
         if not 1 <= self.sjw <= 4:
             raise ValueError(f"sjw (={self.sjw}) must be in [1...4].")
+
+        _validate_sjw_with_prop_seg(sjw=self.sjw, tseg1=self.tseg1)
 
         if self.sample_point < 50.0:
             raise ValueError(
@@ -245,11 +247,11 @@ class BitTiming(Mapping[str, int]):
                 continue
 
             tseg1 = round(sample_point / 100 * nbt) - 1
-            # limit tseg1, so tseg2 is at least 1 TQ
-            tseg1 = min(tseg1, nbt - 2)
+            # limit tseg1, so tseg2 is at least 2 TQ
+            tseg1 = min(tseg1, nbt - 3)
 
             tseg2 = nbt - tseg1 - 1
-            sjw = min(tseg1, tseg2, 4)
+            sjw = min(tseg1 - 1, tseg2, 4)
 
             try:
                 bt = BitTiming(
@@ -461,7 +463,7 @@ class BitTiming(Mapping[str, int]):
             )
         # adapt synchronization jump width, so it has the same size relative to bit time as self
         sjw = round(self.sjw / self.nbt * bt.nbt)
-        sjw = max(1, min(4, bt.tseg1, bt.tseg2, sjw))
+        sjw = max(1, min(4, bt.tseg1 - 1, bt.tseg2, sjw))
         bt._data["sjw"] = sjw  # pylint: disable=protected-access
         bt._data["nof_samples"] = self.nof_samples  # pylint: disable=protected-access
         bt._validate()  # pylint: disable=protected-access
@@ -637,20 +639,14 @@ class BitTimingFd(Mapping[str, int]):
                 f"equal to nom_bitrate (={self.nom_bitrate})"
             )
 
-        if self.nom_sample_point < 50.0:
-            raise ValueError(
-                f"The arbitration sample point must be greater than or equal to 50% "
-                f"(nom_sample_point={self.nom_sample_point:.2f}%)."
-            )
-
-        if self.data_sample_point < 50.0:
-            raise ValueError(
-                f"The data sample point must be greater than or equal to 50% "
-                f"(data_sample_point={self.data_sample_point:.2f}%)."
-            )
-
     def _restrict_to_minimum_range(self) -> None:
         # restrict to minimum required range as defined in ISO 11898
+        if not 1 <= self.nom_brp <= 32:
+            raise ValueError(f"nom_brp (={self.nom_brp}) must be in [1...32].")
+
+        if not 1 <= self.data_brp <= 32:
+            raise ValueError(f"data_brp (={self.data_brp}) must be in [1...32].")
+
         if not 8 <= self.nbt <= 80:
             raise ValueError(f"Nominal bit time (={self.nbt}) must be in [8...80]")
 
@@ -686,6 +682,22 @@ class BitTimingFd(Mapping[str, int]):
 
             if not 1 <= self.nom_sjw <= 16:
                 raise ValueError(f"nom_sjw (={self.nom_sjw}) must be in [1...16].")
+
+        _validate_sjw_with_prop_seg(
+            sjw=self.nom_sjw, tseg1=self.nom_tseg1, prefix="nom_"
+        )
+
+        if self.nom_sample_point < 50.0:
+            raise ValueError(
+                f"The arbitration sample point must be greater than or equal to 50% "
+                f"(nom_sample_point={self.nom_sample_point:.2f}%)."
+            )
+
+        if self.data_sample_point < 50.0:
+            raise ValueError(
+                f"The data sample point must be greater than or equal to 50% "
+                f"(data_sample_point={self.data_sample_point:.2f}%)."
+            )
 
     @classmethod
     def from_bitrate_and_segments(  # pylint: disable=too-many-arguments
@@ -823,7 +835,7 @@ class BitTimingFd(Mapping[str, int]):
             nom_tseg1 = min(nom_tseg1, nbt - sync_seg - 2)
             nom_tseg2 = nbt - nom_tseg1 - 1
 
-            nom_sjw = min(nom_tseg1, nom_tseg2, 128)
+            nom_sjw = min(nom_tseg1 - 1, nom_tseg2, 128)
 
             for data_brp in range(1, 257):
                 dbt = round(int(f_clock / (data_bitrate * data_brp)))
@@ -1133,7 +1145,7 @@ class BitTimingFd(Mapping[str, int]):
             )
         # adapt synchronization jump width, so it has the same size relative to bit time as self
         nom_sjw = round(self.nom_sjw / self.nbt * bt.nbt)
-        nom_sjw = max(1, min(bt.nom_tseg1, bt.nom_tseg2, nom_sjw))
+        nom_sjw = max(1, min(bt.nom_tseg1 - 1, bt.nom_tseg2, nom_sjw))
         bt._data["nom_sjw"] = nom_sjw  # pylint: disable=protected-access
         data_sjw = round(self.data_sjw / self.dbt * bt.dbt)
         data_sjw = max(1, min(bt.data_tseg1, bt.data_tseg2, data_sjw))
@@ -1203,6 +1215,19 @@ def _validate_segments(
                 f"{prefix}sjw (={sjw}) must not be greater than "
                 f"{prefix}{name} (={value})."
             )
+
+
+def _validate_sjw_with_prop_seg(sjw: int, tseg1: int, prefix: str = "") -> None:
+    """Check SJW against Phase_Seg1 for bit times with a propagation segment.
+
+    In the nominal bit time, tseg1 contains at least one time quantum of
+    propagation segment, so Phase_Seg1 and therefore SJW is at most ``tseg1 - 1``.
+    """
+    if sjw > tseg1 - 1:
+        raise ValueError(
+            f"{prefix}sjw (={sjw}) must be less than {prefix}tseg1 (={tseg1}), "
+            f"because {prefix}tseg1 contains at least one quantum of propagation segment."
+        )
 
 
 def _oscillator_tolerance_condition_1(nom_sjw: int, nbt: int) -> float:

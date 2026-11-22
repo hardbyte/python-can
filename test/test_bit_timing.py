@@ -132,7 +132,7 @@ def test_from_bitrate_and_segments():
     assert timing.data_sample_point == 75
 
     # test strict invalid
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Nominal bit time"):
         can.BitTimingFd.from_bitrate_and_segments(
             f_clock=80_000_000,
             nom_bitrate=500_000,
@@ -178,7 +178,7 @@ def test_can_fd():
     assert timing.data_sample_point == 75
 
     # test strict invalid
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Nominal bit time"):
         can.BitTimingFd(
             f_clock=80_000_000,
             nom_brp=1,
@@ -693,3 +693,125 @@ def test_invalid_bitrate(create) -> None:
     """
     with pytest.raises(ValueError, match="bitrate"):
         create()
+
+
+@pytest.mark.parametrize(
+    ("cls", "base", "overrides", "match"),
+    [
+        (can.BitTiming, _CLASSIC_KWARGS, {"tseg1": 1, "tseg2": 6}, "tseg1"),
+        (can.BitTiming, _CLASSIC_KWARGS, {"tseg1": 6, "tseg2": 1}, "tseg2"),
+        (
+            can.BitTiming,
+            _CLASSIC_KWARGS,
+            {"tseg1": 2, "tseg2": 5, "sjw": 2},
+            "propagation",
+        ),
+        (can.BitTiming, _CLASSIC_KWARGS, {"tseg1": 2, "tseg2": 5}, "sample point"),
+        (
+            can.BitTiming,
+            _CLASSIC_KWARGS,
+            {"f_clock": 264_000_000, "brp": 33},
+            "prescaler",
+        ),
+        (can.BitTimingFd, _FD_KWARGS, {"nom_brp": 33, "data_brp": 33}, "nom_brp"),
+        (can.BitTimingFd, _FD_KWARGS, {"nom_brp": 32, "data_brp": 33}, "data_brp"),
+        (
+            can.BitTimingFd,
+            _FD_KWARGS,
+            {"nom_tseg1": 10, "nom_tseg2": 10, "nom_sjw": 10},
+            "propagation",
+        ),
+        (
+            can.BitTimingFd,
+            _FD_KWARGS,
+            {"nom_tseg1": 9, "nom_tseg2": 12, "nom_sjw": 5},
+            "arbitration sample point",
+        ),
+        (
+            can.BitTimingFd,
+            _FD_KWARGS,
+            {"data_tseg1": 2, "data_tseg2": 5, "data_sjw": 2},
+            "data sample point",
+        ),
+    ],
+)
+def test_strict_ranges(cls, base, overrides, match) -> None:
+    """
+    Test Scope:
+        With strict=True, BitTiming and BitTimingFd reject timings outside the
+        minimum configuration ranges of ISO 11898-1 and sample points below 50%.
+    Preconditions:
+        A set of constructor arguments that is valid in strict mode.
+    Events:
+        Construct the class with strict=True and one or more arguments replaced
+        by a value outside of the strict range.
+    Evaluate:
+        A ValueError naming the violated rule is raised.
+    """
+    with pytest.raises(ValueError, match=match):
+        cls(**{**base, **overrides}, strict=True)
+
+
+@pytest.mark.parametrize(
+    ("cls", "kwargs", "sample_point_attr"),
+    [
+        (can.BitTiming, {**_CLASSIC_KWARGS, "tseg1": 2, "tseg2": 5}, "sample_point"),
+        (
+            can.BitTimingFd,
+            {**_FD_KWARGS, "nom_tseg1": 9, "nom_tseg2": 12, "nom_sjw": 5},
+            "nom_sample_point",
+        ),
+        (
+            can.BitTimingFd,
+            {**_FD_KWARGS, "data_tseg1": 2, "data_tseg2": 5, "data_sjw": 2},
+            "data_sample_point",
+        ),
+    ],
+)
+def test_non_strict_allows_low_sample_point(cls, kwargs, sample_point_attr) -> None:
+    """
+    Test Scope:
+        Without strict mode, sample points below 50% are accepted, since
+        ISO 11898-1 does not restrict the position of the sample point.
+    Preconditions:
+        None.
+    Events:
+        Construct the class with strict=False and segments that place the
+        sample point below 50%.
+    Evaluate:
+        The instance is created and reports the sample point below 50%.
+    """
+    timing = cls(**kwargs)
+    assert getattr(timing, sample_point_attr) < 50.0
+
+
+def test_from_sample_point_follows_strict_rules() -> None:
+    """
+    Test Scope:
+        The solvers only return timings that fulfil the strict rules for
+        tseg2 and SJW, also when the requested sample point cannot be reached.
+    Preconditions:
+        None.
+    Events:
+        Call BitTiming.from_sample_point and BitTimingFd.from_sample_point for
+        sample points from 50% to 99%.
+    Evaluate:
+        tseg2 is at least 2 for classic CAN and SJW is less than tseg1 for
+        classic CAN and the arbitration phase of CAN FD.
+    """
+    for sp in range(50, 100):
+        timing = can.BitTiming.from_sample_point(
+            f_clock=8_000_000, bitrate=1_000_000, sample_point=sp
+        )
+        assert timing.tseg2 >= 2
+        assert timing.sjw <= timing.tseg1 - 1
+
+    for sp in range(50, 100, 7):
+        fd_timing = can.BitTimingFd.from_sample_point(
+            f_clock=80_000_000,
+            nom_bitrate=500_000,
+            nom_sample_point=sp,
+            data_bitrate=2_000_000,
+            data_sample_point=sp,
+        )
+        assert fd_timing.nom_sjw <= fd_timing.nom_tseg1 - 1
