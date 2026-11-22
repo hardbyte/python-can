@@ -130,6 +130,7 @@ class PcanBus(BusABC):
         timing: BitTiming | BitTimingFd | None = None,
         bitrate: int = 500000,
         receive_own_messages: bool = False,
+        listen_only: bool = False,
         **kwargs: Any,
     ):
         """A PCAN USB interface to CAN.
@@ -174,6 +175,12 @@ class PcanBus(BusABC):
 
         :param receive_own_messages:
             Enable self-reception of sent messages.
+
+        :param listen_only:
+            Open the channel in listen-only mode. In listen-only mode,
+            :attr:`state` is ``BusState.PASSIVE`` and :meth:`send` raises
+            :class:`~can.exceptions.CanOperationError`. The mode can be switched
+            at runtime with :attr:`listen_only`.
 
         :param bool fd:
             Should the Bus be initialized in CAN-FD mode.
@@ -273,10 +280,10 @@ class PcanBus(BusABC):
 
         self.check_api_version()
 
-        if state in [BusState.ACTIVE, BusState.PASSIVE]:
-            self.state = state
-        else:
+        if state not in [BusState.ACTIVE, BusState.PASSIVE]:
             raise ValueError("BusState must be Active or Passive")
+        self._listen_only = listen_only or state is BusState.PASSIVE
+        self._apply_listen_only_mode()
 
         if isinstance(timing, BitTiming):
             timing = check_or_adjust_timing_clock(timing, VALID_PCAN_CAN_CLOCKS)
@@ -612,6 +619,8 @@ class PcanBus(BusABC):
         return rx_msg, False
 
     def send(self, msg, timeout=None):
+        if self._listen_only:
+            raise CanOperationError("Cannot send in listen-only mode")
         msgType = (
             PCAN_MESSAGE_EXTENDED.value
             if msg.is_extended_id
@@ -697,26 +706,32 @@ class PcanBus(BusABC):
         return self._can_protocol is CanProtocol.CAN_FD
 
     @property
+    def listen_only(self) -> bool:
+        return self._listen_only
+
+    @listen_only.setter
+    def listen_only(self, value: bool) -> None:
+        self._listen_only = value
+        self._apply_listen_only_mode()
+
+    @property
     def state(self):
-        return self._state
+        return BusState.PASSIVE if self._listen_only else BusState.ACTIVE
 
     @state.setter
     def state(self, new_state):
-        # declare here, which is called by __init__()
-        self._state = new_state  # pylint: disable=attribute-defined-outside-init
+        if new_state is BusState.ACTIVE or new_state is BusState.PASSIVE:
+            self.listen_only = new_state is BusState.PASSIVE
 
-        if new_state is BusState.ACTIVE:
-            self.m_objPCANBasic.SetValue(
-                self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF
-            )
-
-        elif new_state is BusState.PASSIVE:
-            # When this mode is set, the CAN controller does not take part on active events (eg. transmit CAN messages)
-            # but stays in a passive mode (CAN monitor), in which it can analyse the traffic on the CAN bus used by a
-            # PCAN channel. See also the Philips Data Sheet "SJA1000 Stand-alone CAN controller".
-            self.m_objPCANBasic.SetValue(
-                self.m_PcanHandle, PCAN_LISTEN_ONLY, PCAN_PARAMETER_ON
-            )
+    def _apply_listen_only_mode(self) -> None:
+        # When this mode is set, the CAN controller does not take part on active events (eg. transmit CAN messages)
+        # but stays in a passive mode (CAN monitor), in which it can analyse the traffic on the CAN bus used by a
+        # PCAN channel. See also the Philips Data Sheet "SJA1000 Stand-alone CAN controller".
+        self.m_objPCANBasic.SetValue(
+            self.m_PcanHandle,
+            PCAN_LISTEN_ONLY,
+            PCAN_PARAMETER_ON if self._listen_only else PCAN_PARAMETER_OFF,
+        )
 
     @staticmethod
     def _detect_available_configs():

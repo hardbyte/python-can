@@ -376,6 +376,7 @@ class KvaserBus(BusABC):
         channel: int,
         can_filters: CanFilters | None = None,
         timing: BitTiming | BitTimingFd | None = None,
+        listen_only: bool = False,
         **kwargs,
     ):
         """
@@ -413,6 +414,9 @@ class KvaserBus(BusABC):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
+        :param bool listen_only:
+            If True, open the channel in silent mode. In silent mode,
+            :meth:`send` raises :class:`~can.exceptions.CanOperationError`.
 
         :param bool driver_mode:
             Silent or normal.
@@ -450,6 +454,8 @@ class KvaserBus(BusABC):
         sjw = kwargs.get("sjw", 0)
         no_samp = kwargs.get("no_samp", 0)
         driver_mode = kwargs.get("driver_mode", DRIVER_MODE_NORMAL)
+        listen_only = listen_only or driver_mode == DRIVER_MODE_SILENT
+        self._listen_only = listen_only
         single_handle = kwargs.get("single_handle", False)
         receive_own_messages = kwargs.get("receive_own_messages", False)
         exclusive = kwargs.get("exclusive", False)
@@ -579,9 +585,7 @@ class KvaserBus(BusABC):
             self._write_handle = canOpenChannel(channel, flags_)
 
         can_driver_mode = (
-            canstat.canDRIVER_SILENT
-            if driver_mode == DRIVER_MODE_SILENT
-            else canstat.canDRIVER_NORMAL
+            canstat.canDRIVER_SILENT if listen_only else canstat.canDRIVER_NORMAL
         )
         canSetBusOutputControl(self._write_handle, can_driver_mode)
 
@@ -708,6 +712,8 @@ class KvaserBus(BusABC):
             return None, self._is_filtered
 
     def send(self, msg, timeout=None):
+        if self._listen_only:
+            raise CanOperationError("Cannot send in listen-only mode")
         # log.debug("Writing a message: {}".format(msg))
         flags = canstat.canMSG_EXT if msg.is_extended_id else canstat.canMSG_STD
         if msg.is_remote_frame:

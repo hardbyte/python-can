@@ -31,6 +31,9 @@ Here is an example configuration file for using `PCAN-USB <https://www.peak-syst
 
  Where ``x`` should be replaced with the desired channel number starting at ``1``.
 
+``listen_only`` (default ``False``)
+ Open the channel in :ref:`listen-only mode <listen_only>`.
+
 ``state`` (default ``can.bus.BusState.ACTIVE``)
  BusState of the channel
 

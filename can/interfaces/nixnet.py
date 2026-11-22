@@ -59,6 +59,7 @@ class NiXNETcanBus(BusABC):
         fd: bool = False,
         fd_bitrate: int | None = None,
         poll_interval: float = 0.001,
+        listen_only: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -84,6 +85,10 @@ class NiXNETcanBus(BusABC):
         :param poll_interval:
             Poll interval in seconds.
 
+        :param listen_only:
+            If True, open the interface in listen only mode. In listen only
+            mode, :meth:`send` raises :class:`~can.exceptions.CanOperationError`.
+
         :raises ~can.exceptions.CanInitializationError:
             If starting communication fails
         """
@@ -103,6 +108,7 @@ class NiXNETcanBus(BusABC):
         self.channel_info = "NI-XNET: " + channel
 
         self.poll_interval = poll_interval
+        self._listen_only = listen_only
 
         is_fd = isinstance(timing, BitTimingFd) if timing else fd
         self._can_protocol = CanProtocol.CAN_FD if is_fd else CanProtocol.CAN_20
@@ -122,7 +128,7 @@ class NiXNETcanBus(BusABC):
             self._interface = self._session_send.intf
 
             # set interface properties
-            self._interface.can_lstn_only = kwargs.get("listen_only", False)
+            self._interface.can_lstn_only = listen_only
             self._interface.echo_tx = receive_own_messages
             self._interface.bus_err_to_in_strm = True
 
@@ -267,7 +273,10 @@ class NiXNETcanBus(BusABC):
         :raises can.exceptions.CanOperationError:
             If writing to transmit buffer fails.
             It does not wait for message to be ACKed currently.
+            Also raised if the bus was opened in listen only mode.
         """
+        if self._listen_only:
+            raise CanOperationError("Cannot send in listen-only mode")
         if timeout is None:
             timeout = self.nixnet.constants.TIMEOUT_INFINITE
 

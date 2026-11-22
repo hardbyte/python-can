@@ -45,7 +45,8 @@ Configuration
           frame_type='STD',
           operation_mode='normal',
           bitrate=500000,
-          can_filters=None)
+          can_filters=None,
+          listen_only=False)
 
 CHANNEL
  The serial port created by the USB device when connected.
@@ -62,6 +63,10 @@ OPERATIONMODE
  - "loopback"
  - "silent"
  - "loopback_and_silent"
+
+LISTEN_ONLY
+ Open the device in :ref:`listen-only mode <listen_only>`. Cannot be combined
+ with OPERATIONMODE "loopback".
 
 BITRATE
  - 1000000

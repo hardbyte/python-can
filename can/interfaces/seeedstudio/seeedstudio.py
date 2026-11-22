@@ -66,6 +66,7 @@ class SeeedBus(BusABC):
         operation_mode: str = "normal",
         bitrate: int = 500000,
         can_filters: CanFilters | None = None,
+        listen_only: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -94,6 +95,11 @@ class SeeedBus(BusABC):
             zero or more than one filter is provided, software-based
             filtering will be used. Defaults to None (no filtering).
 
+        :param bool listen_only:
+            If True, open the device in silent mode. In silent mode,
+            :meth:`send` raises :class:`~can.exceptions.CanOperationError`.
+
+        :raises ValueError: If ``listen_only`` is combined with loopback mode.
         :raises can.CanInitializationError: If the given parameters are invalid.
         :raises can.CanInterfaceNotImplementedError: If the serial module is not installed.
         """
@@ -115,6 +121,13 @@ class SeeedBus(BusABC):
 
         self.bit_rate = bitrate
         self.frame_type = frame_type
+        if operation_mode in ("silent", "loopback_and_silent"):
+            listen_only = True
+        elif listen_only and operation_mode == "loopback":
+            raise ValueError("'listen_only' cannot be combined with loopback mode")
+        if listen_only:
+            operation_mode = "silent"
+        self._listen_only = listen_only
         self.op_mode = operation_mode
         self.filter_id = struct.pack("<I", can_id)
         self.mask_id = struct.pack("<I", can_mask)
@@ -203,7 +216,11 @@ class SeeedBus(BusABC):
         :param timeout:
             This parameter will be ignored. The timeout value of the channel is
             used instead.
+
+        :raises can.CanOperationError: If the bus was opened in listen-only mode.
         """
+        if self._listen_only:
+            raise can.CanOperationError("Cannot send in listen-only mode")
 
         byte_msg = bytearray()
         byte_msg.append(0xAA)

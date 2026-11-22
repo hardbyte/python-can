@@ -48,6 +48,7 @@ Optional parameters:
 * ``device_number`` (default first device) The device number of the USB-CAN
 * ``rx_buffer_entries`` (default 4096) The maximum number of entries in the receive buffer
 * ``tx_buffer_entries`` (default 4096) The maximum number of entries in the transmit buffer
+* ``listen_only`` (default False) Open the channel in :ref:`listen-only mode <listen_only>`
 * ``state`` (default BusState.ACTIVE) BusState of the channel
 * ``receive_own_messages`` (default False) If messages transmitted should also be received back
 

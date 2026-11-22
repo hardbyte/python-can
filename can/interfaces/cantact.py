@@ -12,6 +12,7 @@ from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
 from can.exceptions import (
     CanInitializationError,
     CanInterfaceNotImplementedError,
+    CanOperationError,
     error_check,
 )
 from can.typechecking import AutoDetectedConfig
@@ -56,6 +57,7 @@ class CantactBus(BusABC):
         poll_interval: float = 0.01,
         monitor: bool = False,
         timing: BitTiming | BitTimingFd | None = None,
+        listen_only: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -71,7 +73,12 @@ class CantactBus(BusABC):
             `f_clock` value of the timing instance must be set to 24_000_000 (24MHz)
             for standard CAN.
             CAN FD and the :class:`~can.BitTimingFd` class are not supported.
+        :param listen_only:
+            If true, operate in listen-only monitoring mode. In this mode,
+            :meth:`send` raises :class:`~can.exceptions.CanOperationError`.
         """
+        listen_only = listen_only or monitor
+        self._listen_only = listen_only
 
         if kwargs.get("_testing", False):
             self.interface = MockInterface()
@@ -112,7 +119,7 @@ class CantactBus(BusABC):
                 self.interface.set_bitrate(int(channel), int(bitrate))
 
             self.interface.set_enabled(int(channel), True)
-            self.interface.set_monitor(int(channel), monitor)
+            self.interface.set_monitor(int(channel), listen_only)
             self.interface.start()
 
         super().__init__(
@@ -145,6 +152,8 @@ class CantactBus(BusABC):
         return msg, False
 
     def send(self, msg: Message, timeout: float | None = None) -> None:
+        if self._listen_only:
+            raise CanOperationError("Cannot send in listen-only mode")
         with error_check("Cannot send message"):
             self.interface.send(
                 self.channel,

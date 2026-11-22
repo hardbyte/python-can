@@ -57,6 +57,26 @@ class CantactTest(unittest.TestCase):
         cantact.MockInterface.recv.assert_called()
         self.assertIsNone(frame)
 
+    def test_listen_only(self):
+        """
+        Test Scope:
+            Listen-only mode of the CANtact interface.
+        Preconditions:
+            A mocked CANtact device.
+        Events:
+            Create a listen-only bus and try to send a message.
+        Evaluate:
+            Monitor mode is switched on, send raises CanOperationError and no
+            frame is passed to the device.
+        """
+        cantact.MockInterface.send.reset_mock()
+        bus = can.Bus(channel=0, interface="cantact", listen_only=True, _testing=True)
+
+        cantact.MockInterface.set_monitor.assert_called_with(0, True)
+        with self.assertRaises(can.CanOperationError):
+            bus.send(can.Message(arbitration_id=0x123))
+        cantact.MockInterface.send.assert_not_called()
+
     def test_shutdown(self):
         bus = can.Bus(channel=0, interface="cantact", _testing=True)
         bus.shutdown()

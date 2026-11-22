@@ -100,13 +100,16 @@ in a :ref:`configuration file <configuration>` with ``listen_only = True``, and 
 command line tools accept ``--listen-only``.
 
 The :attr:`~can.BusABC.listen_only` property tells whether a bus is in listen-only
-mode.
+mode. Interfaces that can switch the mode at runtime, currently ``pcan`` and
+``systec``, also allow setting it.
 
 An interface supports listen-only mode only if its constructor declares a
 ``listen_only`` parameter, or forwards ``**kwargs`` to a base class constructor
 that does. For any other interface, ``listen_only=True`` raises
 :class:`~can.exceptions.CanInterfaceNotImplementedError` before the bus is
-created, see :class:`~can.BusABC`.
+created, see :class:`~can.BusABC`. Of the built-in interfaces, ``cantact``,
+``kvaser``, ``nixnet``, ``pcan``, ``seeedstudio``, ``slcan``, ``systec``,
+``vector`` and ``virtual`` support it.
 
 Bus API
 '''''''

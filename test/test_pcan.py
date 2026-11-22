@@ -488,6 +488,38 @@ class TestPCANBus(unittest.TestCase):
             bus = can.Bus(interface="pcan", state=state)
             assert bus.state == state
 
+    def test_listen_only(self) -> None:
+        """
+        Test Scope:
+            Listen-only mode of the PCAN interface.
+        Preconditions:
+            A mocked PCAN-Basic API.
+        Events:
+            Create a listen-only bus, try to send a message, then switch
+            listen_only off.
+        Evaluate:
+            Listen-only mode is switched on, the state is PASSIVE, send raises
+            CanOperationError and no frame is written. Switching listen_only off
+            turns the driver's listen-only mode off and the state becomes ACTIVE.
+        """
+        self.mock_pcan.Write = Mock(return_value=PCAN_ERROR_OK)
+        self.bus = can.Bus(interface="pcan", listen_only=True)
+
+        self.mock_pcan.SetValue.assert_any_call(
+            PCAN_USBBUS1, PCAN_LISTEN_ONLY, PCAN_PARAMETER_ON
+        )
+        assert self.bus.state == BusState.PASSIVE
+        with pytest.raises(can.CanOperationError):
+            self.bus.send(can.Message(arbitration_id=0x123))
+        self.mock_pcan.Write.assert_not_called()
+
+        self.bus.listen_only = False
+        self.assertEqual(
+            self.mock_pcan.SetValue.call_args[0],
+            (PCAN_USBBUS1, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF),
+        )
+        assert self.bus.state == BusState.ACTIVE
+
     def test_detect_available_configs(self) -> None:
         if platform.system() == "Darwin":
             self.mock_pcan.GetValue = Mock(
