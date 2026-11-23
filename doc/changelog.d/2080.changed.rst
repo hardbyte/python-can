@@ -1,0 +1,1 @@
+The ``slcan`` interface now finds frame terminators with the C-level ``bytearray.find`` instead of a Python-level byte loop, so ``recv()`` is faster and stays fast even when a large backlog of frames has accumulated in the serial buffer.
