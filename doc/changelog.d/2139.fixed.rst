@@ -1,0 +1,1 @@
+Fixed ASCReader handling of CANFD ASC records containing classical CAN frames, remote requests, and empty CAN FD frames, preserving frame flags and remote DLC values.

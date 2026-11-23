@@ -33,7 +33,7 @@ try:
     import nixnet.constants  # type: ignore
     import nixnet.system  # type: ignore
     import nixnet.types  # type: ignore
-except Exception as exc:
+except ImportError as exc:
     logger.warning("Could not import nixnet: %s", exc)
 
 
@@ -345,7 +345,7 @@ class NiXNETcanBus(BusABC):
                             is nixnet.constants.CanTcvrCap.HS,  # type: ignore[union-attr]
                         }
                     )
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             logger.debug("An error occured while searching for configs: %s", str(error))
 
         return configs  # type: ignore

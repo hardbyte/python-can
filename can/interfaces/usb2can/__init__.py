@@ -1,4 +1,4 @@
-""" """
+"""USB2CAN CAN interface."""
 
 __all__ = [
     "Usb2CanAbstractionLayer",

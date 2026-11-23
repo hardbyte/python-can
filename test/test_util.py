@@ -182,6 +182,35 @@ class TestBusConfig(unittest.TestCase):
         assert timing.tseg2 == 2
         assert timing.sjw == 1
 
+    def test_invalid_bit_timing_cfg_logs_warning(self):
+        """
+        Test Scope:
+            A config with complete but invalid bit timing parameters is not
+            silently ignored.
+        Preconditions:
+            None.
+        Events:
+            Create a bus config with all CAN 2.0 bit timing parameters, where
+            sjw is greater than tseg2.
+        Evaluate:
+            The config contains no timing and a warning naming the invalid
+            parameter is logged.
+        """
+        with self.assertLogs("can.util", level="WARNING") as logs:
+            can_cfg = _create_bus_config(
+                {
+                    **self.base_config,
+                    "f_clock": "8000000",
+                    "brp": "1",
+                    "tseg1": "5",
+                    "tseg2": "2",
+                    "sjw": "3",
+                    "nof_samples": "1",
+                }
+            )
+        assert "timing" not in can_cfg
+        assert "sjw" in logs.output[0]
+
     def test_bit_timing_fd_cfg(self):
         canfd_cfg = _create_bus_config(
             {

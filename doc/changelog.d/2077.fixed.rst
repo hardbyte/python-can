@@ -1,0 +1,1 @@
+Fixed Systec errors raising ``TypeError`` instead of reporting the underlying USB-CAN return code.

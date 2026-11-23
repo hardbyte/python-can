@@ -1,0 +1,1 @@
+Fix ``canERR_PARAM`` raised when opening a Kvaser channel with Linux CANlib, a regression introduced in 4.6.0.

@@ -1,4 +1,4 @@
-""" """
+"""PCAN CAN interface and driver bindings."""
 
 __all__ = [
     "PcanBus",

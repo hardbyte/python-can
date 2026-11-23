@@ -162,6 +162,83 @@ class CanViewerTest(unittest.TestCase):
         # are parsed correctly
         self.can_viewer.run()
 
+    def _receive_statistics_fixture(self):
+        for index, (identifier, extended) in enumerate(
+            [(0x321, False), (0x123, False), (0x123, True)]
+        ):
+            for timestamp in (10.0 + index, 10.5 + index):
+                self.can_viewer.draw_can_bus_message(
+                    can.Message(
+                        timestamp=timestamp,
+                        arbitration_id=identifier,
+                        is_extended_id=extended,
+                        data=[index],
+                    )
+                )
+        return {
+            key: (value["count"], value["dt"], value["msg"])
+            for key, value in self.can_viewer.ids.items()
+        }
+
+    def _assert_receive_statistics(self, expected):
+        self.assertEqual(self.can_viewer.ids.keys(), expected.keys())
+        for key, (count, dt, message) in expected.items():
+            self.assertEqual(self.can_viewer.ids[key]["count"], count)
+            self.assertEqual(self.can_viewer.ids[key]["dt"], dt)
+            self.assertIs(self.can_viewer.ids[key]["msg"], message)
+
+    def test_redraw_preserves_receive_statistics(self):
+        expected = self._receive_statistics_fixture()
+        start_time = self.can_viewer.start_time
+        for scroll in (1, 2, 0):
+            self.can_viewer.scroll = scroll
+            self.can_viewer.redraw_screen()
+            self._assert_receive_statistics(expected)
+        self.assertEqual(self.can_viewer.start_time, start_time)
+
+        # A genuine subsequent reception must still update count and interval.
+        for key, (_, _, previous) in expected.items():
+            self.can_viewer.draw_can_bus_message(
+                can.Message(
+                    timestamp=previous.timestamp + 0.5,
+                    arbitration_id=previous.arbitration_id,
+                    is_extended_id=previous.is_extended_id,
+                    data=previous.data,
+                )
+            )
+            self.assertEqual(self.can_viewer.ids[key]["count"], 3)
+            self.assertEqual(self.can_viewer.ids[key]["dt"], 0.5)
+
+    def test_scrolling_preserves_receive_statistics(self):
+        expected = self._receive_statistics_fixture()
+        self.can_viewer.paused = True
+        # The legacy teardown can then exit immediately after this run.
+        self.stdscr_dummy.key_counter = 200
+        with (
+            patch.object(
+                self.stdscr_dummy,
+                "getch",
+                side_effect=[curses.KEY_DOWN, curses.KEY_UP, ord("q")],
+            ),
+            patch("curses.is_term_resized", return_value=False),
+        ):
+            self.can_viewer.run()
+        self.assertEqual(self.can_viewer.scroll, 0)
+        self._assert_receive_statistics(expected)
+
+    def test_resizing_preserves_receive_statistics(self):
+        expected = self._receive_statistics_fixture()
+        self.can_viewer.paused = True
+        self.stdscr_dummy.key_counter = 200
+        with (
+            patch.object(self.stdscr_dummy, "getch", side_effect=[-1, ord("q")]),
+            patch.object(self.stdscr_dummy, "getmaxyx", return_value=(2, 100)),
+            patch("curses.is_term_resized", return_value=True),
+        ):
+            self.can_viewer.run()
+        self.assertEqual(self.can_viewer.y, 2)
+        self._assert_receive_statistics(expected)
+
     def test_send(self):
         # CANopen EMCY
         data = [1, 2, 3, 4, 5, 6, 7]  # Wrong length

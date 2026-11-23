@@ -1,4 +1,4 @@
-""" """
+"""Kvaser CAN interface and CANlib bindings."""
 
 __all__ = [
     "CANLIBInitializationError",

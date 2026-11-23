@@ -121,7 +121,7 @@ class Usb2CanAbstractionLayer:
         try:
             self.__m_dllBasic = windll.LoadLibrary(dll)
             if self.__m_dllBasic is None:
-                raise Exception("__m_dllBasic is None")
+                raise can.CanInitializationError("__m_dllBasic is None")
 
         except Exception as error:
             message = f"DLL failed to load at path: {dll}"

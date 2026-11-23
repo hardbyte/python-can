@@ -40,7 +40,7 @@ def _get_class_for_interface(interface: str) -> type[BusABC]:
     # Import the correct interface module
     try:
         module = importlib.import_module(module_name)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise CanInterfaceNotImplementedError(
             f"Cannot import module {module_name} for CAN interface '{interface}': {e}"
         ) from None
@@ -48,7 +48,7 @@ def _get_class_for_interface(interface: str) -> type[BusABC]:
     # Get the correct class
     try:
         bus_class = getattr(module, class_name)
-    except Exception as e:
+    except AttributeError as e:
         raise CanInterfaceNotImplementedError(
             f"Cannot import class {class_name} from module {module_name} for CAN interface "
             f"'{interface}': {e}"
@@ -140,7 +140,7 @@ def Bus(  # noqa: N802
 
 
 def detect_available_configs(
-    interfaces: None | str | Iterable[str] = None,
+    interfaces: str | Iterable[str] | None = None,
     timeout: float = 5.0,
 ) -> Sequence[AutoDetectedConfig]:
     """Detect all configurations/channels that the interfaces could

@@ -1,0 +1,2 @@
+Fixed the CAN viewer increasing message counts and resetting receive intervals
+when scrolling or resizing the terminal.

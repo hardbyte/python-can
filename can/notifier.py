@@ -196,6 +196,9 @@ class Notifier(AbstractContextManager["Notifier"]):
         """Stop notifying Listeners when new :class:`~can.Message` objects arrive
         and call :meth:`~can.Listener.stop` on each Listener.
 
+        Queued message delivery callbacks are ignored after stopping. Already
+        scheduled coroutine tasks are not cancelled.
+
         :param timeout:
             Max time in seconds to wait for receive threads to finish.
             Should be longer than timeout given at instantiation.
@@ -252,6 +255,8 @@ class Notifier(AbstractContextManager["Notifier"]):
 
     def _on_message_received(self, msg: Message) -> None:
         for callback in self.listeners:
+            if self._stopped:
+                return
             res = callback(msg)
             if res and self._loop and asyncio.iscoroutine(res):
                 # Schedule coroutine and keep a reference to the task

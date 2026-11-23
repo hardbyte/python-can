@@ -1,4 +1,4 @@
-""" """
+"""Vector CAN interface and XL Driver bindings."""
 
 __all__ = [
     "VectorBus",

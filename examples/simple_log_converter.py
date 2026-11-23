@@ -15,10 +15,9 @@ import can
 def main():
     """The transcoder"""
 
-    with can.LogReader(sys.argv[1]) as reader:
-        with can.Logger(sys.argv[2]) as writer:
-            for msg in reader:
-                writer.on_message_received(msg)
+    with can.LogReader(sys.argv[1]) as reader, can.Logger(sys.argv[2]) as writer:
+        for msg in reader:
+            writer.on_message_received(msg)
 
 
 if __name__ == "__main__":

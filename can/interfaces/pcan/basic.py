@@ -972,7 +972,7 @@ class PCANBasic:
 
             elif (
                 Parameter == PCAN_ACCEPTANCE_FILTER_11BIT
-                or PCAN_ACCEPTANCE_FILTER_29BIT
+                or Parameter == PCAN_ACCEPTANCE_FILTER_29BIT
             ):
                 mybuffer = c_int64(0)
 
@@ -1018,7 +1018,7 @@ class PCANBasic:
                 mybuffer = create_string_buffer(256)
             elif (
                 Parameter == PCAN_ACCEPTANCE_FILTER_11BIT
-                or PCAN_ACCEPTANCE_FILTER_29BIT
+                or Parameter == PCAN_ACCEPTANCE_FILTER_29BIT
             ):
                 mybuffer = c_int64(0)
             else:

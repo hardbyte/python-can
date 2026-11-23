@@ -116,7 +116,7 @@ elif IS_LINUX:
         import select
 
         HAS_EVENTS = True
-    except Exception:
+    except ImportError:
         pass
 
 

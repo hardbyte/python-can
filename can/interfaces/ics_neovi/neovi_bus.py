@@ -234,12 +234,9 @@ class NeoViBus(BusABC):
                 for channel in self.channels:
                     ics.set_bit_rate(self.dev, kwargs.get("bitrate"), channel)
 
-            if is_fd:
-                if "data_bitrate" in kwargs:
-                    for channel in self.channels:
-                        ics.set_fd_bit_rate(
-                            self.dev, kwargs.get("data_bitrate"), channel
-                        )
+            if is_fd and "data_bitrate" in kwargs:
+                for channel in self.channels:
+                    ics.set_fd_bit_rate(self.dev, kwargs.get("data_bitrate"), channel)
         except ics.RuntimeError as re:
             logger.error(re)
             err = ICSInitializationError(*ics.get_last_api_error(self.dev))
@@ -304,7 +301,7 @@ class NeoViBus(BusABC):
 
         try:
             devices = ics.find_devices()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug("Failed to detect configs: %s", e)
             return []
 

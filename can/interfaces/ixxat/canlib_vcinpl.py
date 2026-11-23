@@ -56,7 +56,7 @@ _canlib = None
 if sys.platform == "win32" or sys.platform == "cygwin":
     try:
         _canlib = CLibrary("vcinpl.dll")
-    except Exception as e:
+    except OSError as e:
         log.warning("Cannot load IXXAT vcinpl library: %s", e)
 else:
     # Will not work on other systems, but have it importable anyway for
@@ -349,7 +349,7 @@ try:
 except AttributeError:
     # In case _canlib == None meaning we're not on win32/no lib found
     pass
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     log.warning("Could not initialize IXXAT VCI library: %s", e)
 # ---------------------------------------------------------------------------
 
@@ -626,7 +626,7 @@ class IXXATBus(BusABC):
 
         # Calculate an offset to make them relative to epoch
         # Assume that the time offset is in the middle of the start command
-        self._timeoffset = start_begin + (start_end - start_begin / 2)
+        self._timeoffset = start_begin + (start_end - start_begin) / 2
         self._overrunticks = 0
         self._starttickoffset = 0
 
@@ -642,10 +642,20 @@ class IXXATBus(BusABC):
                 _canlib.canChannelReadMessage(
                     self._channel_handle, 0, ctypes.byref(self._message)
                 )
+                self._update_timestamp()
             except (VCITimeout, VCIRxQueueEmptyError):
                 break
 
         super().__init__(channel=channel, can_filters=None, **kwargs)
+
+    def _update_timestamp(self):
+        """Retain clock metadata even when startup messages are discarded."""
+        message_type = self._message.uMsgInfo.Bits.type
+        if message_type == constants.CAN_MSGTYPE_INFO:
+            if self._message.abData[0] == constants.CAN_INFO_START:
+                self._starttickoffset = self._message.dwTime
+        elif message_type == constants.CAN_MSGTYPE_TIMEOVR:
+            self._overrunticks += self._message.dwMsgId << 32
 
     def _inWaiting(self):
         try:
@@ -701,9 +711,7 @@ class IXXATBus(BusABC):
                         f"Unknown CAN info message code {self._message.abData[0]}",
                     )
                 )
-                # Handle CAN start info message
-                if self._message.abData[0] == constants.CAN_INFO_START:
-                    self._starttickoffset = self._message.dwTime
+                self._update_timestamp()
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_ERROR:
                 if self._message.uMsgInfo.Bytes.bFlags & constants.CAN_MSGFLAGS_OVR:
                     raise VCIDataOverrunError("Data overrun occurred")
@@ -721,7 +729,7 @@ class IXXATBus(BusABC):
                     )
             elif self._message.uMsgInfo.Bits.type == constants.CAN_MSGTYPE_TIMEOVR:
                 # Add the number of timestamp overruns to the high word
-                self._overrunticks += self._message.dwMsgId << 32
+                self._update_timestamp()
             else:
                 log.warning(
                     "Unexpected message info type 0x%X",
@@ -742,10 +750,12 @@ class IXXATBus(BusABC):
                         raise VCIErrorLimitExceededError("Error warning limit exceeded")
                     # Not checking CAN_STATUS_OVRRUN here because it is handled above and would be
                     # raised every time as the flag is never cleared until a reset.
-                elif error_byte_2 > constants.CAN_STATUS_ININIT:
+                elif (
+                    error_byte_2 > constants.CAN_STATUS_ININIT
+                    and error_byte_2 & constants.CAN_STATUS_BUSCERR
+                ):
                     # CAN_STATUS_BUSCERR  = 0x20  # bus coupling error
-                    if error_byte_2 & constants.CAN_STATUS_BUSCERR:
-                        raise VCIBusCouplingError("Bus coupling error")
+                    raise VCIBusCouplingError("Bus coupling error")
 
         if not data_received:
             # Timed out / can message type is not DATA
@@ -1005,7 +1015,7 @@ def _detect_available_configs() -> Sequence["AutoDetectedIxxatConfig"]:
                             constants.FALSE,
                             ctypes.byref(channel_handle),
                         )
-                    except Exception:
+                    except VCIError:
                         # Array outside of bounds error == accessing a channel not in the hardware
                         break
                     else:

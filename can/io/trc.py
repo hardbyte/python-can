@@ -10,14 +10,14 @@ Version 1.1 will be implemented as it is most commonly used
 import logging
 import os
 from collections.abc import Callable, Generator
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from io import TextIOWrapper
 from typing import Any, TextIO
 
 from ..message import Message
 from ..typechecking import StringPathLike
-from ..util import channel2int, len2dlc
+from ..util import channel2int, dlc2len
 from .generic import TextIOMessageReader, TextIOMessageWriter
 
 logger = logging.getLogger("can.io.trc")
@@ -67,7 +67,7 @@ class TRCReader(TextIOMessageReader):
     @property
     def start_time(self) -> datetime | None:
         if self._start_time:
-            return datetime.fromtimestamp(self._start_time, timezone.utc)
+            return datetime.fromtimestamp(self._start_time, UTC)
         return None
 
     def _extract_header(self) -> str:
@@ -94,7 +94,7 @@ class TRCReader(TextIOMessageReader):
                 logger.debug("TRCReader: Found start time '%s'", line)
                 try:
                     self._start_time = (
-                        datetime(1899, 12, 30, tzinfo=timezone.utc)
+                        datetime(1899, 12, 30, tzinfo=UTC)
                         + timedelta(days=float(line.split("=")[1]))
                     ).timestamp()
                 except IndexError:
@@ -112,13 +112,11 @@ class TRCReader(TextIOMessageReader):
             else:
                 break
 
-        if self.file_version >= TRCFileVersion.V1_1:
-            if self._start_time is None:
-                raise ValueError("File has no start time information")
+        if self.file_version >= TRCFileVersion.V1_1 and self._start_time is None:
+            raise ValueError("File has no start time information")
 
-        if self.file_version >= TRCFileVersion.V2_0:
-            if not self.columns:
-                raise ValueError("File has no column information")
+        if self.file_version >= TRCFileVersion.V2_0 and not self.columns:
+            raise ValueError("File has no column information")
 
         if self.file_version == TRCFileVersion.UNKNOWN:
             logger.info(
@@ -192,25 +190,24 @@ class TRCReader(TextIOMessageReader):
         type_ = cols[self.columns["T"]]
         bus = self.columns.get("B", None)
 
+        msg = Message()
+        msg.is_fd = type_ in {"FD", "FB", "FE", "BI"}
         if "l" in self.columns:
-            length = int(cols[self.columns["l"]])
-            dlc = len2dlc(length)
+            msg.dlc = int(cols[self.columns["l"]])
         elif "L" in self.columns:
             dlc = int(cols[self.columns["L"]])
+            msg.dlc = dlc2len(dlc) if msg.is_fd and 0 <= dlc <= 15 else dlc
         else:
             raise ValueError("No length/dlc columns present.")
 
-        msg = Message()
         msg.timestamp = float(cols[self.columns["O"]]) / 1000 + self._start_time
         msg.arbitration_id = int(cols[self.columns["I"]], 16)
         msg.is_extended_id = len(cols[self.columns["I"]]) > 4
         msg.channel = int(cols[bus]) if bus is not None else 1
-        msg.dlc = dlc
         msg.is_remote_frame = type_ in {"RR"}
-        if dlc and not msg.is_remote_frame:
+        if msg.dlc and not msg.is_remote_frame:
             msg.data = bytearray.fromhex(cols[self.columns["D"]])
         msg.is_rx = cols[self.columns["d"]] == "Rx"
-        msg.is_fd = type_ in {"FD", "FB", "FE", "BI"}
         msg.bitrate_switch = type_ in {"FB", "FE"}
         msg.error_state_indicator = type_ in {"FE", "BI"}
 
@@ -339,9 +336,7 @@ class TRCWriter(TextIOMessageWriter):
         self.file.writelines(line + "\n" for line in lines)
 
     def _write_header_v2_1(self, start_time: datetime) -> None:
-        header_time = start_time - datetime(
-            year=1899, month=12, day=30, tzinfo=timezone.utc
-        )
+        header_time = start_time - datetime(year=1899, month=12, day=30, tzinfo=UTC)
         lines = [
             ";$FILEVERSION=2.1",
             f";$STARTTIME={header_time/timedelta(days=1)}",
@@ -399,7 +394,7 @@ class TRCWriter(TextIOMessageWriter):
 
     def write_header(self, timestamp: float) -> None:
         # write start of file header
-        start_time = datetime.fromtimestamp(timestamp, timezone.utc)
+        start_time = datetime.fromtimestamp(timestamp, UTC)
 
         if self.file_version == TRCFileVersion.V1_0:
             self._write_header_v1_0(start_time)

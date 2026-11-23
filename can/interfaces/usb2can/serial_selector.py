@@ -1,4 +1,4 @@
-""" """
+"""Discover USB2CAN devices and select them by serial number."""
 
 import logging
 

@@ -1,10 +1,8 @@
 import argparse
 import errno
 import sys
-from datetime import datetime
-from typing import (
-    TYPE_CHECKING,
-)
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from can import BusState, Logger, SizedRotatingLogger
 from can.cli import (
@@ -107,7 +105,7 @@ def main() -> None:
         bus.state = BusState.PASSIVE
 
     print(f"Connected to {bus.__class__.__name__}: {bus.channel_info}")
-    print(f"Can Logger (Started on {datetime.now()})")
+    print(f"Can Logger (Started on {datetime.now(tz=UTC)})")
 
     logger: MessageWriter | BaseRotatingLogger
     if results.file_size:

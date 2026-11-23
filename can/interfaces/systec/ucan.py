@@ -313,7 +313,7 @@ else:
 
         _UCAN_INITIALIZED = True
 
-    except Exception as ex:
+    except (AttributeError, OSError) as ex:
         log.warning("Cannot load SYSTEC ucan library: %s.", ex)
 
 

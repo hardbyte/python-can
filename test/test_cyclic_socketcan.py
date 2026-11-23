@@ -221,7 +221,7 @@ class CyclicSocketCan(unittest.TestCase):
             self.assertEqual(tx_message.is_fd, rx_message.is_fd)
 
     def test_cyclic_initializer_invalid_none(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             task = self._send_bus.send_periodic(None, self.PERIOD)
 
     def test_cyclic_initializer_invalid_empty_list(self):
@@ -515,7 +515,7 @@ class CyclicSocketCan(unittest.TestCase):
 
         time.sleep(2 * self.PERIOD)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             task.modify_data(None)
 
     def test_modify_data_unequal_lengths(self):

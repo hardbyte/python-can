@@ -286,7 +286,7 @@ class GeneralPurposeUdpMulticastBus:
                 ):  # It is unavailable on macOS (ENOPROTOOPT) or windows(EINVAL/WSAEINVAL)
                     self.timestamp_nanosecond = False
                 else:
-                    raise error
+                    raise
             else:
                 self.timestamp_nanosecond = True
 

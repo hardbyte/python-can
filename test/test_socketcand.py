@@ -42,5 +42,32 @@ class TestConvertAsciiMessageToCanMessage(unittest.TestCase):
         self.assertIsNone(msg)
 
 
+class TestConvertCanMessageToAsciiMessage(unittest.TestCase):
+    def test_standard_frame(self):
+        msg = can.Message(
+            arbitration_id=0x123, data=[0x01, 0x02, 0x03, 0x04], is_extended_id=False
+        )
+        self.assertEqual(
+            socketcand.convert_can_message_to_ascii_message(msg),
+            "< send 123 4 1 2 3 4 >",
+        )
+
+    def test_extended_frame(self):
+        msg = can.Message(
+            arbitration_id=0x1AAAAAAA, data=[0x01, 0xF1], is_extended_id=True
+        )
+        self.assertEqual(
+            socketcand.convert_can_message_to_ascii_message(msg),
+            "< send 1AAAAAAA 2 1 f1 >",
+        )
+
+    def test_remote_frame_is_refused(self):
+        msg = can.Message(
+            arbitration_id=0x403, is_remote_frame=True, is_extended_id=False
+        )
+        with self.assertRaises(can.CanOperationError):
+            socketcand.convert_can_message_to_ascii_message(msg)
+
+
 if __name__ == "__main__":
     unittest.main()

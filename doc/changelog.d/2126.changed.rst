@@ -1,0 +1,1 @@
+``can.BusABC.send_periodic()`` may raise a ``TypeError`` now if the msgs argument is not a message or a sequence of messages.
