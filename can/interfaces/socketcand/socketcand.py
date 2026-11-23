@@ -296,41 +296,7 @@ class SocketCanDaemonBus(can.BusABC):
                 self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
             self.__receive_buffer += ascii_msg
             log.debug(f"Received Ascii Message: {ascii_msg}")
-            buffer_view = self.__receive_buffer
-            chars_processed_successfully = 0
-            while True:
-                if len(buffer_view) == 0:
-                    break
-
-                start = buffer_view.find("<")
-                if start == -1:
-                    log.warning(
-                        f"Bad data: No opening < found => discarding entire buffer '{buffer_view}'"
-                    )
-                    chars_processed_successfully = len(self.__receive_buffer)
-                    break
-                end = buffer_view.find(">")
-                if end == -1:
-                    log.warning("Got incomplete message => waiting for more data")
-                    if len(buffer_view) > 200:
-                        log.warning(
-                            "Incomplete message exceeds 200 chars => Discarding"
-                        )
-                        chars_processed_successfully = len(self.__receive_buffer)
-                    break
-                chars_processed_successfully += end + 1
-                single_message = buffer_view[start : end + 1]
-                parsed_can_message = convert_ascii_message_to_can_message(
-                    single_message
-                )
-                if parsed_can_message is None:
-                    log.warning(f"Invalid Frame: {single_message}")
-                else:
-                    parsed_can_message.channel = self.channel
-                    self.__message_buffer.append(parsed_can_message)
-                buffer_view = buffer_view[end + 1 :]
-
-            self.__receive_buffer = self.__receive_buffer[chars_processed_successfully:]
+            self._parse_receive_buffer()
             can_message = (
                 None
                 if len(self.__message_buffer) == 0
@@ -350,12 +316,61 @@ class SocketCanDaemonBus(can.BusABC):
         if self.__tcp_tune:
             self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
 
+    def _parse_receive_buffer(self) -> None:
+        """Move every complete message in the receive buffer to the message buffer."""
+        buffer_view = self.__receive_buffer
+        chars_processed_successfully = 0
+        while True:
+            if len(buffer_view) == 0:
+                break
+
+            start = buffer_view.find("<")
+            if start == -1:
+                log.warning(
+                    f"Bad data: No opening < found => discarding entire buffer '{buffer_view}'"
+                )
+                chars_processed_successfully = len(self.__receive_buffer)
+                break
+            end = buffer_view.find(">")
+            if end == -1:
+                log.warning("Got incomplete message => waiting for more data")
+                if len(buffer_view) > 200:
+                    log.warning("Incomplete message exceeds 200 chars => Discarding")
+                    chars_processed_successfully = len(self.__receive_buffer)
+                break
+            chars_processed_successfully += end + 1
+            single_message = buffer_view[start : end + 1]
+            parsed_can_message = convert_ascii_message_to_can_message(single_message)
+            if parsed_can_message is None:
+                log.warning(f"Invalid Frame: {single_message}")
+            else:
+                parsed_can_message.channel = self.channel
+                self.__message_buffer.append(parsed_can_message)
+            buffer_view = buffer_view[end + 1 :]
+
+        self.__receive_buffer = self.__receive_buffer[chars_processed_successfully:]
+
     def _expect_msg(self, msg):
-        ascii_msg = self.__socket.recv(256).decode("ascii")
-        if self.__tcp_tune:
-            self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
+        # TCP is a stream: the reply can arrive in several pieces, and after
+        # "< rawmode >" the first frames can follow the "< ok >" in the same read.
+        while ">" not in self.__receive_buffer:
+            data = self.__socket.recv(256)
+            if not data:
+                raise can.CanError(
+                    f"Expected '{msg}' got: '{self.__receive_buffer}' "
+                    "(connection closed)"
+                )
+            if self.__tcp_tune:
+                self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
+            self.__receive_buffer += data.decode("ascii")
+
+        end = self.__receive_buffer.index(">") + 1
+        ascii_msg = self.__receive_buffer[:end]
         if not ascii_msg == msg:
             raise can.CanError(f"Expected '{msg}' got: '{ascii_msg}'")
+        self.__receive_buffer = self.__receive_buffer[end:]
+        # keep frames that arrived together with the reply
+        self._parse_receive_buffer()
 
     def send(self, msg, timeout=None):
         """Transmit a message to the CAN bus.

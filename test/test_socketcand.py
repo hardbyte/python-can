@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
+import socket
+import threading
 import unittest
+
 import can
 from can.interfaces.socketcand import socketcand
 
@@ -67,6 +70,78 @@ class TestConvertCanMessageToAsciiMessage(unittest.TestCase):
         )
         with self.assertRaises(can.CanOperationError):
             socketcand.convert_can_message_to_ascii_message(msg)
+
+
+class TestHandshake(unittest.TestCase):
+    """The server replies arrive on a TCP stream, so a read can hold part
+    of a reply or a reply followed by frames."""
+
+    def _serve(self, chunks):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        self.addCleanup(server.close)
+
+        def run():
+            conn, _ = server.accept()
+            with conn:
+                for expected_cmd, reply_chunks in chunks:
+                    if expected_cmd:
+                        received = b""
+                        while not received.endswith(b">"):
+                            received += conn.recv(256)
+                        self.assertEqual(received.decode("ascii"), expected_cmd)
+                    for chunk in reply_chunks:
+                        conn.sendall(chunk.encode("ascii"))
+                        threading.Event().wait(0.05)
+                # wait for the client to close the connection
+                while conn.recv(256):
+                    pass
+
+        thread = threading.Thread(target=run, daemon=True)
+        thread.start()
+        self.addCleanup(thread.join, 2)
+        return server.getsockname()[1]
+
+    def test_frames_in_same_read_as_rawmode_ok(self):
+        port = self._serve(
+            [
+                (None, ["< hi >"]),
+                ("< open can0 >", ["< ok >"]),
+                ("< rawmode >", ["< ok >< frame 123 1680000000.0 0102 >"]),
+            ]
+        )
+        with can.Bus(
+            interface="socketcand", channel="can0", host="127.0.0.1", port=port
+        ) as bus:
+            msg = bus.recv(timeout=1)
+        self.assertIsNotNone(msg)
+        self.assertEqual(msg.arbitration_id, 0x123)
+        self.assertEqual(msg.data, bytearray([1, 2]))
+        self.assertEqual(msg.channel, "can0")
+
+    def test_reply_split_over_reads(self):
+        port = self._serve(
+            [
+                (None, ["< h", "i >"]),
+                ("< open can0 >", ["< o", "k >"]),
+                ("< rawmode >", ["< ok >"]),
+            ]
+        )
+        with can.Bus(
+            interface="socketcand", channel="can0", host="127.0.0.1", port=port
+        ) as bus:
+            self.assertIsNone(bus.recv(timeout=0.1))
+
+    def test_unexpected_reply_raises(self):
+        port = self._serve(
+            [
+                (None, ["< hi >"]),
+                ("< open can0 >", ["< error could not open bus >"]),
+            ]
+        )
+        with self.assertRaises(can.CanError):
+            can.Bus(interface="socketcand", channel="can0", host="127.0.0.1", port=port)
 
 
 if __name__ == "__main__":
