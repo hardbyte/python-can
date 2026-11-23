@@ -11,9 +11,11 @@ import logging
 from collections.abc import Generator, Iterator
 from datetime import UTC, datetime
 from hashlib import md5
+from importlib import import_module
 from io import BufferedIOBase, BytesIO
 from pathlib import Path
-from typing import Any, BinaryIO, cast
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
 from ..message import Message
 from ..typechecking import StringPathLike
@@ -22,14 +24,13 @@ from .generic import BinaryIOMessageReader, BinaryIOMessageWriter
 
 logger = logging.getLogger("can.io.mf4")
 
-try:
-    import asammdf
-    import numpy as np
+if TYPE_CHECKING:
     from asammdf import Signal, Source
     from asammdf.blocks.mdf_v4 import MDF4
-    from asammdf.blocks.v4_blocks import ChannelGroup, SourceInformation
-    from asammdf.blocks.v4_constants import BUS_TYPE_CAN, FLAG_CG_BUS_EVENT, SOURCE_BUS
-    from asammdf.mdf import MDF
+    from asammdf.blocks.v4_blocks import ChannelGroup
+
+try:
+    import numpy as np
 
     STD_DTYPE = np.dtype(
         [
@@ -72,9 +73,21 @@ try:
         ]
     )
 except ImportError:
-    asammdf = None
-    MDF4 = None
-    Signal = None
+    pass
+
+
+def _import_asammdf(class_name: str) -> ModuleType:
+    # Import when a reader/writer is created: importing can while asammdf is
+    # initializing must not permanently disable MF4 support.
+    try:
+        return import_module("asammdf")
+    except ModuleNotFoundError as exc:
+        if exc.name != "asammdf":
+            raise
+        raise NotImplementedError(
+            "The asammdf package was not found. Install python-can with "
+            f"the optional dependency [mf4] to use the {class_name}."
+        ) from exc
 
 
 CAN_MSG_EXT = 0x80000000
@@ -111,11 +124,8 @@ class MF4Writer(BinaryIOMessageWriter):
             * 1 - deflate (slower, but produces smaller files)
             * 2 - transposition + deflate (slowest, but produces the smallest files)
         """
-        if asammdf is None:
-            raise NotImplementedError(
-                "The asammdf package was not found. Install python-can with "
-                "the optional dependency [mf4] to use the MF4Writer."
-            )
+        asammdf = _import_asammdf("MF4Writer")
+        source_information = import_module("asammdf.blocks.v4_blocks").SourceInformation
 
         if kwargs.get("append", False):
             raise ValueError(
@@ -125,7 +135,7 @@ class MF4Writer(BinaryIOMessageWriter):
 
         super().__init__(file, mode="w+b")
         now = datetime.now(tz=UTC)
-        self._mdf = cast("MDF4", MDF(version="4.10"))
+        self._mdf = cast("MDF4", asammdf.MDF(version="4.10"))
         self._mdf.header.start_time = now
         self.last_timestamp = self._start_time = now.timestamp()
 
@@ -141,13 +151,13 @@ class MF4Writer(BinaryIOMessageWriter):
         else:
             attachment = None
 
-        acquisition_source = SourceInformation(
-            source_type=SOURCE_BUS, bus_type=BUS_TYPE_CAN
+        acquisition_source = source_information(
+            source_type=asammdf.Source.SOURCE_BUS, bus_type=asammdf.Source.BUS_TYPE_CAN
         )
 
         # standard frames group
         self._mdf.append(
-            Signal(
+            asammdf.Signal(
                 name="CAN_DataFrame",
                 samples=np.array([], dtype=STD_DTYPE),
                 timestamps=np.array([], dtype="<f8"),
@@ -158,7 +168,7 @@ class MF4Writer(BinaryIOMessageWriter):
 
         # error frames group
         self._mdf.append(
-            Signal(
+            asammdf.Signal(
                 name="CAN_ErrorFrame",
                 samples=np.array([], dtype=ERR_DTYPE),
                 timestamps=np.array([], dtype="<f8"),
@@ -169,7 +179,7 @@ class MF4Writer(BinaryIOMessageWriter):
 
         # remote frames group
         self._mdf.append(
-            Signal(
+            asammdf.Signal(
                 name="CAN_RemoteFrame",
                 samples=np.array([], dtype=RTR_DTYPE),
                 timestamps=np.array([], dtype="<f8"),
@@ -282,7 +292,9 @@ class FrameIterator(abc.ABC):
     # Number of records to request for each asammdf call
     _chunk_size = 1000
 
-    def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float, name: str):
+    def __init__(
+        self, mdf: "MDF4", group_index: int, start_timestamp: float, name: str
+    ):
         self._mdf = mdf
         self._group_index = group_index
         self._start_timestamp = start_timestamp
@@ -297,7 +309,7 @@ class FrameIterator(abc.ABC):
             if str(channel.name).startswith(f"{self._name}."):
                 self._channel_names.append(channel.name)
 
-    def _get_data(self, current_offset: int) -> Signal:
+    def _get_data(self, current_offset: int) -> "Signal":
         # NOTE: asammdf suggests using select instead of get. Select seem to miss converting some
         #       channels which get does convert as expected.
         data_raw = self._mdf.get(
@@ -326,7 +338,7 @@ class MF4Reader(BinaryIOMessageReader):
 
     class _CANDataFrameIterator(FrameIterator):
 
-        def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
+        def __init__(self, mdf: "MDF4", group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_DataFrame")
 
         def __iter__(self) -> Generator[Message, None, None]:
@@ -369,7 +381,7 @@ class MF4Reader(BinaryIOMessageReader):
 
     class _CANErrorFrameIterator(FrameIterator):
 
-        def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
+        def __init__(self, mdf: "MDF4", group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_ErrorFrame")
 
         def __iter__(self) -> Generator[Message, None, None]:
@@ -424,7 +436,7 @@ class MF4Reader(BinaryIOMessageReader):
 
     class _CANRemoteFrameIterator(FrameIterator):
 
-        def __init__(self, mdf: MDF4, group_index: int, start_timestamp: float):
+        def __init__(self, mdf: "MDF4", group_index: int, start_timestamp: float):
             super().__init__(mdf, group_index, start_timestamp, "CAN_RemoteFrame")
 
         def __iter__(self) -> Generator[Message, None, None]:
@@ -467,30 +479,28 @@ class MF4Reader(BinaryIOMessageReader):
                         If this is a file-like object, is has to be opened in
                         binary read mode, not text read mode.
         """
-        if asammdf is None:
-            raise NotImplementedError(
-                "The asammdf package was not found. Install python-can with "
-                "the optional dependency [mf4] to use the MF4Reader."
-            )
+        asammdf = _import_asammdf("MF4Reader")
 
         super().__init__(file, mode="rb")
 
         self._mdf: MDF4
         if isinstance(file, BufferedIOBase):
-            self._mdf = cast("MDF4", MDF(BytesIO(file.read())))
+            self._mdf = cast("MDF4", asammdf.MDF(BytesIO(file.read())))
         else:
-            self._mdf = cast("MDF4", MDF(file))
+            self._mdf = cast("MDF4", asammdf.MDF(file))
 
         self._start_timestamp = self._mdf.header.start_time.timestamp()
 
     def __iter__(self) -> Iterator[Message]:
         # To handle messages split over multiple channel groups, create a single iterator per
         # channel group and merge these iterators into a single iterator using heapq.
+        asammdf = _import_asammdf("MF4Reader")
+        bus_event = import_module("asammdf.blocks.v4_constants").FLAG_CG_BUS_EVENT
         iterators: list[FrameIterator] = []
         for group_index, group in enumerate(self._mdf.groups):
             channel_group: ChannelGroup = group.channel_group
 
-            if not channel_group.flags & FLAG_CG_BUS_EVENT:
+            if not channel_group.flags & bus_event:
                 # Not a bus event, skip
                 continue
 
@@ -503,13 +513,13 @@ class MF4Reader(BinaryIOMessageReader):
             if acquisition_source is None:
                 # No source information, skip
                 continue
-            if not acquisition_source.source_type & Source.SOURCE_BUS:
+            if not acquisition_source.source_type & asammdf.Source.SOURCE_BUS:
                 # Not a bus type (likely already covered by the channel group flag), skip
                 continue
 
             channel_names = [channel.name for channel in group.channels]
 
-            if acquisition_source.bus_type == Source.BUS_TYPE_CAN:
+            if acquisition_source.bus_type == asammdf.Source.BUS_TYPE_CAN:
                 if "CAN_DataFrame" in channel_names:
                     iterators.append(
                         self._CANDataFrameIterator(

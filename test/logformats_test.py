@@ -15,6 +15,9 @@ TODO: correctly set preserves_channel and adds_default_channel
 import locale
 import logging
 import os
+import subprocess
+import sys
+import textwrap
 import tempfile
 import unittest
 from abc import ABCMeta, abstractmethod
@@ -632,6 +635,40 @@ class TestAscFileFormat(ReaderWriterTest):
     def test_read_ignore_comments(self):
         _msg_list = self._read_log_file("logfile.asc")
 
+    def test_first_message_after_header_comment_is_not_dropped(self):
+        content = (
+            "date Mon Oct 12 06:42:09 PM 2026\n"
+            "base hex timestamps absolute\n"
+            "// version 7.0.0\n"
+            "0.000000 1 123 Rx d 8 01 02 03 04 05 06 07 08\n"
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".asc", delete=False) as logfile:
+            logfile.write(content)
+            logfile_name = logfile.name
+        try:
+            with can.ASCReader(logfile_name) as reader:
+                messages = list(reader)
+        finally:
+            os.unlink(logfile_name)
+
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0].arbitration_id, 0x123)
+        self.assertEqual(messages[0].data, b"\x01\x02\x03\x04\x05\x06\x07\x08")
+
+    def test_first_message_after_header_comment_is_not_dropped_from_string_io(self):
+        content = (
+            "date Mon Oct 12 06:42:09 PM 2026\n"
+            "base hex timestamps absolute\n"
+            "// version 7.0.0\n"
+            "0.000000 1 123 Rx d 8 01 02 03 04 05 06 07 08\n"
+        )
+        with can.ASCReader(StringIO(content)) as reader:
+            messages = list(reader)
+
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0].arbitration_id, 0x123)
+        self.assertEqual(messages[0].data, b"\x01\x02\x03\x04\x05\x06\x07\x08")
+
     def test_read_no_triggerblock(self):
         _msg_list = self._read_log_file("issue_1256.asc")
 
@@ -910,6 +947,109 @@ class TestBlfFileFormat(ReaderWriterTest):
         with can.BLFReader(self.test_file_name) as reader:
             self.assertMessagesEqual(messages, list(reader))
 
+    def _prepend_blf_object(self, header_version, obj_type, obj_size):
+        with can.BLFWriter(self.test_file_name, compression_level=0) as writer:
+            writer(can.Message(arbitration_id=0x456, data=range(8)))
+
+        data = bytearray(Path(self.test_file_name).read_bytes())
+        container_offset = blf.FILE_HEADER_SIZE + blf.OBJ_HEADER_BASE_STRUCT.size
+        offset = container_offset + blf.LOG_CONTAINER_STRUCT.size
+        header_size = blf.OBJ_HEADER_BASE_STRUCT.size + (
+            blf.OBJ_HEADER_V2_STRUCT.size
+            if header_version == 2
+            else blf.OBJ_HEADER_V1_STRUCT.size
+        )
+        obj = blf.OBJ_HEADER_BASE_STRUCT.pack(
+            b"LOBJ", header_size, header_version, obj_size, obj_type
+        ) + bytes(obj_size - blf.OBJ_HEADER_BASE_STRUCT.size)
+        padding = bytes(obj_size % 4)
+        data[offset:offset] = obj + padding
+        added_size = len(obj) + len(padding)
+        container = list(
+            blf.OBJ_HEADER_BASE_STRUCT.unpack_from(data, blf.FILE_HEADER_SIZE)
+        )
+        container[3] += added_size
+        blf.OBJ_HEADER_BASE_STRUCT.pack_into(data, blf.FILE_HEADER_SIZE, *container)
+        method, size = blf.LOG_CONTAINER_STRUCT.unpack_from(data, container_offset)
+        blf.LOG_CONTAINER_STRUCT.pack_into(
+            data, container_offset, method, size + added_size
+        )
+        file_header = list(blf.FILE_HEADER_STRUCT.unpack_from(data))
+        file_header[10] += added_size
+        file_header[11] += added_size
+        file_header[12] += 1
+        blf.FILE_HEADER_STRUCT.pack_into(data, 0, *file_header)
+        return BytesIO(data)
+
+    @parameterized.expand(
+        (version, obj_type, payload.size)
+        for version in (1, 2)
+        for obj_type, payload in (
+            (blf.CAN_MESSAGE, blf.CAN_MSG_STRUCT),
+            (blf.CAN_MESSAGE2, blf.CAN_MSG_STRUCT),
+            (blf.CAN_ERROR_EXT, blf.CAN_ERROR_EXT_STRUCT),
+            (blf.CAN_FD_MESSAGE, blf.CAN_FD_MSG_STRUCT),
+            (blf.CAN_FD_MESSAGE_64, blf.CAN_FD_MSG_64_STRUCT),
+        )
+    )
+    def test_truncated_object_payload(self, version, obj_type, payload_size):
+        header_size = blf.OBJ_HEADER_BASE_STRUCT.size + (
+            blf.OBJ_HEADER_V1_STRUCT.size
+            if version == 1
+            else blf.OBJ_HEADER_V2_STRUCT.size
+        )
+        # The next object's bytes must not complete this object's payload.
+        obj_size = header_size + payload_size - 4
+        with can.BLFReader(
+            self._prepend_blf_object(version, obj_type, obj_size)
+        ) as reader:
+            with self.assertRaisesRegex(blf.BLFParseError, "Invalid object size"):
+                next(iter(reader))
+
+    @parameterized.expand(
+        (version, obj_type, payload.size)
+        for version in (1, 2)
+        for obj_type, payload in (
+            (blf.CAN_MESSAGE, blf.CAN_MSG_STRUCT),
+            (blf.CAN_MESSAGE2, blf.CAN_MSG_STRUCT),
+            (blf.CAN_ERROR_EXT, blf.CAN_ERROR_EXT_STRUCT),
+            (blf.CAN_FD_MESSAGE, blf.CAN_FD_MSG_STRUCT),
+            (blf.CAN_FD_MESSAGE_64, blf.CAN_FD_MSG_64_STRUCT),
+        )
+    )
+    def test_minimum_object_payload(self, version, obj_type, payload_size):
+        header_size = blf.OBJ_HEADER_BASE_STRUCT.size + (
+            blf.OBJ_HEADER_V1_STRUCT.size
+            if version == 1
+            else blf.OBJ_HEADER_V2_STRUCT.size
+        )
+        with can.BLFReader(
+            self._prepend_blf_object(version, obj_type, header_size + payload_size)
+        ) as reader:
+            messages = list(reader)
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0].data, bytearray())
+        self.assertEqual(messages[1].arbitration_id, 0x456)
+        self.assertEqual(messages[1].data, bytearray(range(8)))
+
+    @parameterized.expand([(1, 28), (2, 36)])
+    def test_truncated_object_header(self, version, obj_size):
+        with can.BLFReader(
+            self._prepend_blf_object(version, blf.CAN_MESSAGE, obj_size)
+        ) as reader:
+            with self.assertRaisesRegex(blf.BLFParseError, "Invalid object size"):
+                next(iter(reader))
+
+    @parameterized.expand([(3, blf.CAN_MESSAGE, 32), (1, 0xFFFF, 32)])
+    def test_skip_unknown_object(self, version, obj_type, obj_size):
+        with can.BLFReader(
+            self._prepend_blf_object(version, obj_type, obj_size)
+        ) as reader:
+            messages = list(reader)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0].arbitration_id, 0x456)
+        self.assertEqual(messages[0].data, bytearray(range(8)))
+
     def test_can_message(self):
         expected = can.Message(
             timestamp=2459565876.494607,
@@ -1048,11 +1188,75 @@ class TestCanutilsFileFormat(ReaderWriterTest):
         super()._setup_instance_helper(
             can.CanutilsLogWriter,
             can.CanutilsLogReader,
+            # error frames without class bits are written as bus errors,
+            # see test_write_error_frame_without_class
+            check_error_frames=False,
             check_fd=True,
             test_append=True,
             check_comments=False,
             preserves_channel=False,
             adds_default_channel="vcan0",
+        )
+
+    def test_read_error_frames(self):
+        # error frames as candump -L writes them: CAN_ERR_FLAG plus the error
+        # class in the identifier, followed by the eight error data bytes
+        with open(self.test_file_name, "w", encoding="ascii") as file:
+            file.write("(1.000000) can0 20000004#0004000000000000\n")
+            file.write("(2.000000) can1 20000080#0000000000000000\n")
+
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            messages = list(reader)
+
+        expected = [
+            can.Message(
+                timestamp=1.0,
+                arbitration_id=0x004,
+                is_error_frame=True,
+                data=bytes.fromhex("0004000000000000"),
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=2.0,
+                arbitration_id=0x080,
+                is_error_frame=True,
+                data=bytes(8),
+                channel="can1",
+            ),
+        ]
+        self.assertEqual(len(messages), len(expected))
+        for actual, wanted in zip(messages, expected):
+            self.assertTrue(wanted.equals(actual), f"{actual!r} != {wanted!r}")
+
+    def test_write_error_frame_class(self):
+        message = can.Message(
+            timestamp=1.0,
+            arbitration_id=0x204,
+            is_error_frame=True,
+            data=bytes.fromhex("0004000000000102"),
+            channel="can1",
+        )
+        with can.CanutilsLogWriter(self.test_file_name) as writer:
+            writer(message)
+
+        with open(self.test_file_name, encoding="ascii") as file:
+            self.assertEqual(file.read(), "(1.000000) can1 20000204#0004000000000102\n")
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            (read_back,) = reader
+        self.assertTrue(message.equals(read_back), f"{read_back!r}")
+
+    def test_write_error_frame_without_class(self):
+        message = can.Message(timestamp=1.0, is_error_frame=True, channel="can0")
+        with can.CanutilsLogWriter(self.test_file_name) as writer:
+            writer(message)
+
+        with open(self.test_file_name, encoding="ascii") as file:
+            self.assertEqual(file.read(), "(1.000000) can0 20000080#\n")
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            (read_back,) = reader
+        self.assertMessageEqual(
+            can.Message(timestamp=1.0, arbitration_id=0x080, is_error_frame=True),
+            read_back,
         )
 
 
@@ -1072,6 +1276,119 @@ class TestCsvFileFormat(ReaderWriterTest):
 
 
 @unittest.skipIf(asammdf is None, "MF4 is unavailable")
+class MF4ImportTest(unittest.TestCase):
+    def run_script(self, script, *, circular_import=False):
+        script = textwrap.dedent(script)
+        if circular_import:
+            script = textwrap.dedent("""
+                import importlib.abc
+                import importlib.machinery
+                import sys
+
+                class CircularLoader(importlib.abc.Loader):
+                    def __init__(self, loader):
+                        self.loader = loader
+
+                    def create_module(self, spec):
+                        return None
+
+                    def exec_module(self, module):
+                        import can
+                        self.loader.exec_module(module)
+
+                class CircularAsammdf(importlib.abc.MetaPathFinder):
+                    def find_spec(self, fullname, path=None, target=None):
+                        if fullname == "asammdf":
+                            spec = importlib.machinery.PathFinder.find_spec(fullname, path)
+                            spec.loader = CircularLoader(spec.loader)
+                            return spec
+
+                sys.meta_path.insert(0, CircularAsammdf())
+            """) + script
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    @unittest.skipUnless(asammdf is not None, "MF4 is unavailable")
+    def test_circular_import_reader_and_writer(self):
+        # One fresh interpreter reproduces the re-entrant import and exercises
+        # both directions of MF4 I/O, avoiding redundant plain-import probes.
+        self.run_script(
+            """
+            import asammdf
+            import can
+            import tempfile
+            from pathlib import Path
+
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "messages.mf4"
+                with can.MF4Writer(path) as writer:
+                    writer(can.Message(timestamp=1, arbitration_id=0x123,
+                                       is_extended_id=False, data=b'\\x01\\x02'))
+                with can.MF4Reader(path) as reader:
+                    messages = list(reader)
+                assert len(messages) == 1
+                assert messages[0].arbitration_id == 0x123
+                assert messages[0].data == b'\\x01\\x02'
+            """,
+            circular_import=True,
+        )
+
+    def test_missing_dependency_does_not_open_files(self):
+        self.run_script("""
+            import importlib.abc
+            import sys
+            from unittest.mock import patch
+
+            class MissingAsammdf(importlib.abc.MetaPathFinder):
+                def find_spec(self, fullname, path=None, target=None):
+                    if fullname == "asammdf":
+                        raise ModuleNotFoundError("asammdf unavailable", name="asammdf")
+
+            sys.meta_path.insert(0, MissingAsammdf())
+            import can
+            for cls in (can.MF4Reader, can.MF4Writer):
+                with patch("builtins.open") as opened:
+                    try:
+                        cls("must-not-open.mf4")
+                    except NotImplementedError as exc:
+                        assert "optional dependency [mf4]" in str(exc)
+                        assert cls.__name__ in str(exc)
+                    else:
+                        raise AssertionError("missing dependency was accepted")
+                    opened.assert_not_called()
+        """)
+
+    def test_broken_dependency_keeps_original_error(self):
+        self.run_script("""
+            import importlib.abc
+            import sys
+
+            class BrokenAsammdf(importlib.abc.MetaPathFinder):
+                def find_spec(self, fullname, path=None, target=None):
+                    if fullname == "asammdf":
+                        raise ModuleNotFoundError(
+                            "missing transitive dependency", name="missing_child"
+                        )
+
+            sys.meta_path.insert(0, BrokenAsammdf())
+            import can
+            for cls in (can.MF4Reader, can.MF4Writer):
+                try:
+                    cls("must-not-open.mf4")
+                except ModuleNotFoundError as exc:
+                    assert exc.name == "missing_child"
+                else:
+                    raise AssertionError("original dependency error was hidden")
+        """)
+
+
+@unittest.skipIf(asammdf is None, "MF4 is unavailable")
 class TestMF4FileFormat(ReaderWriterTest):
     """Tests can.MF4Writer and can.MF4Reader"""
 
@@ -1087,7 +1404,11 @@ class TestMF4FileFormat(ReaderWriterTest):
             ("fd_array_full", "(64,)u1", bytes(range(64)), 64, True),
         ]
     )
+    @unittest.skipIf(asammdf is None, "MF4 is unavailable")
     def test_error_frame_payload(self, name, storage, payload, length, fd):
+        from asammdf.blocks.v4_blocks import SourceInformation
+        from asammdf.blocks.v4_constants import FLAG_CG_BUS_EVENT
+
         # Build the file with asammdf, since MF4Writer always uses a byte array.
         dtype = mf4.np.dtype(
             [
@@ -1127,12 +1448,13 @@ class TestMF4FileFormat(ReaderWriterTest):
                     name="CAN_ErrorFrame",
                     samples=samples,
                     timestamps=mf4.np.array([1.5, 2.5]),
-                    source=mf4.SourceInformation(
-                        source_type=mf4.SOURCE_BUS, bus_type=mf4.BUS_TYPE_CAN
+                    source=SourceInformation(
+                        source_type=asammdf.Source.SOURCE_BUS,
+                        bus_type=asammdf.Source.BUS_TYPE_CAN,
                     ),
                 )
             )
-            mdf.groups[0].channel_group.flags |= mf4.FLAG_CG_BUS_EVENT
+            mdf.groups[0].channel_group.flags |= FLAG_CG_BUS_EVENT
             mdf.save(path, overwrite=True)
 
         with can.MF4Reader(path) as reader:

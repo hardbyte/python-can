@@ -1,0 +1,4 @@
+Fixed ``ASCReader`` dropping the first frame in ASC files whose header has no
+``internal events logged`` line. For those files, a directly following
+``Begin Triggerblock`` line is now processed as the start-time marker instead
+of being swallowed. Files written by CANoe or python-can are unaffected.

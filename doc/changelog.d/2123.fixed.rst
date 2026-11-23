@@ -1,0 +1,4 @@
+Load MF4 dependencies when a reader or writer is created so importing
+``asammdf`` before ``can`` does not permanently disable MF4 support.
+Preserve the original ``ModuleNotFoundError`` when an installed ``asammdf``
+package has a broken transitive dependency, rather than reporting it missing.

@@ -5,7 +5,9 @@ Test functions in `can.interfaces.socketcan.socketcan`.
 """
 
 import ctypes
+import errno
 import os
+import select
 import socket
 import struct
 import sys
@@ -27,6 +29,7 @@ from can.interfaces.socketcan.constants import (
 from can.interfaces.socketcan.socketcan import (
     RECEIVED_TIMESTAMP_STRUCT,
     BcmMsgHead,
+    SocketcanBus,
     bcm_header_factory,
     build_bcm_header,
     build_bcm_transmit_header,
@@ -476,6 +479,61 @@ class SocketCANTest(unittest.TestCase):
                 self.assertTrue(
                     received.equals(expected), f"{received!r} != {expected!r}"
                 )
+
+    @staticmethod
+    def _bus_with_mock_socket(send_side_effect) -> SocketcanBus:
+        bus = SocketcanBus.__new__(SocketcanBus)
+        bus.channel = "vcan0"
+        bus.socket = Mock()
+        bus.socket.send.side_effect = send_side_effect
+        bus._epoll = Mock()
+        bus._epoll.poll.return_value = [(3, select.EPOLLOUT)]
+        return bus
+
+    @unittest.skipUnless(IS_LINUX, "epoll is only available on Linux")
+    def test_send_retries_on_enobufs(self):
+        """send() retries while the device queue is full (ENOBUFS) until the timeout"""
+        msg = can.Message(arbitration_id=0x123, data=[1, 2, 3])
+        frame_len = len(build_can_frame(msg))
+        enobufs = OSError(errno.ENOBUFS, os.strerror(errno.ENOBUFS))
+        bus = self._bus_with_mock_socket([enobufs, enobufs, frame_len])
+
+        with patch("time.sleep") as sleep:
+            bus.send(msg, timeout=1.0)
+
+        self.assertEqual(bus.socket.send.call_count, 3)
+        self.assertEqual(sleep.call_count, 2)
+
+    @unittest.skipUnless(IS_LINUX, "epoll is only available on Linux")
+    def test_send_raises_enobufs_after_timeout(self):
+        """send() gives up with the ENOBUFS error once the timeout has expired"""
+        msg = can.Message(arbitration_id=0x123, data=[1, 2, 3])
+        enobufs = OSError(errno.ENOBUFS, os.strerror(errno.ENOBUFS))
+
+        # without a timeout the error is raised right away
+        bus = self._bus_with_mock_socket(enobufs)
+        with self.assertRaises(can.CanOperationError) as ctx:
+            bus.send(msg)
+        self.assertEqual(ctx.exception.error_code, errno.ENOBUFS)
+        self.assertEqual(bus.socket.send.call_count, 1)
+
+        # with a timeout it keeps retrying until the timeout has expired
+        bus = self._bus_with_mock_socket(enobufs)
+        with self.assertRaises(can.CanOperationError) as ctx:
+            bus.send(msg, timeout=0.05)
+        self.assertEqual(ctx.exception.error_code, errno.ENOBUFS)
+        self.assertGreater(bus.socket.send.call_count, 1)
+
+    @unittest.skipUnless(IS_LINUX, "epoll is only available on Linux")
+    def test_send_does_not_retry_other_errors(self):
+        """send() does not retry errors other than ENOBUFS"""
+        msg = can.Message(arbitration_id=0x123, data=[1, 2, 3])
+        bus = self._bus_with_mock_socket(OSError(errno.ENETDOWN, "Network is down"))
+
+        with self.assertRaises(can.CanOperationError) as ctx:
+            bus.send(msg, timeout=1.0)
+        self.assertEqual(ctx.exception.error_code, errno.ENETDOWN)
+        self.assertEqual(bus.socket.send.call_count, 1)
 
 
 if __name__ == "__main__":
