@@ -3,8 +3,12 @@ Test for PCAN Interface
 """
 
 import ctypes
+import importlib.util
 import struct
+import sys
 import unittest
+from datetime import datetime, timezone
+from types import ModuleType
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -14,7 +18,8 @@ from parameterized import parameterized
 import can
 from can import BusState, CanProtocol
 from can.exceptions import CanInitializationError
-from can.interfaces.pcan import PcanBus, PcanError
+from can.interfaces.pcan import PcanBus, PcanError, basic
+from can.interfaces.pcan import pcan as pcan_module
 from can.interfaces.pcan.basic import *
 
 
@@ -286,6 +291,71 @@ class TestPCANBus(unittest.TestCase):
         self.assertSequenceEqual(recv_msg.data, [0xAB])
         self.assertIsNone(self.bus.recv(timeout=0))
 
+    def _load_timestamp_backend(self, linux: bool) -> ModuleType:
+        # The platform choice is made at import time; use a separate namespace.
+        spec = importlib.util.spec_from_file_location(
+            "can.interfaces.pcan._timestamp_test", pcan_module.__file__
+        )
+        assert spec is not None and spec.loader is not None
+        backend = importlib.util.module_from_spec(spec)
+        uptime_module = Mock()
+        uptime_module.boottime.return_value = datetime.fromtimestamp(
+            1_700_000_000, timezone.utc
+        )
+        with (
+            patch("can.interfaces.pcan.basic.IS_LINUX", linux),
+            patch("can.interfaces.pcan.basic.IS_WINDOWS", not linux),
+            patch.dict(sys.modules, {"uptime": uptime_module}),
+        ):
+            spec.loader.exec_module(backend)
+        return backend
+
+    @parameterized.expand(
+        [
+            ("linux_classic", True, False),
+            ("linux_fd", True, True),
+            ("windows_classic", False, False),
+        ]
+    )
+    def test_timestamp_clock(self, name: str, linux: bool, fd: bool) -> None:
+        backend = self._load_timestamp_backend(linux)
+        backend.HAS_EVENTS = False
+        with patch.object(backend, "PCANBasic", return_value=self.mock_pcan):
+            self.bus = backend.PcanBus(fd=fd)
+
+        # Linux timestamps are epoch microseconds, not boot-relative.
+        raw_us = 1_790_000_000_123_456 if linux else 123_456
+        if fd:
+            self.mock_pcan.ReadFD.return_value = (
+                PCAN_ERROR_OK,
+                TPCANMsgFD(
+                    ID=0x123,
+                    DLC=9,
+                    MSGTYPE=PCAN_MESSAGE_FD.value,
+                    DATA=(ctypes.c_ubyte * 64)(),
+                ),
+                TPCANTimestampFD(raw_us),
+            )
+        else:
+            millis, micros = divmod(raw_us, 1000)
+            overflow, millis = divmod(millis, 1 << 32)
+            self.mock_pcan.Read.return_value = (
+                PCAN_ERROR_OK,
+                TPCANMsg(
+                    ID=0x123,
+                    LEN=1,
+                    MSGTYPE=PCAN_MESSAGE_STANDARD,
+                    DATA=(ctypes.c_ubyte * 8)(),
+                ),
+                TPCANTimestamp(millis=millis, millis_overflow=overflow, micros=micros),
+            )
+        msg = self.bus.recv(timeout=0)
+        self.assertIsNotNone(msg)
+        expected_offset = 0 if linux else 1_700_000_000
+        self.assertAlmostEqual(
+            msg.timestamp, expected_offset + raw_us / 1_000_000, places=6
+        )
+
     @pytest.mark.timeout(3.0)
     @patch("select.select", return_value=([], [], []))
     def test_recv_no_message(self, mock_select):
@@ -534,6 +604,46 @@ class TestPCANBus(unittest.TestCase):
         self.assertTrue(b"data_tseg1=9" in bitrate_arg)
         self.assertTrue(b"data_tseg2=6" in bitrate_arg)
         self.assertTrue(b"data_sjw=1" in bitrate_arg)
+
+
+@pytest.mark.parametrize(
+    "parameter,ctype,value",
+    [
+        (basic.PCAN_CHANNEL_CONDITION, ctypes.c_int, 3),
+        (basic.PCAN_DEVICE_ID, ctypes.c_int, 42),
+        (basic.PCAN_BUSOFF_AUTORESET, ctypes.c_int, 1),
+        (basic.PCAN_ACCEPTANCE_FILTER_11BIT, ctypes.c_int64, 0x123456789ABCDEF),
+        (basic.PCAN_ACCEPTANCE_FILTER_29BIT, ctypes.c_int64, 0x123456789ABCDEF),
+        (basic.PCAN_TRACE_LOCATION, ctypes.c_char * 256, b"/tmp/can-traces"),
+    ],
+)
+@pytest.mark.parametrize("operation", ["get", "set"])
+def test_parameter_buffer_type(parameter, ctype, value, operation):
+    api = basic.PCANBasic.__new__(basic.PCANBasic)
+    driver = Mock()
+    api._PCANBasic__m_dllBasic = driver
+
+    def transfer(channel, requested_parameter, buffer, size):
+        assert channel is basic.PCAN_USBBUS1
+        assert requested_parameter is parameter
+        assert size == ctypes.sizeof(ctype)
+        typed = ctypes.cast(buffer, ctypes.POINTER(ctype)).contents
+        if operation == "get":
+            typed.value = value
+        else:
+            assert typed.value == value
+        return basic.PCAN_ERROR_OK
+
+    if operation == "get":
+        driver.CAN_GetValue.side_effect = transfer
+        status, result = api.GetValue(basic.PCAN_USBBUS1, parameter)
+        assert result == value
+        driver.CAN_GetValue.assert_called_once()
+    else:
+        driver.CAN_SetValue.side_effect = transfer
+        status = api.SetValue(basic.PCAN_USBBUS1, parameter, value)
+        driver.CAN_SetValue.assert_called_once()
+    assert status == basic.PCAN_ERROR_OK
 
 
 if __name__ == "__main__":

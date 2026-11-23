@@ -18,10 +18,11 @@ from can.interfaces.udp_multicast.utils import is_msgpack_installed
 
 from .config import (
     IS_CI,
-    IS_OSX,
     IS_PYPY,
     TEST_CAN_FD,
     TEST_INTERFACE_SOCKETCAN,
+    TEST_UDP_MULTICAST_IPv4,
+    TEST_UDP_MULTICAST_IPv6,
 )
 
 
@@ -291,15 +292,13 @@ class BasicTestSocketCan(Back2BackTestCase):
     CHANNEL_2 = "vcan0"
 
 
-# this doesn't even work on Travis CI for macOS; for example, see
-# https://travis-ci.org/github/hardbyte/python-can/jobs/745389871
-@unittest.skipIf(
-    IS_CI and IS_OSX,
-    "not supported for macOS CI",
-)
 @unittest.skipUnless(
     is_msgpack_installed(raise_exception=False),
     "msgpack not installed",
+)
+@unittest.skipUnless(
+    TEST_UDP_MULTICAST_IPv4,
+    "IPv4 UDP multicast not available on this host",
 )
 class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
     INTERFACE_1 = "udp_multicast"
@@ -312,15 +311,13 @@ class BasicTestUdpMulticastBusIPv4(Back2BackTestCase):
             super().test_unique_message_instances()
 
 
-# this doesn't even work for loopback multicast addresses on Travis CI; for example, see
-# https://travis-ci.org/github/hardbyte/python-can/builds/745065503
-@unittest.skipIf(
-    IS_CI and IS_OSX,
-    "not supported for macOS CI",
-)
 @unittest.skipUnless(
     is_msgpack_installed(raise_exception=False),
     "msgpack not installed",
+)
+@unittest.skipUnless(
+    TEST_UDP_MULTICAST_IPv6,
+    "IPv6 UDP multicast not available on this host",
 )
 class BasicTestUdpMulticastBusIPv6(Back2BackTestCase):
     HOST_LOCAL_MCAST_GROUP_IPv6 = "ff11:7079:7468:6f6e:6465:6d6f:6d63:6173"

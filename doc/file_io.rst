@@ -95,6 +95,7 @@ Log (.log can-utils Logging format)
 -----------------------------------
 
 CanutilsLogWriter logs CAN data to an ASCII log file compatible with `can-utils <https://github.com/linux-can/can-utils>`_
+and preserves the requested data length of classic CAN remote frames.
 As specification following references can-utils can be used: 
 `asc2log <https://github.com/linux-can/can-utils/blob/master/asc2log.c>`_,
 `log2asc <https://github.com/linux-can/can-utils/blob/master/log2asc.c>`_.
@@ -177,7 +178,9 @@ Implements basic support for the TRC file format.
     :show-inheritance:
     :members:
 
-The following class can be used to read messages from TRC file:
+When reading CAN FD frames from TRC 2.0 and 2.1 files, :class:`~can.TRCReader`
+reports :attr:`~can.Message.dlc` in bytes for both the data length (``l``) and
+data length code (``L``) columns.
 
 .. autoclass:: can.TRCReader
     :show-inheritance:
