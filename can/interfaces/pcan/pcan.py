@@ -80,20 +80,24 @@ log = logging.getLogger("can.pcan")
 
 MIN_PCAN_API_VERSION = version.parse("4.2.0")
 
-try:
-    # use the "uptime" library if available
-    import uptime
-
-    # boottime() and fromtimestamp() are timezone offset, so the difference is not.
-    if uptime.boottime() is None:
-        boottimeEpoch = 0
-    else:
-        boottimeEpoch = uptime.boottime().timestamp()
-except ImportError:
-    log.warning(
-        "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
-    )
+if IS_LINUX:
+    # PCAN-Basic for Linux already returns timestamps relative to the Unix epoch.
     boottimeEpoch = 0
+else:
+    try:
+        # use the "uptime" library if available
+        import uptime
+
+        # boottime() and fromtimestamp() are timezone offset, so the difference is not.
+        if uptime.boottime() is None:
+            boottimeEpoch = 0
+        else:
+            boottimeEpoch = uptime.boottime().timestamp()
+    except ImportError:
+        log.warning(
+            "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
+        )
+        boottimeEpoch = 0
 
 HAS_EVENTS = False
 
