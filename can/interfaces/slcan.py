@@ -223,7 +223,9 @@ class slcanBus(BusABC):
                 self._buffer.extend(self.serialPortOrig.read(size)) # read serial at once
     
                 i1 = self._buffer.find(self._OK)                    # bytearray.find() or byte.find() is in C level
-                i2 = self._buffer.find(self._ERROR)
+                # an ERROR byte only matters if it comes before the first OK byte,
+                # so limit the second search to avoid scanning the whole backlog
+                i2 = self._buffer.find(self._ERROR, 0, i1 if i1 >= 0 else len(self._buffer))
     
                 if i1 >= 0 and i2 >= 0:
                     i = i1 if i1 < i2 else i2                       # python if/else branch is faster than min()/max()
