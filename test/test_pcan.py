@@ -263,6 +263,34 @@ class TestPCANBus(unittest.TestCase):
         self.assertEqual(recv_msg.timestamp, 0)
         self.assertEqual(recv_msg.channel, "PCAN_USBBUS1")
 
+    @parameterized.expand([("classic", False), ("fd", True)])
+    def test_recv_skips_status_frames(self, name, fd):
+        if fd:
+            status = TPCANMsgFD(ID=1, DLC=4, MSGTYPE=PCAN_MESSAGE_STATUS.value)
+            data = TPCANMsgFD(ID=1, DLC=1, MSGTYPE=PCAN_MESSAGE_FD.value)
+            timestamp = TPCANTimestampFD()
+            read = self.mock_pcan.ReadFD
+        else:
+            status = TPCANMsg(ID=1, LEN=4, MSGTYPE=PCAN_MESSAGE_STATUS.value)
+            data = TPCANMsg(ID=1, LEN=1, MSGTYPE=PCAN_MESSAGE_STANDARD.value)
+            timestamp = TPCANTimestamp()
+            read = self.mock_pcan.Read
+        data.DATA[0] = 0xAB
+        read.side_effect = [
+            (PCAN_ERROR_OK, status, timestamp),
+            (PCAN_ERROR_OK, data, timestamp),
+            (PCAN_ERROR_OK, status, timestamp),
+            (PCAN_ERROR_QRCVEMPTY, type(status)(), timestamp),
+        ]
+        self.bus = can.Bus(interface="pcan", fd=fd)
+
+        recv_msg = self.bus.recv(timeout=0)
+        self.assertIsNotNone(recv_msg)
+        self.assertEqual(recv_msg.arbitration_id, 1)
+        self.assertEqual(recv_msg.is_fd, fd)
+        self.assertSequenceEqual(recv_msg.data, [0xAB])
+        self.assertIsNone(self.bus.recv(timeout=0))
+
     def _load_timestamp_backend(self, linux: bool) -> ModuleType:
         # The platform choice is made at import time; use a separate namespace.
         spec = importlib.util.spec_from_file_location(
