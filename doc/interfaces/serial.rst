@@ -33,6 +33,8 @@ arbitration ID will be interpreted as 4 byte unsigned integers. The DLC is
 also an unsigned integer with a length of 1 byte. Extended (29-bit)
 identifiers are encoded by adding 0x80000000 to the ID. For example, a
 29-bit CAN ID of 0x123 is encoded with an arbitration ID of 0x80000123.
+Remote frames set bit 30 (0x40000000) of the arbitration ID. They have no
+payload; their DLC holds the requested data length.
 
 Serial frame format
 ^^^^^^^^^^^^^^^^^^^

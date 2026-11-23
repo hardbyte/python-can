@@ -193,7 +193,9 @@ class SerialBus(BusABC):
                 else:
                     arbitration_id = arbitration_id & CAN_ID_MASK_STD
 
-                data = self._ser.read(dlc)
+                # a remote frame carries the requested length in the DLC but
+                # no payload, see send()
+                data = b"" if is_remote_frame else self._ser.read(dlc)
 
                 delimiter_byte = ord(self._ser.read())
                 if delimiter_byte == 0xBB:

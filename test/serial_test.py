@@ -177,6 +177,21 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
         msg_receive = self.bus.recv()
         self.assertMessageEqual(msg, msg_receive)
 
+    def test_rx_tx_rtr_frame_with_dlc(self):
+        """
+        Test the transfer of remote frames that request data.
+        """
+        for dlc in (1, 8):
+            msg = can.Message(
+                arbitration_id=0x123,
+                is_extended_id=False,
+                is_remote_frame=True,
+                dlc=dlc,
+            )
+            self.bus.send(msg)
+            msg_receive = self.bus.recv()
+            self.assertMessageEqual(msg, msg_receive)
+
     def test_when_no_fileno(self):
         """
         Tests for the fileno method catching the missing pyserial implementeation on the Windows platform
