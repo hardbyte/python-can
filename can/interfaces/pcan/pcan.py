@@ -57,6 +57,7 @@ from .basic import (
     PCAN_MESSAGE_FD,
     PCAN_MESSAGE_RTR,
     PCAN_MESSAGE_STANDARD,
+    PCAN_MESSAGE_STATUS,
     PCAN_NONEBUS,
     PCAN_PARAMETER_OFF,
     PCAN_PARAMETER_ON,
@@ -80,20 +81,24 @@ log = logging.getLogger("can.pcan")
 
 MIN_PCAN_API_VERSION = version.parse("4.2.0")
 
-try:
-    # use the "uptime" library if available
-    import uptime
-
-    # boottime() and fromtimestamp() are timezone offset, so the difference is not.
-    if uptime.boottime() is None:
-        boottimeEpoch = 0
-    else:
-        boottimeEpoch = uptime.boottime().timestamp()
-except ImportError:
-    log.warning(
-        "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
-    )
+if IS_LINUX:
+    # PCAN-Basic for Linux already returns timestamps relative to the Unix epoch.
     boottimeEpoch = 0
+else:
+    try:
+        # use the "uptime" library if available
+        import uptime
+
+        # boottime() and fromtimestamp() are timezone offset, so the difference is not.
+        if uptime.boottime() is None:
+            boottimeEpoch = 0
+        else:
+            boottimeEpoch = uptime.boottime().timestamp()
+    except ImportError:
+        log.warning(
+            "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
+        )
+        boottimeEpoch = 0
 
 HAS_EVENTS = False
 
@@ -514,6 +519,8 @@ class PcanBus(BusABC):
                 )
 
             if result == PCAN_ERROR_OK:
+                if pcan_msg.MSGTYPE & PCAN_MESSAGE_STATUS.value:
+                    continue
                 # message received
                 break
 
