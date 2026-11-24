@@ -107,8 +107,9 @@ class ThreadSafeBus(
 
     @property
     def state(self) -> BusState:
-        with self._self_lock_send, self._self_lock_recv:
-            return self._self_wrapped.state
+        # Reading the state must not wait for the locks: a thread blocking in
+        # recv() holds the receive lock for its whole timeout.
+        return self._self_wrapped.state
 
     @state.setter
     def state(self, new_state: BusState) -> None:
@@ -117,5 +118,4 @@ class ThreadSafeBus(
 
     @property
     def protocol(self) -> CanProtocol:
-        with self._self_lock_send, self._self_lock_recv:
-            return self._self_wrapped.protocol
+        return self._self_wrapped.protocol
