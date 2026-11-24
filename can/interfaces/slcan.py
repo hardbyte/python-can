@@ -236,9 +236,8 @@ class slcanBus(BusABC):
                 )
 
                 if i1 >= 0 and i2 >= 0:
-                    i = min(
-                        i2, i1
-                    )  # python if/else branch is faster than min()/max() but ruff FURB136 rewrites it
+                    # python if/else branch is faster than min()/max() but ruff FURB136 rewrites it
+                    i = min(i2, i1)
                 elif i1 >= 0:
                     i = i1
                 elif i2 >= 0:
