@@ -96,11 +96,17 @@ def main() -> None:
         "--skip",
         type=float,
         default=60 * 60 * 24,
-        help="Skip gaps greater than 's' seconds between messages. "
-        "Default is 86400 (24 hours), meaning only very large gaps are skipped. "
+        help="Cap playback waits at 's' seconds (default: 86400, or 24 hours). "
         "Set to 0 to never skip any gaps (all delays are preserved). "
         "Set to a very small value (e.g., 1e-4) "
         "to skip all gaps and send messages as fast as possible.",
+    )
+    player_group.add_argument(
+        "--remove-gaps",
+        dest="skip_gaps",
+        action="store_true",
+        help="Remove recorded-timestamp waits greater than --skip instead of "
+        "capping them. Has no effect with --skip 0 or --ignore-timestamps.",
     )
     player_group.add_argument(
         "-l",
@@ -147,6 +153,7 @@ def main() -> None:
                         timestamps=results.timestamps,
                         gap=results.gap,
                         skip=results.skip,
+                        skip_gaps=results.skip_gaps,
                     )
                     print(_format_player_start_message(iteration, loop_count))
 
