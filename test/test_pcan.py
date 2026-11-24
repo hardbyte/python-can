@@ -8,7 +8,7 @@ import struct
 import sys
 import unittest
 from datetime import datetime, timezone
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -228,9 +228,9 @@ class TestPCANBus(unittest.TestCase):
 
         timestamp = TPCANTimestamp()
         self.mock_pcan.Read = Mock(return_value=(PCAN_ERROR_OK, msg, timestamp))
-        self.bus = can.Bus(interface="pcan")
-
-        recv_msg = self.bus.recv()
+        with patch.object(pcan_module, "boottimeEpoch", 0):
+            self.bus = can.Bus(interface="pcan")
+            recv_msg = self.bus.recv()
         self.assertEqual(recv_msg.arbitration_id, msg.ID)
         self.assertEqual(recv_msg.dlc, msg.LEN)
         self.assertEqual(recv_msg.is_extended_id, True)
@@ -252,9 +252,9 @@ class TestPCANBus(unittest.TestCase):
 
         self.mock_pcan.ReadFD = Mock(return_value=(PCAN_ERROR_OK, msg, timestamp))
 
-        self.bus = can.Bus(interface="pcan", fd=True)
-
-        recv_msg = self.bus.recv()
+        with patch.object(pcan_module, "boottimeEpoch", 0):
+            self.bus = can.Bus(interface="pcan", fd=True)
+            recv_msg = self.bus.recv()
         self.assertEqual(recv_msg.arbitration_id, msg.ID)
         self.assertEqual(recv_msg.dlc, msg.DLC)
         self.assertEqual(recv_msg.is_extended_id, True)
@@ -291,7 +291,13 @@ class TestPCANBus(unittest.TestCase):
         self.assertSequenceEqual(recv_msg.data, [0xAB])
         self.assertIsNone(self.bus.recv(timeout=0))
 
-    def _load_timestamp_backend(self, linux: bool) -> ModuleType:
+    def _load_timestamp_backend(
+        self,
+        linux: bool,
+        windows: bool,
+        uptime_available: bool = True,
+        native_windows: bool = True,
+    ) -> ModuleType:
         # The platform choice is made at import time; use a separate namespace.
         spec = importlib.util.spec_from_file_location(
             "can.interfaces.pcan._timestamp_test", pcan_module.__file__
@@ -302,10 +308,22 @@ class TestPCANBus(unittest.TestCase):
         uptime_module.boottime.return_value = datetime.fromtimestamp(
             1_700_000_000, timezone.utc
         )
+
+        uptime_entry = uptime_module if uptime_available else None
+        if native_windows:
+            get_tick_count = Mock(return_value=100_000_000)
+            get_tick_count.restype = ctypes.c_ulonglong
+            kernel32 = SimpleNamespace(GetTickCount64=get_tick_count)
+        else:
+            kernel32 = SimpleNamespace()
+        fake_windll = SimpleNamespace(kernel32=kernel32)
+
         with (
             patch("can.interfaces.pcan.basic.IS_LINUX", linux),
-            patch("can.interfaces.pcan.basic.IS_WINDOWS", not linux),
-            patch.dict(sys.modules, {"uptime": uptime_module}),
+            patch("can.interfaces.pcan.basic.IS_WINDOWS", windows),
+            patch("ctypes.windll", fake_windll),
+            patch("time.time", return_value=1_700_100_000),
+            patch.dict(sys.modules, {"uptime": uptime_entry}),
         ):
             spec.loader.exec_module(backend)
         return backend
@@ -318,7 +336,7 @@ class TestPCANBus(unittest.TestCase):
         ]
     )
     def test_timestamp_clock(self, name: str, linux: bool, fd: bool) -> None:
-        backend = self._load_timestamp_backend(linux)
+        backend = self._load_timestamp_backend(linux, windows=not linux)
         backend.HAS_EVENTS = False
         with patch.object(backend, "PCANBasic", return_value=self.mock_pcan):
             self.bus = backend.PcanBus(fd=fd)
@@ -355,6 +373,37 @@ class TestPCANBus(unittest.TestCase):
         self.assertAlmostEqual(
             msg.timestamp, expected_offset + raw_us / 1_000_000, places=6
         )
+
+    def test_timestamp_linux_boot_offset_is_zero(self) -> None:
+        backend = self._load_timestamp_backend(linux=True, windows=False)
+        self.assertEqual(backend.boottimeEpoch, 0)
+
+    def test_timestamp_windows_native_boot_offset(self) -> None:
+        backend = self._load_timestamp_backend(
+            linux=False, windows=True, native_windows=True
+        )
+        self.assertAlmostEqual(backend.boottimeEpoch, 1_700_000_000, places=6)
+
+    def test_timestamp_windows_uptime_fallback(self) -> None:
+        backend = self._load_timestamp_backend(
+            linux=False, windows=True, native_windows=False
+        )
+        self.assertEqual(backend.boottimeEpoch, 1_700_000_000)
+
+    def test_timestamp_windows_without_boot_time_source(self) -> None:
+        backend = self._load_timestamp_backend(
+            linux=False,
+            windows=True,
+            uptime_available=False,
+            native_windows=False,
+        )
+        self.assertEqual(backend.boottimeEpoch, 0)
+
+    def test_timestamp_other_platform_uptime_fallback(self) -> None:
+        backend = self._load_timestamp_backend(
+            linux=False, windows=False, native_windows=False
+        )
+        self.assertEqual(backend.boottimeEpoch, 1_700_000_000)
 
     @pytest.mark.timeout(3.0)
     @patch("select.select", return_value=([], [], []))
