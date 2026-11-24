@@ -321,7 +321,7 @@ class TestPCANBus(unittest.TestCase):
         with (
             patch("can.interfaces.pcan.basic.IS_LINUX", linux),
             patch("can.interfaces.pcan.basic.IS_WINDOWS", windows),
-            patch("ctypes.windll", fake_windll),
+            patch.object(ctypes, "windll", fake_windll, create=True),
             patch("time.time", return_value=1_700_100_000),
             patch.dict(sys.modules, {"uptime": uptime_entry}),
         ):

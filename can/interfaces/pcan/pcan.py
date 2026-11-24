@@ -92,7 +92,7 @@ MIN_PCAN_API_VERSION = version.parse("4.2.0")
 #   timestamps to epoch times, so boottimeEpoch shall be set accordingly.
 # - Other platforms: Use the uptime package to convert boot-relative
 #   timestamps to epoch times, so boottimeEpoch shall be set accordingly.
-# 
+#
 # If the boot time cannot be determined, timestamps remain relative to system
 # startup and a warning is logged to inform the user how to interpret them.
 boottimeEpoch = 0
@@ -106,6 +106,7 @@ else:
         # if this fails, we can still fallback to trying to import uptime
         import ctypes
         import time
+
         try:
             # GetTickCount64 exists since Windows Vista
             # https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount64#requirements
@@ -130,11 +131,11 @@ else:
         except ImportError:
             log.warning("uptime library not available")
         else:
-            if boottime:= uptime.boottime():
+            if boottime := uptime.boottime():
                 boottimeEpoch = boottime.timestamp()
 
     if not boottimeEpoch:
-        # No success in somehow determining the boottimeEpoch, therefore at least 
+        # No success in somehow determining the boottimeEpoch, therefore at least
         # warn the user about how to interpret the timestamps
         log.warning("Timestamps are relative to boot time and not to Epoch UTC")
 

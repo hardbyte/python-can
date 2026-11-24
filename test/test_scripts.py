@@ -28,7 +28,9 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
         """
         for command in self._commands():
             try:
-                args = command if isinstance(command, (list, tuple)) else command.split()
+                args = (
+                    command if isinstance(command, (list, tuple)) else command.split()
+                )
                 subprocess.check_output(
                     args,
                     stderr=subprocess.STDOUT,
