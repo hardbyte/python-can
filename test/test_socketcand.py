@@ -143,6 +143,12 @@ class TestHandshake(unittest.TestCase):
         with self.assertRaises(can.CanError):
             can.Bus(interface="socketcand", channel="can0", host="127.0.0.1", port=port)
 
+    def test_non_socketcand_server_raises(self):
+        # e.g. the port belongs to another service that keeps the connection open
+        port = self._serve([(None, ["SSH-2.0-OpenSSH_9.6\r\n"])])
+        with self.assertRaises(can.CanInitializationError):
+            can.Bus(interface="socketcand", channel="can0", host="127.0.0.1", port=port)
+
 
 if __name__ == "__main__":
     unittest.main()

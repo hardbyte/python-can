@@ -354,9 +354,16 @@ class SocketCanDaemonBus(can.BusABC):
         # TCP is a stream: the reply can arrive in several pieces, and after
         # "< rawmode >" the first frames can follow the "< ok >" in the same read.
         while ">" not in self.__receive_buffer:
+            # a reply always starts with "<", so fail early instead of waiting
+            # forever when the server is not socketcand
+            buffer = self.__receive_buffer.lstrip()
+            if (buffer and not buffer.startswith("<")) or len(buffer) > 200:
+                raise can.CanInitializationError(
+                    f"Expected '{msg}' got: '{self.__receive_buffer}'"
+                )
             data = self.__socket.recv(256)
             if not data:
-                raise can.CanError(
+                raise can.CanInitializationError(
                     f"Expected '{msg}' got: '{self.__receive_buffer}' "
                     "(connection closed)"
                 )
