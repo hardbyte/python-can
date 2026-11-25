@@ -235,6 +235,43 @@ class ASCReader(TextIOMessageReader):
         return Message(**msg_kwargs)
 
     def _process_fd_can_frame(self, line: str, msg_kwargs: dict[str, Any]) -> Message:
+        fields = line.split()
+        if len(fields) >= 4 and fields[1] not in ("Rx", "Tx"):
+            # CANoe 7.x uses <channel> <id> <direction> instead of
+            # <channel> <direction> <id>. CANoe also writes FD DLC codes in
+            # decimal even for hex-base logs, so the data-length field decides
+            # between decimal and hexadecimal interpretation.
+            channel, can_id_str, direction = fields[:3]
+            msg_kwargs["channel"] = int(channel) - 1
+            msg_kwargs["is_rx"] = direction == "Rx"
+            self._extract_can_id(can_id_str, msg_kwargs)
+
+            rest = fields[3:]
+            if rest[:1] and rest[0].lower() == "errorframe":
+                msg_kwargs["is_error_frame"] = True
+                return Message(**msg_kwargs)
+            if len(rest) < 4:
+                return Message(**msg_kwargs)
+
+            brs, esi = rest[0], rest[1]
+            index = 2
+            if index < len(rest) and not rest[index].isdigit():
+                index += 1
+            if index + 1 >= len(rest):
+                return Message(**msg_kwargs)
+
+            dlc_str = rest[index]
+            data_length = int(rest[index + 1])
+            dlc = self._parse_fd_dlc(dlc_str, data_length)
+            msg_kwargs["is_fd"] = True
+            msg_kwargs["bitrate_switch"] = brs == "1"
+            msg_kwargs["error_state_indicator"] = esi == "1"
+            msg_kwargs["dlc"] = data_length
+            msg_kwargs["data"] = self._parse_data(
+                rest[index + 2:], data_length
+            )
+            return Message(**msg_kwargs)
+
         channel, direction, rest_of_message = line.split(None, 2)
         # See ASCWriter
         msg_kwargs["channel"] = int(channel) - 1
@@ -293,6 +330,21 @@ class ASCReader(TextIOMessageReader):
             msg_kwargs["data"] = self._parse_data(fields, data_length)
 
         return Message(**msg_kwargs)
+
+    def _parse_fd_dlc(self, dlc_str: str, data_length: int) -> int:
+        """Resolve CANoe decimal and python-can hexadecimal DLC spellings."""
+        candidates: list[int] = []
+        for base in (self._converted_base, BASE_DEC):
+            try:
+                code = int(dlc_str, base)
+            except ValueError:
+                continue
+            if code not in candidates:
+                candidates.append(code)
+        for code in candidates:
+            if dlc2len(code) == data_length:
+                return code
+        return candidates[0] if candidates else 0
 
     def __iter__(self) -> Generator[Message, None, None]:
         first_line = self._extract_header()

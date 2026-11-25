@@ -535,6 +535,40 @@ class TestAscFileFormat(ReaderWriterTest):
             (actual,) = reader
         self.assertTrue(msg.equals(actual, timestamp_delta=None))
 
+    def test_read_canoe_7_can_fd_layout(self):
+        stream = StringIO(
+            "date Mon Oct 12 06:42:09 PM 2026\n"
+            "base hex timestamps absolute\n"
+            "// version 7.0.0\n"
+            "0.000000 CANFD 1 1d3 Rx 1 0 d 8 8 "
+            "78 88 00 00 00 00 0c e6\n"
+        )
+        with can.ASCReader(stream) as reader:
+            (actual,) = reader
+
+        self.assertTrue(actual.is_fd)
+        self.assertEqual(actual.arbitration_id, 0x1D3)
+        self.assertEqual(actual.channel, 0)
+        self.assertTrue(actual.is_rx)
+        self.assertTrue(actual.bitrate_switch)
+        self.assertEqual(actual.dlc, 8)
+        self.assertEqual(actual.data, b"\x78\x88\x00\x00\x00\x00\x0c\xe6")
+
+    def test_read_canoe_7_decimal_fd_dlc(self):
+        stream = StringIO(
+            "base hex timestamps absolute\n"
+            "0.004238 CANFD 1 1e3 Rx 1 0 d 13 32 "
+            + " ".join(["00"] * 32)
+            + "\n"
+        )
+        with can.ASCReader(stream) as reader:
+            (actual,) = reader
+
+        self.assertTrue(actual.is_fd)
+        self.assertEqual(actual.arbitration_id, 0x1E3)
+        self.assertEqual(actual.dlc, 32)
+        self.assertEqual(len(actual.data), 32)
+
     @parameterized.expand(
         [
             ("empty_data", "0 0 0 0 0", False, 0, b""),
