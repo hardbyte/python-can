@@ -267,9 +267,7 @@ class ASCReader(TextIOMessageReader):
             msg_kwargs["bitrate_switch"] = brs == "1"
             msg_kwargs["error_state_indicator"] = esi == "1"
             msg_kwargs["dlc"] = data_length
-            msg_kwargs["data"] = self._parse_data(
-                rest[index + 2:], data_length
-            )
+            msg_kwargs["data"] = self._parse_data(rest[index + 2 :], data_length)
             return Message(**msg_kwargs)
 
         channel, direction, rest_of_message = line.split(None, 2)

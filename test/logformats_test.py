@@ -557,9 +557,7 @@ class TestAscFileFormat(ReaderWriterTest):
     def test_read_canoe_7_decimal_fd_dlc(self):
         stream = StringIO(
             "base hex timestamps absolute\n"
-            "0.004238 CANFD 1 1e3 Rx 1 0 d 13 32 "
-            + " ".join(["00"] * 32)
-            + "\n"
+            "0.004238 CANFD 1 1e3 Rx 1 0 d 13 32 " + " ".join(["00"] * 32) + "\n"
         )
         with can.ASCReader(stream) as reader:
             (actual,) = reader
