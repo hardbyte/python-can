@@ -9,7 +9,6 @@ import subprocess
 import sys
 import unittest
 from abc import ABCMeta, abstractmethod
-from pathlib import Path
 
 from .config import *
 
@@ -28,13 +27,11 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
         """
         for command in self._commands():
             try:
-                args = (
-                    command if isinstance(command, (list, tuple)) else command.split()
-                )
                 subprocess.check_output(
-                    args,
+                    command.split(),
                     stderr=subprocess.STDOUT,
                     encoding="utf-8",
+                    shell=IS_WINDOWS,
                 )
             except subprocess.CalledProcessError as e:
                 return_code = e.returncode
@@ -60,12 +57,6 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
             module.main()
         self.assertEqual(cm.exception.code, errno.EINVAL)
 
-    def _console_command(self, name: str) -> list[str]:
-        executable = Path(sys.executable).parent / name
-        if IS_WINDOWS:
-            executable = executable.with_suffix(".exe")
-        return [str(executable), "--help"]
-
     @abstractmethod
     def _commands(self):
         """Returns an Iterable of commands that should "succeed", meaning they exit
@@ -82,8 +73,8 @@ class CanScriptTest(unittest.TestCase, metaclass=ABCMeta):
 class TestLoggerScript(CanScriptTest):
     def _commands(self):
         commands = [
-            [sys.executable, "-m", "can.logger", "--help"],
-            self._console_command("can_logger"),
+            "python -m can.logger --help",
+            "can_logger --help",
         ]
         return commands
 
@@ -96,8 +87,8 @@ class TestLoggerScript(CanScriptTest):
 class TestPlayerScript(CanScriptTest):
     def _commands(self):
         commands = [
-            [sys.executable, "-m", "can.player", "--help"],
-            self._console_command("can_player"),
+            "python -m can.player --help",
+            "can_player --help",
         ]
         return commands
 
@@ -110,8 +101,8 @@ class TestPlayerScript(CanScriptTest):
 class TestBridgeScript(CanScriptTest):
     def _commands(self):
         commands = [
-            [sys.executable, "-m", "can.bridge", "--help"],
-            self._console_command("can_bridge"),
+            "python -m can.bridge --help",
+            "can_bridge --help",
         ]
         return commands
 
@@ -124,8 +115,8 @@ class TestBridgeScript(CanScriptTest):
 class TestLogconvertScript(CanScriptTest):
     def _commands(self):
         commands = [
-            [sys.executable, "-m", "can.logconvert", "--help"],
-            self._console_command("can_logconvert"),
+            "python -m can.logconvert --help",
+            "can_logconvert --help",
         ]
         return commands
 

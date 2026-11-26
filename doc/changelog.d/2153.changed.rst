@@ -1,0 +1,2 @@
+Update PCAN timestamp determination for Linux and Windows and fall back to
+the ``uptime`` package where necessary (if ``uptime`` is available).

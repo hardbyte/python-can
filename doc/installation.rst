@@ -59,15 +59,21 @@ Download and install the latest driver for your interface:
 - `Linux <https://www.peak-system.com/Downloads.76.0.html?&L=1>`__ (`also works without <https://www.peak-system.com/fileadmin/media/linux/index.htm>`__, see also :ref:`pcandoc linux installation`)
 - `macOS <https://www.mac-can.com>`__
 
-PCAN-Basic for Linux returns timestamps relative to the Unix epoch,
-so no boot-time offset or ``uptime`` package is needed.
-On Windows Vista or newer, the Windows API is used to convert
-boot-relative timestamps to epoch times, so ``uptime`` is not needed.
-On Windows XP or older and on other platforms, install
-``python-can[pcan]`` to use ``uptime`` for timestamp conversion.
+Note that PCANBasic API timestamps count seconds from system startup.
+Timestamp handling then depends on the platform:
 
-If the boot time cannot be determined, timestamps remain relative to system
-startup.
+- Linux: PCAN-Basic provides timestamps relative to the Unix epoch, so no
+  boot-time offset or ``uptime`` package is needed.
+- Windows: the native API determines the boot time, so no ``uptime`` library
+  is needed.
+- Other platforms: ``uptime`` converts timestamps to epoch times. If it is
+  unavailable, timestamps are returned as seconds from system startup. Install
+  the library with ``pip install python-can[pcan]``.
+
+This library can take advantage of the `Python for Windows Extensions
+<https://github.com/mhammond/pywin32>`__ library if installed.
+It will be used to get notified of new messages instead of
+the CPU intensive polling that will otherwise have be used.
 
 IXXAT
 ~~~~~

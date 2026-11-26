@@ -76,68 +76,46 @@ from .basic import (
     TPCANMsgFD,
 )
 
+if IS_WINDOWS:
+    import ctypes
+
 # Set up logging
 log = logging.getLogger("can.pcan")
 
 MIN_PCAN_API_VERSION = version.parse("4.2.0")
 
-# The following cases need to be considered when determining the boottimeEpoch
-# for PCAN timestamps:
-#
-# - Linux: PCAN-Basic for Linux already returns timestamps relative to the
-#   Unix epoch, so boottimeEpoch shall stay 0
-# - Windows Vista or newer: Use Windows API to convert boot-relative
-#   timestamps to epoch times, so boottimeEpoch shall be set accordingly.
-# - Windows XP or older: Use the uptime package to convert boot-relative
-#   timestamps to epoch times, so boottimeEpoch shall be set accordingly.
-# - Other platforms: Use the uptime package to convert boot-relative
-#   timestamps to epoch times, so boottimeEpoch shall be set accordingly.
-#
-# If the boot time cannot be determined, timestamps remain relative to system
-# startup and a warning is logged to inform the user how to interpret them.
-boottimeEpoch = 0
+# explicit uninitialized marker 'None' to distinguish from the case where the boot time is 0 (Linux)
+boottimeEpoch = None
 if IS_LINUX:
     # PCAN-Basic for Linux already returns timestamps relative to the Unix epoch.
-    # boottimeEpoch shall stay 0
-    pass
+    boottimeEpoch = 0
+elif IS_WINDOWS:
+        # GetTickCount64 exists since Windows Vista and python-can requires
+        # Python >= 3.11, which runs only on Windows 8.1 or newer
+        get_tick_count = ctypes.windll.kernel32.GetTickCount64
+        get_tick_count.restype = ctypes.c_ulonglong
+        try:
+            tick_count = get_tick_count()
+        except OSError:
+            log.warning("Call to 'GetTickCount64' failed")
+            boottimeEpoch = 0
+        else:
+            boottimeEpoch = time.time() - tick_count / 1000
 else:
-    if IS_WINDOWS:
-        # try first to determine boottimeEpoch via Windows-native API
-        # if this fails, we can still fallback to trying to import uptime
-        import ctypes
-        import time
+    try:
+        # use the "uptime" library if available
+        import uptime
+    except ImportError:
+        log.warning("uptime library not available")
+    else:
+        if boottime := uptime.boottime():
+            boottimeEpoch = boottime.timestamp()
 
-        try:
-            # GetTickCount64 exists since Windows Vista
-            # https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount64#requirements
-            # if we are running on an older version, try to fallback to uptime again
-            get_tick_count = ctypes.windll.kernel32.GetTickCount64
-            get_tick_count.restype = ctypes.c_ulonglong
-        except (AttributeError, OSError):
-            log.warning("Could not resolve 'GetTickCount64' from the Windows API")
-        else:
-            try:
-                tick_count = get_tick_count()
-            except OSError:
-                log.warning("Call to 'GetTickCount64' failed")
-            else:
-                boottimeEpoch = time.time() - tick_count / 1000
-
-    if not boottimeEpoch:
-        # we are neither running on Windows or Linux, but still on a supported
-        # platform and the boottimeEpoch was still not set
-        try:
-            import uptime
-        except ImportError:
-            log.warning("uptime library not available")
-        else:
-            if boottime := uptime.boottime():
-                boottimeEpoch = boottime.timestamp()
-
-    if not boottimeEpoch:
-        # No success in somehow determining the boottimeEpoch, therefore at least
-        # warn the user about how to interpret the timestamps
-        log.warning("Timestamps are relative to boot time and not to Epoch UTC")
+if boottimeEpoch is None:
+    # No success in somehow determining the boottimeEpoch, therefore at least
+    # warn the user about how to interpret the timestamps
+    log.warning("Timestamps are relative to boot time and not to Epoch UTC")
+    boottimeEpoch = 0
 
 HAS_EVENTS = False
 
