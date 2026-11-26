@@ -90,17 +90,17 @@ if IS_LINUX:
     # PCAN-Basic for Linux already returns timestamps relative to the Unix epoch.
     boottimeEpoch = 0
 elif IS_WINDOWS:
-        # GetTickCount64 exists since Windows Vista and python-can requires
-        # Python >= 3.11, which runs only on Windows 8.1 or newer
-        get_tick_count = ctypes.windll.kernel32.GetTickCount64
-        get_tick_count.restype = ctypes.c_ulonglong
-        try:
-            tick_count = get_tick_count()
-        except OSError:
-            log.warning("Call to 'GetTickCount64' failed")
-            boottimeEpoch = 0
-        else:
-            boottimeEpoch = time.time() - tick_count / 1000
+    # GetTickCount64 exists since Windows Vista and python-can requires
+    # Python >= 3.11, which runs only on Windows 8.1 or newer
+    get_tick_count = ctypes.windll.kernel32.GetTickCount64
+    get_tick_count.restype = ctypes.c_ulonglong
+    try:
+        tick_count = get_tick_count()
+    except OSError:
+        log.warning("Call to 'GetTickCount64' failed")
+        boottimeEpoch = 0
+    else:
+        boottimeEpoch = time.time() - tick_count / 1000
 else:
     try:
         # use the "uptime" library if available
