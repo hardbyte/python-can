@@ -7,8 +7,7 @@ import importlib.util
 import struct
 import sys
 import unittest
-from datetime import datetime, timezone
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -228,9 +227,9 @@ class TestPCANBus(unittest.TestCase):
 
         timestamp = TPCANTimestamp()
         self.mock_pcan.Read = Mock(return_value=(PCAN_ERROR_OK, msg, timestamp))
-        self.bus = can.Bus(interface="pcan")
-
-        recv_msg = self.bus.recv()
+        with patch.object(pcan_module, "boottimeEpoch", 0):
+            self.bus = can.Bus(interface="pcan")
+            recv_msg = self.bus.recv()
         self.assertEqual(recv_msg.arbitration_id, msg.ID)
         self.assertEqual(recv_msg.dlc, msg.LEN)
         self.assertEqual(recv_msg.is_extended_id, True)
@@ -252,9 +251,9 @@ class TestPCANBus(unittest.TestCase):
 
         self.mock_pcan.ReadFD = Mock(return_value=(PCAN_ERROR_OK, msg, timestamp))
 
-        self.bus = can.Bus(interface="pcan", fd=True)
-
-        recv_msg = self.bus.recv()
+        with patch.object(pcan_module, "boottimeEpoch", 0):
+            self.bus = can.Bus(interface="pcan", fd=True)
+            recv_msg = self.bus.recv()
         self.assertEqual(recv_msg.arbitration_id, msg.ID)
         self.assertEqual(recv_msg.dlc, msg.DLC)
         self.assertEqual(recv_msg.is_extended_id, True)
@@ -291,23 +290,28 @@ class TestPCANBus(unittest.TestCase):
         self.assertSequenceEqual(recv_msg.data, [0xAB])
         self.assertIsNone(self.bus.recv(timeout=0))
 
-    def _load_timestamp_backend(self, linux: bool) -> ModuleType:
+    def _load_timestamp_backend(self, linux: bool, windows: bool) -> ModuleType:
         # The platform choice is made at import time; use a separate namespace.
         spec = importlib.util.spec_from_file_location(
             "can.interfaces.pcan._timestamp_test", pcan_module.__file__
         )
         assert spec is not None and spec.loader is not None
         backend = importlib.util.module_from_spec(spec)
-        uptime_module = Mock()
-        uptime_module.boottime.return_value = datetime.fromtimestamp(
-            1_700_000_000, timezone.utc
+        get_tick_count = Mock(return_value=100_000_000)
+        get_tick_count.restype = ctypes.c_ulonglong
+        fake_windll = SimpleNamespace(
+            kernel32=SimpleNamespace(GetTickCount64=get_tick_count)
         )
-        with (
-            patch("can.interfaces.pcan.basic.IS_LINUX", linux),
-            patch("can.interfaces.pcan.basic.IS_WINDOWS", not linux),
-            patch.dict(sys.modules, {"uptime": uptime_module}),
-        ):
-            spec.loader.exec_module(backend)
+
+        with patch.dict(sys.modules):
+            sys.modules.pop("uptime", None)
+            with (
+                patch("can.interfaces.pcan.basic.IS_LINUX", linux),
+                patch("can.interfaces.pcan.basic.IS_WINDOWS", windows),
+                patch.object(ctypes, "windll", fake_windll, create=True),
+                patch("time.time", return_value=1_700_100_000),
+            ):
+                spec.loader.exec_module(backend)
         return backend
 
     @parameterized.expand(
@@ -318,7 +322,7 @@ class TestPCANBus(unittest.TestCase):
         ]
     )
     def test_timestamp_clock(self, name: str, linux: bool, fd: bool) -> None:
-        backend = self._load_timestamp_backend(linux)
+        backend = self._load_timestamp_backend(linux, windows=not linux)
         backend.HAS_EVENTS = False
         with patch.object(backend, "PCANBasic", return_value=self.mock_pcan):
             self.bus = backend.PcanBus(fd=fd)

@@ -48,11 +48,17 @@ Beginning with version 3.4, Linux kernels support the PCAN adapters natively via
 Timestamps
 ----------
 
-PCAN-Basic on Linux provides timestamps relative to the Unix epoch, so no boot-time
-offset or ``uptime`` package is needed. On other supported platforms, install
-``python-can[pcan]`` to use ``uptime`` for conversion of boot-relative timestamps to
-epoch timestamps. Without a known boot time, those platforms retain relative
-timestamps.
+- Linux: PCAN-Basic on Linux provides timestamps relative to the Unix epoch,
+  so no boot-time offset or ``uptime`` package is needed.
+- Windows: the native Windows API determines the boot time, so no ``uptime``
+  package is needed.
+- Other platforms: install ``python-can[pcan]`` to use ``uptime`` for
+  conversion of boot-relative timestamps to epoch timestamps.
+
+.. note::
+
+   Knowing the boot time is not a requirement, but without a known boot time,
+   those platforms retain relative timestamps.
 
 Bus
 ---

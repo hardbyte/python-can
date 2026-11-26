@@ -76,29 +76,46 @@ from .basic import (
     TPCANMsgFD,
 )
 
+if IS_WINDOWS:
+    import ctypes
+
 # Set up logging
 log = logging.getLogger("can.pcan")
 
 MIN_PCAN_API_VERSION = version.parse("4.2.0")
 
+# explicit uninitialized marker 'None' to distinguish from the case where the boot time is 0 (Linux)
+boottimeEpoch = None
 if IS_LINUX:
     # PCAN-Basic for Linux already returns timestamps relative to the Unix epoch.
     boottimeEpoch = 0
+elif IS_WINDOWS:
+    # GetTickCount64 exists since Windows Vista and python-can requires
+    # Python >= 3.11, which runs only on Windows 8.1 or newer
+    get_tick_count = ctypes.windll.kernel32.GetTickCount64
+    get_tick_count.restype = ctypes.c_ulonglong
+    try:
+        tick_count = get_tick_count()
+    except OSError:
+        log.warning("Call to 'GetTickCount64' failed")
+        boottimeEpoch = 0
+    else:
+        boottimeEpoch = time.time() - tick_count / 1000
 else:
     try:
         # use the "uptime" library if available
         import uptime
-
-        # boottime() and fromtimestamp() are timezone offset, so the difference is not.
-        if uptime.boottime() is None:
-            boottimeEpoch = 0
-        else:
-            boottimeEpoch = uptime.boottime().timestamp()
     except ImportError:
-        log.warning(
-            "uptime library not available, timestamps are relative to boot time and not to Epoch UTC",
-        )
-        boottimeEpoch = 0
+        log.warning("uptime library not available")
+    else:
+        if boottime := uptime.boottime():
+            boottimeEpoch = boottime.timestamp()
+
+if boottimeEpoch is None:
+    # No success in somehow determining the boottimeEpoch, therefore at least
+    # warn the user about how to interpret the timestamps
+    log.warning("Timestamps are relative to boot time and not to Epoch UTC")
+    boottimeEpoch = 0
 
 HAS_EVENTS = False
 

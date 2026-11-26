@@ -59,10 +59,16 @@ Download and install the latest driver for your interface:
 - `Linux <https://www.peak-system.com/Downloads.76.0.html?&L=1>`__ (`also works without <https://www.peak-system.com/fileadmin/media/linux/index.htm>`__, see also :ref:`pcandoc linux installation`)
 - `macOS <https://www.mac-can.com>`__
 
-Note that PCANBasic API timestamps count seconds from system startup. To
-convert these to epoch times, the uptime library is used. If it is not
-available, the times are returned as number of seconds from system
-startup. To install the uptime library, run ``pip install python-can[pcan]``.
+Note that PCANBasic API timestamps count seconds from system startup.
+Timestamp handling then depends on the platform:
+
+- Linux: PCAN-Basic provides timestamps relative to the Unix epoch, so no
+  boot-time offset or ``uptime`` package is needed.
+- Windows: the native API determines the boot time, so no ``uptime`` library
+  is needed.
+- Other platforms: ``uptime`` converts timestamps to epoch times. If it is
+  unavailable, timestamps are returned as seconds from system startup. Install
+  the library with ``pip install python-can[pcan]``.
 
 This library can take advantage of the `Python for Windows Extensions
 <https://github.com/mhammond/pywin32>`__ library if installed.
