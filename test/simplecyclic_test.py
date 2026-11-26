@@ -10,9 +10,9 @@ import sys
 import time
 import traceback
 import unittest
-from threading import Thread
+from threading import Event, Thread
 from time import sleep
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import can
 
@@ -150,6 +150,39 @@ class SimpleCyclicSendTaskTest(unittest.TestCase, ComparingMessagesTestCase):
             # Tasks stopped via `stop_all_periodic_tasks` with remove_tasks=False should
             # still be associated with the bus (e.g. for restarting)
             assert len(bus._periodic_tasks) == 5
+
+    def test_manual_and_periodic_send_do_not_overlap(self):
+        first_entered = Event()
+        release_first = Event()
+        second_entered = Event()
+        first = can.Message(arbitration_id=0x100, data=[1], is_extended_id=False)
+        second = can.Message(arbitration_id=0x200, data=[2], is_extended_id=False)
+
+        def observed_send(msg, timeout=None):
+            if msg.arbitration_id == first.arbitration_id:
+                first_entered.set()
+                release_first.wait()
+            else:
+                second_entered.set()
+
+        bus = can.ThreadSafeBus(interface="virtual", channel=self.id())
+        with bus, patch.object(bus.__wrapped__, "send", side_effect=observed_send):
+            manual_thread = Thread(target=bus.send, args=(first,))
+            task = None
+            manual_thread.start()
+            try:
+                self.assertTrue(first_entered.wait(5))
+                task = bus.send_periodic(second, 0.01)
+                self.assertFalse(second_entered.wait(0.1))
+                release_first.set()
+                self.assertTrue(second_entered.wait(5))
+            finally:
+                release_first.set()
+                if task is not None:
+                    task.stop()
+                    self.join_threads([manual_thread, task.thread], 5.0)
+                else:
+                    self.join_threads([manual_thread], 5.0)
 
     def test_restart_perodic_tasks(self):
         period = 0.01
