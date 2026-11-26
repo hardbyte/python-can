@@ -87,6 +87,8 @@ The table below lists interface drivers that can be added by installing addition
 +----------------------------+----------------------------------------------------------+
 | `python-can-hub`_          | Remote CAN interfaces over can-hub (QUIC/TLS/TCP/unix)   |
 +----------------------------+----------------------------------------------------------+
+| `python-can-cansub`_       | CSS Electronics CANsub CAN-USB/Ethernet interfaces       |
++----------------------------+----------------------------------------------------------+
 
 .. _python-can-canine: https://github.com/tinymovr/python-can-canine
 .. _python-can-cvector: https://github.com/zariiii9003/python-can-cvector
@@ -99,4 +101,5 @@ The table below lists interface drivers that can be added by installing addition
 .. _RP1210: https://github.com/dfieschko/RP1210
 .. _python-can-damiao: https://github.com/gaoyichuan/python-can-damiao
 .. _python-can-hub: https://github.com/can-hub-io/can-hub/tree/main/python
+.. _python-can-cansub: https://github.com/CSS-Electronics/python-can-cansub
 
