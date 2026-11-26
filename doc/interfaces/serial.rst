@@ -47,7 +47,8 @@ Serial frame format
 +-------------------+----------------+-----------------------------------------------+-------------------------------+-------------------------+---------+--------------+
 | **Byte order**    | \-             | Little-Endian                                 | Little-Endian                 | Little-Endian           | \-      | \-           |
 +-------------------+----------------+-----------------------------------------------+-------------------------------+-------------------------+---------+--------------+
-| **Description**   | Must be 0xAA   | Usually s, ms or µs since start of the device | Length in byte of the payload | \-                      | \-      | Must be 0xBB |
+| **Description**   | Must be 0xAA   | Usually s, ms or µs since start of the device | Payload length; requested     | \-                      | \-      | Must be 0xBB |
+|                   |                |                                               | data length for remote frames |                         |         |              |
 +-------------------+----------------+-----------------------------------------------+-------------------------------+-------------------------+---------+--------------+
 
 Examples of serial frames
