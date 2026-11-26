@@ -1,0 +1,1 @@
+Fixed the serial interface reading payload bytes for received remote frames, which broke the stream for remote frames with a DLC above 0.

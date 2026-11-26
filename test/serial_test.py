@@ -168,14 +168,18 @@ class SimpleSerialTestBase(ComparingMessagesTestCase):
 
     def test_rx_tx_rtr_frame(self):
         """
-        Test the transfer of remote frames.
+        Test the transfer of remote frames, with and without a requested length.
         """
-        msg = can.Message(
-            is_extended_id=False, is_error_frame=False, is_remote_frame=True
-        )
-        self.bus.send(msg)
-        msg_receive = self.bus.recv()
-        self.assertMessageEqual(msg, msg_receive)
+        for dlc in (0, 8):
+            msg = can.Message(
+                arbitration_id=0x123,
+                is_extended_id=False,
+                is_remote_frame=True,
+                dlc=dlc,
+            )
+            self.bus.send(msg)
+            msg_receive = self.bus.recv()
+            self.assertMessageEqual(msg, msg_receive)
 
     def test_when_no_fileno(self):
         """
