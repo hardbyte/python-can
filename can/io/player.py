@@ -8,6 +8,7 @@ import gzip
 import pathlib
 import time
 from collections.abc import Generator, Iterable
+from functools import cache
 from typing import (
     Any,
     Final,
@@ -38,8 +39,9 @@ MESSAGE_READERS: Final[dict[str, type[MessageReader]]] = {
 }
 
 
+@cache
 def _update_reader_plugins() -> None:
-    """Update available message reader plugins from entry points."""
+    """Discover available message reader plugins once per process."""
     for entry_point in read_entry_points("can.io.message_reader"):
         if entry_point.key in MESSAGE_READERS:
             continue

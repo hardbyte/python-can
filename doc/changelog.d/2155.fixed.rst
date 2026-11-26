@@ -1,0 +1,1 @@
+Avoid rescanning installed entry points for every Logger and LogReader construction.
