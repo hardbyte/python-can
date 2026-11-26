@@ -426,6 +426,20 @@ class TestThreadSafeBus(Back2BackTestCase):
         receiver_pool.close()
         receiver_pool.join()
 
+    def test_state_while_recv_blocks(self):
+        """Reading state and protocol does not wait for a blocked recv() (#1891)."""
+        receiver = ThreadPool(1)
+        pending = receiver.apply_async(self.bus2.recv, (1.0,))
+        sleep(0.1)  # let the receiver take the receive lock
+
+        start = time()
+        self.assertIsInstance(self.bus2.state, can.BusState)
+        self.assertIsInstance(self.bus2.protocol, can.CanProtocol)
+        self.assertLess(time() - start, 0.5)
+
+        self.assertIsNone(pending.get())
+        receiver.close()
+
     @pytest.mark.timeout(180.0 if IS_PYPY else 5.0)
     def test_filtered_bus(self):
         sender_pool = ThreadPool(100)

@@ -1,0 +1,1 @@
+Reading ``ThreadSafeBus.state`` and ``ThreadSafeBus.protocol`` no longer waits for a thread that is blocked in ``recv()``.
