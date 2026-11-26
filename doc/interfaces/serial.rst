@@ -11,10 +11,6 @@ used via ``loop://`` URL.
 The interface is a simple implementation that has been used for
 recording CAN traces.
 
-.. note::
-    The properties **extended_id**, **is_remote_frame** and **is_error_frame**
-    from the class:`~can.Message` are not in use. This interface will not
-    send or receive flags for this properties.
 
 Bus
 ---
@@ -47,6 +43,18 @@ Serial frame format
 +-------------------+----------------+-----------------------------------------------+-------------------------------+-------------------------+---------+--------------+
 | **Description**   | Must be 0xAA   | Usually s, ms or µs since start of the device | Length in byte of the payload | \-                      | \-      | Must be 0xBB |
 +-------------------+----------------+-----------------------------------------------+-------------------------------+-------------------------+---------+--------------+
+
+Arbitration ID format
+^^^^^^^^^^^^^^^^^^^^^
++-------------------+----------------+----------------+----------------+-------------------------------+
+|     Data Bits     |     Bit 31     |     Bit 30     |     Bit 29     |           Bits 28:0           |
++===================+================+================+================+===============================+
+|    Description    |   Extended ID  |  Remote Frame  |   Error Frame  |           Message ID          |
++-------------------+----------------+----------------+----------------+-------------------------------+
+|       Mask        |   0x80000000   |   0x40000000   |   0x20000000   |  0x1FFFFFFF for Extended ID   |
+|                   |                |                |                |       0x7FF for Standard ID   |
++-------------------+----------------+----------------+----------------+-------------------------------+
+
 
 Examples of serial frames
 ^^^^^^^^^^^^^^^^^^^^^^^^^
