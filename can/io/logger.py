@@ -8,6 +8,7 @@ import pathlib
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import cache
 from types import TracebackType
 from typing import (
     Any,
@@ -50,8 +51,9 @@ MESSAGE_WRITERS: Final[dict[str, type[MessageWriter]]] = {
 }
 
 
+@cache
 def _update_writer_plugins() -> None:
-    """Update available message writer plugins from entry points."""
+    """Discover available message writer plugins once per process."""
     for entry_point in read_entry_points("can.io.message_writer"):
         if entry_point.key in MESSAGE_WRITERS:
             continue

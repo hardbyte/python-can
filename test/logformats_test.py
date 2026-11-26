@@ -84,6 +84,19 @@ class ReaderWriterExtensionTest(unittest.TestCase):
             finally:
                 os.remove(tmp_file.name)
 
+    @parameterized.expand([(can.Logger,), (can.LogReader,)])
+    def test_repeated_handlers_do_not_rescan_plugins(self, factory):
+        with tempfile.TemporaryDirectory() as directory:
+            filename = Path(directory) / "record.asc"
+            filename.touch()
+            with factory(filename):
+                pass
+            with patch("can._entry_points.entry_points") as discover:
+                for _ in range(3):
+                    with factory(filename):
+                        pass
+                discover.assert_not_called()
+
     def test_extension_matching_asc(self):
         self._test_extension(".asc")
 
