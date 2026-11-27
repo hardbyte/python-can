@@ -103,8 +103,12 @@ class CanutilsLogReader(TextIOMessageReader):
                 is_remote_frame = True
 
                 length, raw_dlc = data[1:], ""
-                if not is_fd:
-                    length, _, raw_dlc = length.partition(CC_DLC_DELIM)
+                if not is_fd and CC_DLC_DELIM in length:
+                    # like can-utils: an optional length digit 0 to 8, then the raw DLC
+                    digit = length[:1]
+                    if length[1:2] == CC_DLC_DELIM:
+                        raw_dlc = length[2:]
+                    length = digit if digit in "012345678" else ""
                 dlc = _classic_dlc(int(length), raw_dlc) if length else 0
 
                 data_bin = None

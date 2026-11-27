@@ -1282,6 +1282,8 @@ class TestCanutilsFileFormat(ReaderWriterTest):
             file.write("(4.000000) can0 123#1122334455667788_c R\n")
             file.write("(5.000000) can0 123#1122334455667788_8 R\n")
             file.write("(6.000000) can0 123#1122334455667788_CA R\n")
+            file.write("(7.000000) can0 123#R08_C R\n")
+            file.write("(8.000000) can0 123#R9_C R\n")
 
         with can.CanutilsLogReader(self.test_file_name) as reader:
             messages = list(reader)
@@ -1335,6 +1337,23 @@ class TestCanutilsFileFormat(ReaderWriterTest):
                 is_extended_id=False,
                 dlc=12,
                 data=payload,
+                channel="can0",
+            ),
+            # can-utils reads a one-digit remote length of 0 to 8 before the delimiter
+            can.Message(
+                timestamp=7.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                is_remote_frame=True,
+                dlc=0,
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=8.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                is_remote_frame=True,
+                dlc=0,
                 channel="can0",
             ),
         ]
