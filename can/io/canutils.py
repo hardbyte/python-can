@@ -102,7 +102,9 @@ class CanutilsLogReader(TextIOMessageReader):
             if data and data[0].lower() == "r":
                 is_remote_frame = True
 
-                length, _, raw_dlc = data[1:].partition(CC_DLC_DELIM)
+                length, raw_dlc = data[1:], ""
+                if not is_fd:
+                    length, _, raw_dlc = length.partition(CC_DLC_DELIM)
                 dlc = _classic_dlc(int(length), raw_dlc) if length else 0
 
                 data_bin = None

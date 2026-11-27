@@ -1273,7 +1273,7 @@ class TestCanutilsFileFormat(ReaderWriterTest):
         )
 
     def test_read_raw_dlc(self):
-        # candump -8 -L writes a Classical CAN DLC of 9 to 15 after an
+        # candump -L writes a Classical CAN DLC of 9 to 15 after an
         # 8-byte payload as "_<dlc>", for data and remote frames alike
         with open(self.test_file_name, "w", encoding="ascii") as file:
             file.write("(1.000000) can0 123#1122334455667788_C R\n")
@@ -1331,6 +1331,16 @@ class TestCanutilsFileFormat(ReaderWriterTest):
         self.assertEqual(len(messages), len(expected))
         for actual, wanted in zip(messages, expected):
             self.assertTrue(wanted.equals(actual), f"{actual!r} != {wanted!r}")
+
+    @parameterized.expand([("123#1122_C",), ("123##0R8_C",)])
+    def test_read_raw_dlc_invalid(self, frame):
+        # can-utils accepts the suffix only after 8 bytes of a Classical CAN frame
+        with open(self.test_file_name, "w", encoding="ascii") as file:
+            file.write(f"(1.000000) can0 {frame} R\n")
+
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            with self.assertRaises(ValueError):
+                list(reader)
 
     @parameterized.expand(
         [
