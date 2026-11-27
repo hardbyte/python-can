@@ -78,6 +78,17 @@ def add_bus_arguments(
         help="Activate CAN-FD support",
     )
 
+    flags = [f"--{prefix}-listen-only"] if prefix else ["--listen-only"]
+    dest = f"{prefix}_listen_only" if prefix else "listen_only"
+    group.add_argument(
+        *flags,
+        dest=dest,
+        default=argparse.SUPPRESS,
+        action="store_true",
+        help="Open the bus in listen-only mode: receive only, never transmit "
+        "frames, acknowledgements or error frames.",
+    )
+
     flags = [f"--{prefix}-data-bitrate"] if prefix else ["--data-bitrate"]
     dest = f"{prefix}_data_bitrate" if prefix else "data_bitrate"
     group.add_argument(
@@ -165,6 +176,7 @@ def create_bus_from_namespace(
         "interface",
         "bitrate",
         "fd",
+        "listen_only",
         "data_bitrate",
         "can_filters",
         "timing",

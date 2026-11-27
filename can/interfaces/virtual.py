@@ -58,6 +58,7 @@ class VirtualBus(BusABC):
         rx_queue_size: int = 0,
         preserve_timestamps: bool = False,
         protocol: CanProtocol = CanProtocol.CAN_20,
+        listen_only: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -84,12 +85,16 @@ class VirtualBus(BusABC):
         :param protocol: The protocol implemented by this bus instance. The
             value does not affect the operation of the bus instance and can
             be set to an arbitrary value for testing purposes.
+        :param listen_only: If set to True, the bus instance only receives
+            messages and :meth:`send` raises
+            :class:`~can.exceptions.CanOperationError`.
         :param kwargs: Additional keyword arguments passed to the parent
             constructor.
         """
         super().__init__(
             channel=channel,
             receive_own_messages=receive_own_messages,
+            listen_only=listen_only,
             **kwargs,
         )
 
@@ -99,6 +104,7 @@ class VirtualBus(BusABC):
         self.channel_info = f"Virtual bus channel {self.channel_id}"
         self.receive_own_messages = receive_own_messages
         self.preserve_timestamps = preserve_timestamps
+        self._listen_only = listen_only
         self._open = True
 
         with channels_lock:
@@ -129,6 +135,8 @@ class VirtualBus(BusABC):
 
     def send(self, msg: Message, timeout: float | None = None) -> None:
         self._check_if_open()
+        if self._listen_only:
+            raise CanOperationError("Cannot send in listen-only mode")
 
         timestamp = msg.timestamp if self.preserve_timestamps else time.time()
         # Add message to all listening on this channel

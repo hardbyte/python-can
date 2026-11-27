@@ -111,6 +111,28 @@ class LoadConfigTest(unittest.TestCase):
         expected.update({"interface": "socketcan", "channel": 3, "bitrate": 250000})
         self.assertEqual(config, expected)
 
+    def test_listen_only_is_normalized_to_bool(self):
+        """
+        Test Scope:
+            Normalization of the listen_only config value.
+        Preconditions:
+            No config file, environment or rc values.
+        Events:
+            Load configs with listen_only given as "1", "0", "true" and "false".
+        Evaluate:
+            The loaded listen_only value is the matching bool.
+        """
+        for value, expected in (
+            ("1", True),
+            ("0", False),
+            ("true", True),
+            ("false", False),
+        ):
+            config = self._load_config_isolated(
+                config={"interface": "virtual", "listen_only": value}
+            )
+            self.assertIs(config["listen_only"], expected)
+
 
 if __name__ == "__main__":
     unittest.main()

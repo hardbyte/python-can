@@ -68,6 +68,7 @@ def Bus(  # noqa: N802
     interface: str | None = None,
     config_context: str | None = None,
     ignore_config: bool = False,
+    listen_only: bool | None = None,
     **kwargs: Any,
 ) -> BusABC:
     """Create a new bus instance with configuration loading.
@@ -100,11 +101,18 @@ def Bus(  # noqa: N802
         If ``True``, only the given arguments will be used for the bus instantiation. Existing
         configuration sources will be ignored.
 
+    :param listen_only:
+        If ``True``, open the bus in :ref:`listen-only mode <listen_only>`.
+        Set to ``None`` to let it be resolved from the default
+        :ref:`configuration`, falling back to ``False``.
+        The resolved value is always passed to the bus class.
+
     :param kwargs:
         ``interface`` specific keyword arguments.
 
     :raises ~can.exceptions.CanInterfaceNotImplementedError:
-        if the ``interface`` isn't recognized or cannot be loaded
+        if the ``interface`` isn't recognized or cannot be loaded,
+        or if it does not support listen-only mode and ``listen_only`` is ``True``
 
     :raises ~can.exceptions.CanInitializationError:
         if the bus cannot be instantiated
@@ -118,9 +126,16 @@ def Bus(  # noqa: N802
         kwargs["interface"] = interface
     if channel is not None:
         kwargs["channel"] = channel
+    if listen_only is not None:
+        kwargs["listen_only"] = listen_only
 
     if not ignore_config:
         kwargs = util.load_config(config=kwargs, context=config_context)
+
+    # forward listen_only only when it is requested, so that interfaces
+    # which do not know the argument keep working
+    if not kwargs.get("listen_only", False):
+        kwargs.pop("listen_only", None)
 
     # resolve the bus class to use for that interface
     cls = _get_class_for_interface(kwargs["interface"])

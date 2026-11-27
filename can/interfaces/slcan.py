@@ -110,6 +110,7 @@ class slcanBus(BusABC):
         :param listen_only:
             If True, open interface/channel in listen mode with ``L`` command.
             Otherwise, the (default) ``O`` command is still used. See ``open`` method.
+            In listen mode, :meth:`send` raises :class:`~can.exceptions.CanOperationError`.
         :param timeout:
             Timeout for the serial or usb device in seconds (default 0.001)
 
@@ -351,6 +352,8 @@ class slcanBus(BusABC):
         return None, False
 
     def send(self, msg: Message, timeout: float | None = None) -> None:
+        if self._listen_only:
+            raise CanOperationError("Cannot send in listen-only mode")
         if timeout != self.serialPortOrig.write_timeout:
             self.serialPortOrig.write_timeout = timeout
         if msg.is_remote_frame:

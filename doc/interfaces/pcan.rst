@@ -15,7 +15,7 @@ Here is an example configuration file for using `PCAN-USB <https://www.peak-syst
     [default]
     interface = pcan
     channel = PCAN_USBBUS1
-    state = PASSIVE
+    listen_only = True
     bitrate = 500000
 
 ``channel`` (default ``"PCAN_USBBUS1"``)
@@ -31,8 +31,13 @@ Here is an example configuration file for using `PCAN-USB <https://www.peak-syst
 
  Where ``x`` should be replaced with the desired channel number starting at ``1``.
 
+``listen_only`` (default ``False``)
+ Open the channel in :ref:`listen-only mode <listen_only>`.
+
 ``state`` (default ``can.bus.BusState.ACTIVE``)
- BusState of the channel
+ BusState of the channel.
+ Deprecated since 4.7.0, use ``listen_only`` instead.
+ In ``BusState.PASSIVE``, sending raises :class:`~can.exceptions.CanOperationError`.
 
 ``bitrate`` (default ``500000``)
  Channel bitrate

@@ -9,6 +9,9 @@ Linux).
 Bus
 ---
 
+.. deprecated:: 4.7.0
+    The ``driver_mode`` argument is deprecated. Use ``listen_only`` instead.
+
 .. autoclass:: can.interfaces.kvaser.canlib.KvaserBus
     :members:
     :exclude-members: get_stats

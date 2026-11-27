@@ -98,6 +98,29 @@ class TestCliUtils(unittest.TestCase):
         self.assertEqual(parsed_args.bus_kwargs["serial"], 1234)
 
     @patch("can.Bus")
+    def test_listen_only_argument(self, mock_bus):
+        """
+        Test Scope:
+            The --listen-only argument, with and without prefix.
+        Preconditions:
+            A mocked can.Bus.
+        Events:
+            Parse --listen-only and --test-listen-only and create a bus from
+            each namespace.
+        Evaluate:
+            Both buses are created with listen_only=True.
+        """
+        for prefix, flag in ((None, "--listen-only"), ("test", "--test-listen-only")):
+            mock_bus.reset_mock()
+            parser = argparse.ArgumentParser()
+            add_bus_arguments(parser, prefix=prefix)
+
+            namespace = parser.parse_args([flag])
+            create_bus_from_namespace(namespace, prefix=prefix)
+
+            self.assertIs(mock_bus.call_args.kwargs["listen_only"], True)
+
+    @patch("can.Bus")
     def test_create_bus_from_namespace(self, mock_bus):
         namespace = argparse.Namespace(
             test_channel="vcan0",

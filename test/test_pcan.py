@@ -68,7 +68,17 @@ class TestPCANBus(unittest.TestCase):
         self.mock_pcan.InitializeFD.assert_not_called()
 
     def test_bus_creation_state_error(self) -> None:
-        with self.assertRaises(ValueError):
+        """
+        Test Scope:
+            An invalid value for the deprecated state argument.
+        Preconditions:
+            A mocked PCAN-Basic API.
+        Events:
+            Create a bus with state ERROR.
+        Evaluate:
+            A DeprecationWarning is emitted and ValueError is raised.
+        """
+        with self.assertWarns(DeprecationWarning), self.assertRaises(ValueError):
             can.Bus(interface="pcan", state=BusState.ERROR)
 
     @parameterized.expand([("f_clock", 80_000_000), ("f_clock_mhz", 80)])
@@ -465,28 +475,104 @@ class TestPCANBus(unittest.TestCase):
         self.bus.shutdown()
         self.mock_pcan.Uninitialize.assert_called_once_with(PCAN_USBBUS1)
 
-    @parameterized.expand(
-        [
-            ("active", BusState.ACTIVE, PCAN_PARAMETER_OFF),
-            ("passive", BusState.PASSIVE, PCAN_PARAMETER_ON),
-        ]
-    )
-    def test_state(self, name, bus_state: BusState, expected_parameter) -> None:
-        with self.subTest(name):
-            self.bus = can.Bus(interface="pcan")
+    def test_state_active(self) -> None:
+        """
+        Test Scope:
+            Setting the state of a PCAN bus to ACTIVE.
+        Preconditions:
+            A mocked PCAN-Basic API.
+        Events:
+            Set the state to BusState.ACTIVE.
+        Evaluate:
+            A DeprecationWarning is emitted and listen-only mode is switched off.
+        """
+        self.bus = can.Bus(interface="pcan")
 
-            self.bus.state = bus_state
-            call_list = self.mock_pcan.SetValue.call_args_list
-            last_call_args_list = call_list[-1][0]
-            self.assertEqual(
-                last_call_args_list,
-                (PCAN_USBBUS1, PCAN_LISTEN_ONLY, expected_parameter),
-            )
+        with self.assertWarns(DeprecationWarning):
+            self.bus.state = BusState.ACTIVE
+        self.assertEqual(
+            self.mock_pcan.SetValue.call_args[0],
+            (PCAN_USBBUS1, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF),
+        )
 
-    def test_state_constructor(self):
-        for state in [BusState.ACTIVE, BusState.PASSIVE]:
-            bus = can.Bus(interface="pcan", state=state)
-            assert bus.state == state
+    def test_state_passive_deprecated(self) -> None:
+        """
+        Test Scope:
+            The deprecated way to enter listen-only mode by setting the state.
+        Preconditions:
+            A mocked PCAN-Basic API.
+        Events:
+            Set the state to BusState.PASSIVE.
+        Evaluate:
+            A DeprecationWarning is emitted and listen-only mode is switched on.
+        """
+        self.bus = can.Bus(interface="pcan")
+
+        with self.assertWarns(DeprecationWarning):
+            self.bus.state = BusState.PASSIVE
+        self.assertEqual(
+            self.mock_pcan.SetValue.call_args[0],
+            (PCAN_USBBUS1, PCAN_LISTEN_ONLY, PCAN_PARAMETER_ON),
+        )
+
+    def test_state_constructor(self) -> None:
+        """
+        Test Scope:
+            The deprecated state argument of the PCAN bus constructor.
+        Preconditions:
+            A mocked PCAN-Basic API.
+        Events:
+            Create a bus with state ACTIVE, then one with state PASSIVE.
+        Evaluate:
+            Both emit a DeprecationWarning and report the requested state and
+            listen_only value, and the PASSIVE bus can still be switched to
+            ACTIVE, which emits a DeprecationWarning and turns listen_only off.
+        """
+        with self.assertWarns(DeprecationWarning):
+            bus = can.Bus(interface="pcan", state=BusState.ACTIVE)
+        assert bus.state == BusState.ACTIVE
+        assert not bus.listen_only
+
+        with self.assertWarns(DeprecationWarning):
+            bus = can.Bus(interface="pcan", state=BusState.PASSIVE)
+        assert bus.state == BusState.PASSIVE
+        assert bus.listen_only
+        with self.assertWarns(DeprecationWarning):
+            bus.state = BusState.ACTIVE
+        assert bus.state == BusState.ACTIVE
+        assert not bus.listen_only
+
+    def test_listen_only(self) -> None:
+        """
+        Test Scope:
+            Listen-only mode of the PCAN interface.
+        Preconditions:
+            A mocked PCAN-Basic API.
+        Events:
+            Create a listen-only bus, try to send a message, then switch
+            listen_only off.
+        Evaluate:
+            Listen-only mode is switched on, the state is PASSIVE, send raises
+            CanOperationError and no frame is written. Switching listen_only off
+            turns the driver's listen-only mode off and the state becomes ACTIVE.
+        """
+        self.mock_pcan.Write = Mock(return_value=PCAN_ERROR_OK)
+        self.bus = can.Bus(interface="pcan", listen_only=True)
+
+        self.mock_pcan.SetValue.assert_any_call(
+            PCAN_USBBUS1, PCAN_LISTEN_ONLY, PCAN_PARAMETER_ON
+        )
+        assert self.bus.state == BusState.PASSIVE
+        with pytest.raises(can.CanOperationError):
+            self.bus.send(can.Message(arbitration_id=0x123))
+        self.mock_pcan.Write.assert_not_called()
+
+        self.bus.listen_only = False
+        self.assertEqual(
+            self.mock_pcan.SetValue.call_args[0],
+            (PCAN_USBBUS1, PCAN_LISTEN_ONLY, PCAN_PARAMETER_OFF),
+        )
+        assert self.bus.state == BusState.ACTIVE
 
     def test_detect_available_configs(self) -> None:
         if platform.system() == "Darwin":

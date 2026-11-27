@@ -74,6 +74,51 @@ Example defining two filters, one to pass 11-bit ID ``0x451``, the other to pass
 
 See :meth:`~can.BusABC.set_filters` for the implementation.
 
+.. _listen_only:
+
+Listen-only mode
+''''''''''''''''
+
+A bus opened with ``listen_only=True`` only receives: it never puts frames,
+acknowledgements or error frames on the wire, which makes it safe for passively
+logging a live bus. Calling :meth:`~can.BusABC.send` on such a bus raises
+:class:`~can.exceptions.CanOperationError`.
+
+Listen-only mode corresponds to the bus monitoring mode of ISO 11898-1 (§10.14):
+the node receives frames but never drives the bus dominant, so it sends no
+acknowledgements, error flags or overload flags. It is not the restricted
+operation mode (§10.15), which still acknowledges frames.
+
+.. code-block:: python
+
+    with can.Bus(interface="vector", channel=0, listen_only=True) as bus:
+        for msg in bus:
+            print(msg)
+
+Listen-only mode is selected when the bus is created. It can also be set
+in a :ref:`configuration file <configuration>` with ``listen_only = True``, and the
+command line tools accept ``--listen-only``.
+
+The :attr:`~can.BusABC.listen_only` property tells whether a bus is in listen-only
+mode. Interfaces that can switch the mode at runtime, currently ``pcan`` and
+``systec``, also allow setting it.
+
+An interface supports listen-only mode only if its constructor declares a
+``listen_only`` parameter, or forwards ``**kwargs`` to a base class constructor
+that does. For any other interface, ``listen_only=True`` raises
+:class:`~can.exceptions.CanInterfaceNotImplementedError` before the bus is
+created, see :class:`~can.BusABC`. Of the built-in interfaces, ``cantact``,
+``kvaser``, ``nixnet``, ``pcan``, ``seeedstudio``, ``slcan``, ``systec``,
+``vector`` and ``virtual`` support it.
+
+.. deprecated:: 4.7.0
+    The interface specific ways to request listen-only mode are deprecated in favour
+    of ``listen_only``: the ``monitor`` argument of ``cantact``, the ``driver_mode``
+    argument of ``kvaser``, the ``"silent"`` and ``"loopback_and_silent"`` operation
+    modes of ``seeedstudio``, the ``state`` argument and setting ``bus.state`` for
+    ``pcan`` and ``systec``, and the ``--passive`` and ``--active`` arguments of
+    ``can.logger``.
+
 Bus API
 '''''''
 

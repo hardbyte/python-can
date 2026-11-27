@@ -226,10 +226,61 @@ class SystecTest(unittest.TestCase):
             ),
         )
 
-    @staticmethod
-    def test_bus_passive_state():
+    def test_bus_listen_only(self):
+        """
+        Test Scope:
+            Listen-only mode of the SYS TEC interface.
+        Preconditions:
+            A mocked SYS TEC DLL.
+        Events:
+            Create a listen-only bus, try to send a message, then switch
+            listen_only off.
+        Evaluate:
+            The channel is initialized in listen-only mode, the state is PASSIVE,
+            listen_only is True and send raises CanOperationError without writing
+            a frame. After switching listen_only off, the state is ACTIVE.
+        """
         ucan.UcanInitCanEx2.reset_mock()
-        bus = can.Bus(interface="systec", channel=0, state=can.BusState.PASSIVE)
+        ucan.UcanWriteCanMsgEx.reset_mock()
+        bus = can.Bus(interface="systec", channel=0, listen_only=True)
+        ucan.UcanInitCanEx2.assert_called_once_with(
+            bus._ucan._handle,
+            0,
+            InitCanParam(
+                Mode.MODE_LISTEN_ONLY,
+                Baudrate.BAUD_500kBit,
+                OutputControl.OCR_DEFAULT,
+                AMR_ALL,
+                ACR_ALL,
+                BaudrateEx.BAUDEX_USE_BTR01,
+                DEFAULT_BUFFER_ENTRIES,
+                DEFAULT_BUFFER_ENTRIES,
+            ),
+        )
+        assert bus.state is can.BusState.PASSIVE
+        assert bus.listen_only
+        with self.assertRaises(can.CanOperationError):
+            bus.send(can.Message(arbitration_id=0x321))
+        ucan.UcanWriteCanMsgEx.assert_not_called()
+        bus.listen_only = False
+        assert not bus.listen_only
+        assert bus.state is can.BusState.ACTIVE
+
+    def test_bus_passive_state(self):
+        """
+        Test Scope:
+            The deprecated way to request listen-only mode with state PASSIVE.
+        Preconditions:
+            A mocked SYS TEC DLL.
+        Events:
+            Create a bus with state PASSIVE.
+        Evaluate:
+            A DeprecationWarning is emitted and the channel is initialized in
+            listen-only mode.
+        """
+        ucan.UcanInitCanEx2.reset_mock()
+        with self.assertWarns(DeprecationWarning):
+            bus = can.Bus(interface="systec", channel=0, state=can.BusState.PASSIVE)
         ucan.UcanInitCanEx2.assert_called_once_with(
             bus._ucan._handle,
             0,

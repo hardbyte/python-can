@@ -29,6 +29,11 @@ application named "python-can":
 VectorBus
 ---------
 
+.. versionchanged:: 4.7.0
+    In :ref:`listen-only mode <listen_only>`, :meth:`~can.interfaces.vector.VectorBus.send`
+    raises :class:`~can.exceptions.CanOperationError`. Previously, the message was
+    accepted and only received back locally.
+
 .. autoclass:: can.interfaces.vector.VectorBus
    :show-inheritance:
    :member-order: bysource

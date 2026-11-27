@@ -14,7 +14,11 @@ import time
 from can import BitTiming, BitTimingFd, BusABC, CanProtocol, Message
 from can.exceptions import CanError, CanInitializationError, CanOperationError
 from can.typechecking import CanFilters
-from can.util import check_or_adjust_timing_clock, time_perfcounter_correlation
+from can.util import (
+    _warn_listen_only_deprecated,
+    check_or_adjust_timing_clock,
+    time_perfcounter_correlation,
+)
 
 from . import constants as canstat
 from . import structures
@@ -376,6 +380,7 @@ class KvaserBus(BusABC):
         channel: int,
         can_filters: CanFilters | None = None,
         timing: BitTiming | BitTimingFd | None = None,
+        listen_only: bool = False,
         **kwargs,
     ):
         """
@@ -413,10 +418,9 @@ class KvaserBus(BusABC):
             In this case, the bit will be sampled three quanta in a row,
             with the last sample being taken in the edge between TSEG1 and TSEG2.
             Three samples should only be used for relatively slow baudrates.
-
-        :param bool driver_mode:
-            Silent or normal.
-
+        :param bool listen_only:
+            If True, open the channel in silent mode. In silent mode,
+            :meth:`send` raises :class:`~can.exceptions.CanOperationError`.
         :param bool single_handle:
             Use one Kvaser CANLIB bus handle for both reading and writing.
             This can be set if reading and/or writing is done from one thread.
@@ -449,7 +453,15 @@ class KvaserBus(BusABC):
         tseg2 = kwargs.get("tseg2", 0)
         sjw = kwargs.get("sjw", 0)
         no_samp = kwargs.get("no_samp", 0)
-        driver_mode = kwargs.get("driver_mode", DRIVER_MODE_NORMAL)
+        if "driver_mode" in kwargs:
+            _warn_listen_only_deprecated("The 'driver_mode' argument")
+            silent = kwargs["driver_mode"] == DRIVER_MODE_SILENT
+            if listen_only and not silent:
+                raise ValueError(
+                    "'listen_only' and 'driver_mode' contradict each other"
+                )
+            listen_only = listen_only or silent
+        self._listen_only = listen_only
         single_handle = kwargs.get("single_handle", False)
         receive_own_messages = kwargs.get("receive_own_messages", False)
         exclusive = kwargs.get("exclusive", False)
@@ -579,9 +591,7 @@ class KvaserBus(BusABC):
             self._write_handle = canOpenChannel(channel, flags_)
 
         can_driver_mode = (
-            canstat.canDRIVER_SILENT
-            if driver_mode == DRIVER_MODE_SILENT
-            else canstat.canDRIVER_NORMAL
+            canstat.canDRIVER_SILENT if listen_only else canstat.canDRIVER_NORMAL
         )
         canSetBusOutputControl(self._write_handle, can_driver_mode)
 
@@ -708,6 +718,8 @@ class KvaserBus(BusABC):
             return None, self._is_filtered
 
     def send(self, msg, timeout=None):
+        if self._listen_only:
+            raise CanOperationError("Cannot send in listen-only mode")
         # log.debug("Writing a message: {}".format(msg))
         flags = canstat.canMSG_EXT if msg.is_extended_id else canstat.canMSG_STD
         if msg.is_remote_frame:

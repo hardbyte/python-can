@@ -10,9 +10,12 @@ import io
 import logging
 import struct
 from time import time
+from typing import Any
 
 import can
 from can import BusABC, CanProtocol, Message
+from can.typechecking import CanFilters
+from can.util import _warn_listen_only_deprecated
 
 logger = logging.getLogger("seeedbus")
 
@@ -57,15 +60,16 @@ class SeeedBus(BusABC):
 
     def __init__(
         self,
-        channel,
-        baudrate=2000000,
-        timeout=0.1,
-        frame_type="STD",
-        operation_mode="normal",
-        bitrate=500000,
-        can_filters=None,
-        **kwargs,
-    ):
+        channel: str,
+        baudrate: int = 2000000,
+        timeout: float = 0.1,
+        frame_type: str = "STD",
+        operation_mode: str = "normal",
+        bitrate: int = 500000,
+        can_filters: CanFilters | None = None,
+        listen_only: bool = False,
+        **kwargs: Any,
+    ) -> None:
         """
         :param str channel:
             The serial device to open. For example "/dev/ttyS1" or
@@ -81,7 +85,7 @@ class SeeedBus(BusABC):
             STD or EXT, to select standard or extended messages
 
         :param operation_mode
-            normal, loopback, silent or loopback_and_silent.
+            normal or loopback.
 
         :param bitrate
             CAN bus bit rate, selected from available list.
@@ -92,6 +96,11 @@ class SeeedBus(BusABC):
             zero or more than one filter is provided, software-based
             filtering will be used. Defaults to None (no filtering).
 
+        :param bool listen_only:
+            If True, open the device in silent mode. In silent mode,
+            :meth:`send` raises :class:`~can.exceptions.CanOperationError`.
+
+        :raises ValueError: If ``listen_only`` is combined with loopback mode.
         :raises can.CanInitializationError: If the given parameters are invalid.
         :raises can.CanInterfaceNotImplementedError: If the serial module is not installed.
         """
@@ -113,6 +122,14 @@ class SeeedBus(BusABC):
 
         self.bit_rate = bitrate
         self.frame_type = frame_type
+        if operation_mode in ("silent", "loopback_and_silent"):
+            _warn_listen_only_deprecated(f"The operation_mode '{operation_mode}'")
+            listen_only = True
+        elif listen_only and operation_mode == "loopback":
+            raise ValueError("'listen_only' cannot be combined with loopback mode")
+        if listen_only:
+            operation_mode = "silent"
+        self._listen_only = listen_only
         self.op_mode = operation_mode
         self.filter_id = struct.pack("<I", can_id)
         self.mask_id = struct.pack("<I", can_mask)
@@ -201,7 +218,11 @@ class SeeedBus(BusABC):
         :param timeout:
             This parameter will be ignored. The timeout value of the channel is
             used instead.
+
+        :raises can.CanOperationError: If the bus was opened in listen-only mode.
         """
+        if self._listen_only:
+            raise can.CanOperationError("Cannot send in listen-only mode")
 
         byte_msg = bytearray()
         byte_msg.append(0xAA)

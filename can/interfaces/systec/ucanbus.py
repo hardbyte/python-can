@@ -1,5 +1,6 @@
 import logging
 from threading import Event
+from typing import Any
 
 from can import (
     BusABC,
@@ -10,6 +11,8 @@ from can import (
     CanProtocol,
     Message,
 )
+from can.typechecking import CanFilters
+from can.util import _warn_listen_only_deprecated
 
 from .constants import *
 from .exceptions import UcanException
@@ -57,13 +60,25 @@ class UcanBus(BusABC):
         1000000: Baudrate.BAUD_1MBit,
     }
 
-    def __init__(self, channel, can_filters=None, **kwargs):
+    def __init__(
+        self,
+        channel: int,
+        can_filters: CanFilters | None = None,
+        listen_only: bool = False,
+        **kwargs: Any,
+    ) -> None:
         """
         :param int channel:
             The Channel id to create this bus with.
 
         :param list can_filters:
             See :meth:`can.BusABC.set_filters`.
+
+        :param bool listen_only:
+            Open the channel in listen-only mode. In listen-only mode,
+            :attr:`state` is ``BusState.PASSIVE`` and :meth:`send` raises
+            :class:`~can.exceptions.CanOperationError`. The mode can be switched
+            at runtime with :attr:`listen_only`.
 
         Backend Configuration
 
@@ -76,10 +91,6 @@ class UcanBus(BusABC):
             Valid values: 0 through 254. Special value 255 is reserved to detect the first connected device (should only
             be used, in case only one module is connected to the computer).
             Default is 255.
-
-        :param can.bus.BusState state:
-            BusState of the channel.
-            Default is ACTIVE.
 
         :param bool receive_own_messages:
             If messages transmitted should also be received back.
@@ -121,17 +132,20 @@ class UcanBus(BusABC):
         if bitrate not in self.BITRATES:
             raise ValueError(f"Invalid bitrate {bitrate}")
 
-        state = kwargs.get("state", BusState.ACTIVE)
-        if state is BusState.ACTIVE or state is BusState.PASSIVE:
-            self._state = state
-        else:
-            raise ValueError("BusState must be Active or Passive")
+        state = kwargs.get("state")
+        if state is not None:
+            _warn_listen_only_deprecated("The 'state' argument", "'listen_only'")
+            if state is not BusState.ACTIVE and state is not BusState.PASSIVE:
+                raise ValueError("BusState must be Active or Passive")
+            if listen_only and state is BusState.ACTIVE:
+                raise ValueError("'listen_only' and 'state' contradict each other")
+        self._listen_only = listen_only or state is BusState.PASSIVE
 
         # get parameters
         self._params = {
             "mode": Mode.MODE_NORMAL
             | (Mode.MODE_TX_ECHO if kwargs.get("receive_own_messages") else 0)
-            | (Mode.MODE_LISTEN_ONLY if state is BusState.PASSIVE else 0),
+            | (Mode.MODE_LISTEN_ONLY if self._listen_only else 0),
             "BTR": self.BITRATES[bitrate],
         }
         # get extra parameters
@@ -196,8 +210,11 @@ class UcanBus(BusABC):
             Transmit timeout in seconds (value 0 switches off the "auto delete")
 
         :raises ~can.exceptions.CanOperationError:
-            If the message could not be sent.
+            If the message could not be sent, or if the channel is in
+            listen-only mode.
         """
+        if self._listen_only:
+            raise CanOperationError("Cannot send in listen-only mode")
         try:
             if timeout is not None and timeout >= 0:
                 self._ucan.set_tx_timeout(self.channel, int(timeout * 1000))
@@ -302,26 +319,34 @@ class UcanBus(BusABC):
         ]
 
     @property
+    def listen_only(self) -> bool:
+        return self._listen_only
+
+    @listen_only.setter
+    def listen_only(self, value: bool) -> None:
+        try:
+            # close the CAN channel
+            self._ucan.shutdown(self.channel, False)
+            # set mode
+            if value:
+                self._params["mode"] |= Mode.MODE_LISTEN_ONLY
+            else:
+                self._params["mode"] &= ~Mode.MODE_LISTEN_ONLY
+            # reinitialize CAN channel
+            self._ucan.init_can(self.channel, **self._params)
+        except UcanException as exception:
+            raise CanOperationError() from exception
+        self._listen_only = value
+
+    @property
     def state(self):
-        return self._state
+        return BusState.PASSIVE if self._listen_only else BusState.ACTIVE
 
     @state.setter
     def state(self, new_state):
-        if self._state is not BusState.ERROR and (
-            new_state is BusState.ACTIVE or new_state is BusState.PASSIVE
-        ):
-            try:
-                # close the CAN channel
-                self._ucan.shutdown(self.channel, False)
-                # set mode
-                if new_state is BusState.ACTIVE:
-                    self._params["mode"] &= ~Mode.MODE_LISTEN_ONLY
-                else:
-                    self._params["mode"] |= Mode.MODE_LISTEN_ONLY
-                # reinitialize CAN channel
-                self._ucan.init_can(self.channel, **self._params)
-            except UcanException as exception:
-                raise CanOperationError() from exception
+        _warn_listen_only_deprecated("Setting 'bus.state'", "'bus.listen_only'")
+        if new_state is BusState.ACTIVE or new_state is BusState.PASSIVE:
+            self.listen_only = new_state is BusState.PASSIVE
 
     def shutdown(self):
         """

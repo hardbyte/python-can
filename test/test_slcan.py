@@ -3,6 +3,7 @@
 import unittest.mock
 from typing import cast, Optional
 
+import pytest
 from serial.serialutil import SerialBase
 
 import can.interfaces.slcan
@@ -473,6 +474,37 @@ class slcanTestCase(unittest.TestCase):
         sn = self.bus.get_serial_number(0)
         self.assertEqual(b"N\r", self.serial.get_output_buffer())
         self.assertEqual(sn, "A123")
+
+
+@unittest.mock.patch("serial.serial_for_url", SerialMock.serial_for_url)
+def test_listen_only() -> None:
+    """
+    Test Scope:
+        Listen-only mode of the slcan interface.
+    Preconditions:
+        A mocked serial port.
+    Events:
+        Create a listen-only bus and try to send a message.
+    Evaluate:
+        The channel is opened with the L command, send raises
+        CanOperationError and nothing more is written.
+    """
+    bus = can.Bus(
+        "loop://",
+        interface="slcan",
+        sleep_after_open=0,
+        timeout=TIMEOUT,
+        bitrate=500000,
+        listen_only=True,
+    )
+    serial = cast("SerialMock", bus.serialPortOrig)
+    assert serial.get_output_buffer() == b"L\r"
+
+    with pytest.raises(can.CanOperationError):
+        bus.send(can.Message(arbitration_id=0x123, data=[0xAA]))
+    assert serial.get_output_buffer() == b"L\r"
+
+    bus.shutdown()
 
 
 if __name__ == "__main__":

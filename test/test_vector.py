@@ -80,6 +80,17 @@ def mock_xldriver() -> None:
 
 
 def test_listen_only_mocked(mock_xldriver) -> None:
+    """
+    Test Scope:
+        Listen-only mode of the Vector interface.
+    Preconditions:
+        A mocked XL driver.
+    Events:
+        Create a listen-only bus and try to send a message.
+    Evaluate:
+        The channel output is set to silent mode, send raises
+        CanOperationError and no frame is passed to the driver.
+    """
     bus = can.Bus(channel=0, interface="vector", listen_only=True, _testing=True)
     assert isinstance(bus, canlib.VectorBus)
     assert bus.protocol == can.CanProtocol.CAN_20
@@ -90,14 +101,28 @@ def test_listen_only_mocked(mock_xldriver) -> None:
     )
     assert xlCanSetChannelOutput_args[2] == xldefine.XL_OutputMode.XL_OUTPUT_MODE_SILENT
 
+    msg = can.Message(arbitration_id=0x123, data=[1, 2, 3])
+    with pytest.raises(can.CanOperationError):
+        bus.send(msg)
+    can.interfaces.vector.canlib.xldriver.xlCanTransmit.assert_not_called()
+
 
 @pytest.mark.skipif(not XLDRIVER_FOUND, reason="Vector XL API is unavailable")
 def test_listen_only() -> None:
+    """
+    Test Scope:
+        Listen-only mode of the Vector interface with the real XL driver.
+    Preconditions:
+        A virtual Vector CAN channel.
+    Events:
+        Open the channel in listen-only mode and try to send a message.
+    Evaluate:
+        Send raises CanOperationError.
+    """
     bus = can.Bus(
         channel=0,
         serial=_find_virtual_can_serial(),
         interface="vector",
-        receive_own_messages=True,
         listen_only=True,
     )
     assert isinstance(bus, canlib.VectorBus)
@@ -107,12 +132,8 @@ def test_listen_only() -> None:
         arbitration_id=0xC0FFEF, data=[1, 2, 3, 4, 5, 6, 7, 8], is_extended_id=True
     )
 
-    bus.send(msg)
-
-    received_msg = bus.recv()
-
-    assert received_msg.arbitration_id == msg.arbitration_id
-    assert received_msg.data == msg.data
+    with pytest.raises(can.CanOperationError):
+        bus.send(msg)
 
     bus.shutdown()
 

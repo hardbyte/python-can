@@ -241,6 +241,9 @@ def _create_bus_config(config: dict[str, Any]) -> typechecking.BusConfig:
     if "fd" in config:
         config["fd"] = config["fd"] not in (0, False)
 
+    if "listen_only" in config:
+        config["listen_only"] = config["listen_only"] not in (0, False)
+
     if "state" in config and not isinstance(config["state"], can.BusState):
         try:
             config["state"] = can.BusState[config["state"]]
@@ -423,6 +426,25 @@ def _rename_kwargs(
                 kwargs[new] = value
 
             warnings.warn(deprecation_notice, DeprecationWarning, stacklevel=3)
+
+
+def _warn_listen_only_deprecated(
+    deprecated_usage: str, replacement: str | None = "'listen_only=True'"
+) -> None:
+    """Emit the deprecation warning for a legacy way to request listen-only mode.
+
+    :param deprecated_usage:
+        Description of the deprecated usage, e.g. ``"The 'monitor' argument"``.
+    :param replacement:
+        Description of what to use instead, or ``None`` if there is no replacement.
+    """
+    message = (
+        f"{deprecated_usage} is deprecated since python-can v4.7.0, and "
+        f"scheduled for removal in python-can v5.0.0."
+    )
+    if replacement is not None:
+        message += f" Use {replacement} instead."
+    warnings.warn(message, DeprecationWarning, stacklevel=3)
 
 
 T2 = TypeVar("T2", BitTiming, BitTimingFd)

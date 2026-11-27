@@ -27,7 +27,7 @@ class CANalystIIBus(BusABC):
         timing: BitTiming | BitTimingFd | None = None,
         can_filters: CanFilters | None = None,
         rx_queue_size: int | None = None,
-        **kwargs: dict[str, Any],
+        **kwargs: Any,
     ):
         """
 

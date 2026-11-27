@@ -3,6 +3,7 @@ Contains the ABC bus implementation and its documentation.
 """
 
 import contextlib
+import inspect
 import logging
 import threading
 from abc import ABC, abstractmethod
@@ -10,10 +11,11 @@ from collections.abc import Callable, Iterator, Sequence
 from enum import Enum, auto
 from time import time
 from types import TracebackType
-from typing import Self, cast
+from typing import Any, Self, cast
 
 import can.typechecking
 from can.broadcastmanager import CyclicSendTaskABC, ThreadBasedCyclicSendTask
+from can.exceptions import CanInterfaceNotImplementedError
 from can.message import Message
 
 LOG = logging.getLogger(__name__)
@@ -56,12 +58,23 @@ class BusABC(ABC):
     #: Assume that no cleanup is needed until something was initialized
     _is_shutdown: bool = True
     _can_protocol: CanProtocol = CanProtocol.CAN_20
+    _listen_only: bool = False
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
+        # reject listen-only mode before the subclass opens any driver or device
+        if kwargs.get("listen_only") and not _accepts_listen_only(cls):
+            raise CanInterfaceNotImplementedError(
+                f"{cls.__name__} does not support listen-only mode"
+            )
+        return super().__new__(cls)
 
     @abstractmethod
     def __init__(
         self,
         channel: can.typechecking.Channel,
         can_filters: can.typechecking.CanFilters | None = None,
+        *,
+        listen_only: bool = False,
         **kwargs: object,
     ):
         """Construct and open a CAN bus instance of the specified type.
@@ -75,12 +88,26 @@ class BusABC(ABC):
         :param can_filters:
             See :meth:`~can.BusABC.set_filters` for details.
 
+        :param listen_only:
+            If ``True``, open the bus in :ref:`listen-only mode <listen_only>`:
+            the bus only receives and never puts frames, acknowledgements or
+            error frames on the wire, and :meth:`~can.BusABC.send` raises
+            :class:`~can.exceptions.CanOperationError`.
+            A subclass supports listen-only mode only if its constructor
+            declares ``listen_only`` as an explicit parameter, or forwards
+            ``**kwargs`` to a base class constructor that does (decorators must
+            use :func:`functools.wraps`). For any other subclass,
+            ``listen_only=True`` raises
+            :class:`~can.exceptions.CanInterfaceNotImplementedError` before its
+            constructor runs. ``False`` is always accepted.
+
         :param dict kwargs:
             Any backend dependent configurations are passed in this dictionary
 
         :raises ValueError: If parameters are out of range
         :raises ~can.exceptions.CanInterfaceNotImplementedError:
-            If the driver cannot be accessed
+            If the driver cannot be accessed, or if ``listen_only`` is ``True``
+            and the interface does not support listen-only mode
         :raises ~can.exceptions.CanInitializationError:
             If the bus cannot be initialized
         """
@@ -190,7 +217,8 @@ class BusABC(ABC):
             None blocks indefinitely.
 
         :raises ~can.exceptions.CanOperationError:
-            If an error occurred while sending
+            If an error occurred while sending, or if the bus was opened
+            in :ref:`listen-only mode <listen_only>`
         """
         raise NotImplementedError("Trying to write to a readonly bus?")
 
@@ -498,8 +526,13 @@ class BusABC(ABC):
     def state(self, new_state: BusState) -> None:
         """
         Set the new state of the hardware
+
+        .. deprecated:: 4.7.0
+            Use :attr:`listen_only` to switch listen-only mode instead.
         """
-        raise NotImplementedError("Property is not implemented.")
+        raise NotImplementedError(
+            "Setting the bus state is not supported, use 'listen_only' instead."
+        )
 
     @property
     def protocol(self) -> CanProtocol:
@@ -509,6 +542,26 @@ class BusABC(ABC):
         during the lifetime of a bus instance.
         """
         return self._can_protocol
+
+    @property
+    def listen_only(self) -> bool:
+        """Whether this bus instance is in :ref:`listen-only mode <listen_only>`.
+
+        Interfaces that do not support listen-only mode return ``False``. Subclasses
+        that support it must make this property report the current mode.
+        """
+        return self._listen_only
+
+    @listen_only.setter
+    def listen_only(self, value: bool) -> None:
+        """Switch :ref:`listen-only mode <listen_only>` on or off at runtime.
+
+        :param value:
+            ``True`` to enter listen-only mode, ``False`` to leave it.
+        :raises NotImplementedError:
+            If the interface cannot switch listen-only mode at runtime.
+        """
+        raise NotImplementedError("Property is not implemented.")
 
     @staticmethod
     def _detect_available_configs() -> Sequence[can.typechecking.AutoDetectedConfig]:
@@ -536,3 +589,38 @@ class _SelfRemovingCyclicTask(CyclicSendTaskABC, ABC):
 
     def stop(self, remove_task: bool = True) -> None:
         raise NotImplementedError()
+
+
+def _accepts_listen_only(bus_class: type["BusABC"]) -> bool:
+    """Check whether a constructor of ``bus_class`` declares ``listen_only``.
+
+    The constructors in the MRO are checked from the most derived one up to,
+    but excluding, :meth:`BusABC.__init__`. The first one that declares
+    ``listen_only`` explicitly means support. A constructor that takes
+    ``**kwargs`` may forward ``listen_only`` to its base class, so the search
+    continues there. A constructor that takes neither cannot receive
+    ``listen_only``. If a signature cannot be inspected, ``True`` is returned.
+    """
+    for klass in bus_class.__mro__:
+        if klass is BusABC:
+            return False
+        init = klass.__dict__.get("__init__")
+        if init is None:
+            continue
+        try:
+            parameters = inspect.signature(init).parameters
+        except (TypeError, ValueError):
+            return True
+        parameter = parameters.get("listen_only")
+        if parameter is not None and parameter.kind in (
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.KEYWORD_ONLY,
+        ):
+            return True
+        # without **kwargs, this constructor can neither receive nor forward
+        # listen_only, so base class constructors do not matter
+        if not any(
+            p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()
+        ):
+            return False
+    return False
