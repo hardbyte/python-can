@@ -1272,6 +1272,93 @@ class TestCanutilsFileFormat(ReaderWriterTest):
             read_back,
         )
 
+    def test_read_raw_dlc(self):
+        # candump -8 -L writes a Classical CAN DLC of 9 to 15 after an
+        # 8-byte payload as "_<dlc>", for data and remote frames alike
+        with open(self.test_file_name, "w", encoding="ascii") as file:
+            file.write("(1.000000) can0 123#1122334455667788_C R\n")
+            file.write("(2.000000) can0 12345678#0011223344556677_9 R\n")
+            file.write("(3.000000) can0 123#R8_F R\n")
+            file.write("(4.000000) can0 123#1122334455667788_c R\n")
+            file.write("(5.000000) can0 123#1122334455667788_8 R\n")
+
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            messages = list(reader)
+
+        payload = bytes.fromhex("1122334455667788")
+        expected = [
+            can.Message(
+                timestamp=1.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                dlc=12,
+                data=payload,
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=2.0,
+                arbitration_id=0x12345678,
+                dlc=9,
+                data=bytes.fromhex("0011223344556677"),
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=3.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                is_remote_frame=True,
+                dlc=15,
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=4.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                dlc=12,
+                data=payload,
+                channel="can0",
+            ),
+            # outside 9 to 15 the suffix carries no DLC, as in can-utils
+            can.Message(
+                timestamp=5.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                dlc=8,
+                data=payload,
+                channel="can0",
+            ),
+        ]
+        self.assertEqual(len(messages), len(expected))
+        for actual, wanted in zip(messages, expected):
+            self.assertTrue(wanted.equals(actual), f"{actual!r} != {wanted!r}")
+
+    @parameterized.expand(
+        [
+            (False, 12, "123#1122334455667788_C"),
+            (False, 8, "123#1122334455667788"),
+            (True, 15, "123#R8_F"),
+        ]
+    )
+    def test_write_raw_dlc(self, is_remote_frame, dlc, expected_frame):
+        message = can.Message(
+            timestamp=1.0,
+            arbitration_id=0x123,
+            is_extended_id=False,
+            is_remote_frame=is_remote_frame,
+            dlc=dlc,
+            data=None if is_remote_frame else bytes.fromhex("1122334455667788"),
+            channel="can0",
+        )
+        with can.CanutilsLogWriter(self.test_file_name) as writer:
+            writer(message)
+
+        self.assertEqual(
+            Path(self.test_file_name).read_text().split()[2], expected_frame
+        )
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            (read_back,) = reader
+        self.assertTrue(message.equals(read_back), f"{read_back!r}")
+
 
 class TestCsvFileFormat(ReaderWriterTest):
     """Tests can.CSVWriter and can.CSVReader"""

@@ -1,0 +1,4 @@
+Fixed ``CanutilsLogReader`` stopping with a ``ValueError`` on candump lines that carry a
+Classical CAN raw DLC (``123#1122334455667788_C``, ``123#R8_F``, as ``candump -8 -L`` writes
+them). The raw DLC of 9 to 15 is now read into ``Message.dlc``, as the SocketCAN interface
+does, and ``CanutilsLogWriter`` writes it back in the same form.

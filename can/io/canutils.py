@@ -19,9 +19,25 @@ CAN_MSG_EXT = 0x80000000
 CAN_ERR_FLAG = 0x20000000
 CAN_ERR_BUSERROR = 0x00000080
 CAN_ERR_DLC = 8
+CAN_MAX_DLEN = 8
+CAN_MAX_RAW_DLC = 15
+# separates an 8-byte Classical CAN frame from its raw DLC (9 to 15)
+CC_DLC_DELIM = "_"
 
 CANFD_BRS = 0x01
 CANFD_ESI = 0x02
+
+
+def _classic_dlc(length: int, raw_dlc: str) -> int:
+    """Return the raw DLC written after an 8-byte length, else the length.
+
+    Like can-utils, only the first digit after the delimiter counts, and only
+    when it is 9 to F.
+    """
+    digit = raw_dlc[:1]
+    if length == CAN_MAX_DLEN and digit and digit in "9ABCDEFabcdef":
+        return int(digit, 16)
+    return length
 
 
 class CanutilsLogReader(TextIOMessageReader):
@@ -86,16 +102,19 @@ class CanutilsLogReader(TextIOMessageReader):
             if data and data[0].lower() == "r":
                 is_remote_frame = True
 
-                if len(data) > 1:
-                    dlc = int(data[1:])
-                else:
-                    dlc = 0
+                length, _, raw_dlc = data[1:].partition(CC_DLC_DELIM)
+                dlc = _classic_dlc(int(length), raw_dlc) if length else 0
 
                 data_bin = None
             else:
                 is_remote_frame = False
 
-                dlc = len(data) // 2
+                # the delimiter is only valid right after 8 data bytes
+                raw_dlc = ""
+                end = 2 * CAN_MAX_DLEN
+                if not is_fd and data[end : end + 1] == CC_DLC_DELIM:
+                    data, raw_dlc = data[:end], data[end + 1 :]
+                dlc = _classic_dlc(len(data) // 2, raw_dlc)
                 data_bin = bytearray()
                 for i in range(0, len(data), 2):
                     data_bin.append(int(data[i : (i + 2)], 16))
@@ -183,8 +202,18 @@ class CanutilsLogWriter(TextIOMessageWriter):
         else:
             eol = " R\n" if msg.is_rx else " T\n"
 
+        # an 8-byte Classical CAN frame may carry a raw DLC of 9 to 15
+        raw_dlc = ""
+        if not msg.is_fd and CAN_MAX_DLEN < msg.dlc <= CAN_MAX_RAW_DLC:
+            raw_dlc = f"{CC_DLC_DELIM}{msg.dlc:X}"
+
         if msg.is_remote_frame:
-            remote_dlc = str(msg.dlc) if 0 < msg.dlc <= 8 else ""
+            if 0 < msg.dlc <= CAN_MAX_DLEN:
+                remote_dlc = str(msg.dlc)
+            elif raw_dlc:
+                remote_dlc = f"{CAN_MAX_DLEN}{raw_dlc}"
+            else:
+                remote_dlc = ""
             framestr += f"R{remote_dlc}{eol}"
         else:
             if msg.is_fd:
@@ -194,6 +223,9 @@ class CanutilsLogWriter(TextIOMessageWriter):
                 if msg.error_state_indicator:
                     fd_flags |= CANFD_ESI
                 framestr += f"#{fd_flags:X}"
-            framestr += f"{msg.data.hex().upper()}{eol}"
+            framestr += msg.data.hex().upper()
+            if len(msg.data) == CAN_MAX_DLEN:
+                framestr += raw_dlc
+            framestr += eol
 
         self.file.write(framestr)
