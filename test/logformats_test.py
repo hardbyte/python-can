@@ -542,30 +542,51 @@ class TestAscFileFormat(ReaderWriterTest):
             "// version 7.0.0\n"
             "0.000000 CANFD 1 1d3 Rx 1 0 d 8 8 "
             "78 88 00 00 00 00 0c e6\n"
+            "0.001000 CANFD 1 1e3 Rx 1 0 d 13 32 " + " ".join(["00"] * 32) + "\n"
+            "0.002000 CANFD 1 100 Tx 1 0 r 8 Length = 1704000\n"
         )
         with can.ASCReader(stream) as reader:
-            (actual,) = reader
+            data, large, remote = reader
 
-        self.assertTrue(actual.is_fd)
-        self.assertEqual(actual.arbitration_id, 0x1D3)
-        self.assertEqual(actual.channel, 0)
-        self.assertTrue(actual.is_rx)
-        self.assertTrue(actual.bitrate_switch)
-        self.assertEqual(actual.dlc, 8)
-        self.assertEqual(actual.data, b"\x78\x88\x00\x00\x00\x00\x0c\xe6")
+        self.assertTrue(data.is_fd)
+        self.assertEqual(data.arbitration_id, 0x1D3)
+        self.assertEqual(data.channel, 0)
+        self.assertTrue(data.is_rx)
+        self.assertTrue(data.bitrate_switch)
+        self.assertEqual(data.dlc, 8)
+        self.assertEqual(data.data, b"\x78\x88\x00\x00\x00\x00\x0c\xe6")
 
-    def test_read_canoe_7_decimal_fd_dlc(self):
+        self.assertTrue(large.is_fd)
+        self.assertEqual(large.arbitration_id, 0x1E3)
+        self.assertEqual(large.dlc, 32)
+        self.assertEqual(len(large.data), 32)
+
+        self.assertTrue(remote.is_fd)
+        self.assertTrue(remote.is_remote_frame)
+        self.assertEqual(remote.arbitration_id, 0x100)
+        self.assertFalse(remote.is_rx)
+        self.assertEqual(remote.dlc, 8)
+        self.assertEqual(remote.data, b"")
+
+    def test_read_canoe_7_short_fd_layout_raises_value_error(self):
+        stream = StringIO(
+            "base hex timestamps absolute\n" "0.000000 CANFD 1 1e3 Rx 1 0 d\n"
+        )
+        with can.ASCReader(stream) as reader:
+            with self.assertRaises(ValueError):
+                list(reader)
+
+    def test_read_canoe_7_fd_error_frame(self):
         stream = StringIO(
             "base hex timestamps absolute\n"
-            "0.004238 CANFD 1 1e3 Rx 1 0 d 13 32 " + " ".join(["00"] * 32) + "\n"
+            "0.000000 CANFD 5 Tx ErrorFrame "
+            "Not Acknowledge error, dominant error flag\n"
         )
         with can.ASCReader(stream) as reader:
             (actual,) = reader
 
-        self.assertTrue(actual.is_fd)
-        self.assertEqual(actual.arbitration_id, 0x1E3)
-        self.assertEqual(actual.dlc, 32)
-        self.assertEqual(len(actual.data), 32)
+        self.assertTrue(actual.is_error_frame)
+        self.assertEqual(actual.channel, 4)
 
     @parameterized.expand(
         [
