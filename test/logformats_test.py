@@ -1176,7 +1176,7 @@ class TestBlfFileFormat(ReaderWriterTest):
 class TestCanutilsFileFormat(ReaderWriterTest):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
-    @parameterized.expand([(0, "123#R"), (5, "123#R5"), (8, "123#R8")])
+    @parameterized.expand([(0, "123#R"), (1, "123#R1"), (5, "123#R5"), (8, "123#R8")])
     def test_remote_frame_dlc(self, dlc, expected_frame):
         with can.CanutilsLogWriter(self.test_file_name) as writer:
             writer(
@@ -1281,6 +1281,7 @@ class TestCanutilsFileFormat(ReaderWriterTest):
             file.write("(3.000000) can0 123#R8_F R\n")
             file.write("(4.000000) can0 123#1122334455667788_c R\n")
             file.write("(5.000000) can0 123#1122334455667788_8 R\n")
+            file.write("(6.000000) can0 123#1122334455667788_CA R\n")
 
         with can.CanutilsLogReader(self.test_file_name) as reader:
             messages = list(reader)
@@ -1324,6 +1325,15 @@ class TestCanutilsFileFormat(ReaderWriterTest):
                 arbitration_id=0x123,
                 is_extended_id=False,
                 dlc=8,
+                data=payload,
+                channel="can0",
+            ),
+            # can-utils reads only the first digit after the delimiter
+            can.Message(
+                timestamp=6.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                dlc=12,
                 data=payload,
                 channel="can0",
             ),
