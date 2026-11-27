@@ -1,0 +1,1 @@
+Added `python-can-cansub <https://github.com/CSS-Electronics/python-can-cansub>`_ (CSS Electronics CANsub) to the interface plugin list and as an optional dependency.
