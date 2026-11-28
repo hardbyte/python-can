@@ -1,0 +1,1 @@
+Skip malformed ASC frame records with a warning instead of yielding truncated payloads or stopping iteration.

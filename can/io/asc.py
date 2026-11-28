@@ -42,6 +42,7 @@ class ASCReader(TextIOMessageReader):
     """
     Iterator of CAN messages from a ASC logging file. Meta data (comments,
     bus statistics, J1939 Transport Protocol messages) is ignored.
+    Malformed CAN frame records are skipped with a warning containing the record.
     """
 
     def __init__(
@@ -194,6 +195,10 @@ class ASCReader(TextIOMessageReader):
         return BASE_DEC if base == "dec" else BASE_HEX
 
     def _parse_data(self, fields: list[str], data_length: int) -> bytearray:
+        if len(fields) < data_length:
+            raise ValueError(
+                f"Expected {data_length} data bytes, but only found {len(fields)}"
+            )
         return bytearray(
             int(byte, self._converted_base) for byte in fields[:data_length]
         )
@@ -346,10 +351,14 @@ class ASCReader(TextIOMessageReader):
                 # Some other unprocessed or unknown format
                 continue
 
-            if "is_fd" not in msg_kwargs:
-                msg = self._process_classic_can_frame(rest_of_message, msg_kwargs)
-            else:
-                msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
+            try:
+                if "is_fd" not in msg_kwargs:
+                    msg = self._process_classic_can_frame(rest_of_message, msg_kwargs)
+                else:
+                    msg = self._process_fd_can_frame(rest_of_message, msg_kwargs)
+            except ValueError as exc:
+                logger.warning("Skipping malformed ASC frame: %s (%s)", line, exc)
+                continue
             if msg is not None:
                 yield msg
 
