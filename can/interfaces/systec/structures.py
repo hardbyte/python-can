@@ -41,6 +41,7 @@ class CanMsg(Structure):
     """
 
     _pack_ = 1
+    _layout_ = "ms"
     _fields_ = [
         ("m_dwID", DWORD),  # CAN Identifier
         ("m_bFF", BYTE),  # CAN Frame Format (see enum :class:`MsgFrameFormat`)
@@ -113,6 +114,7 @@ class Status(Structure):
     """
 
     _pack_ = 1
+    _layout_ = "ms"
     _fields_ = [
         ("m_wCanStatus", WORD),  # CAN error status (see enum :class:`CanStatus`)
         ("m_wUsbStatus", WORD),  # USB error status (see enum :class:`UsbStatus`)
@@ -144,6 +146,7 @@ class InitCanParam(Structure):
     """
 
     _pack_ = 1
+    _layout_ = "ms"
     _fields_ = [
         ("m_dwSize", DWORD),  # size of this structure (only used internally)
         (
@@ -266,6 +269,7 @@ class HardwareInfoEx(Structure):
     """
 
     _pack_ = 1
+    _layout_ = "ms"
     _fields_ = [
         ("m_dwSize", DWORD),  # size of this structure (only used internally)
         ("m_UcanHandle", Handle),  # USB-CAN-Handle assigned by the DLL
@@ -343,6 +347,7 @@ class HardwareInitInfo(Structure):
     """
 
     _pack_ = 1
+    _layout_ = "ms"
     _fields_ = [
         ("m_dwSize", DWORD),  # size of this structure
         (
@@ -368,6 +373,7 @@ class ChannelInfo(Structure):
     """
 
     _pack_ = 1
+    _layout_ = "ms"
     _fields_ = [
         ("m_dwSize", DWORD),  # size of this structure
         ("m_bMode", BYTE),  # operation mode of CAN controller (see enum :class:`Mode`)
