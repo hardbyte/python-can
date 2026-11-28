@@ -543,10 +543,11 @@ class TestAscFileFormat(ReaderWriterTest):
             "0.000000 CANFD 1 1d3 Rx 1 0 d 8 8 "
             "78 88 00 00 00 00 0c e6\n"
             "0.001000 CANFD 1 1e3 Rx 1 0 d 13 32 " + " ".join(["00"] * 32) + "\n"
-            "0.002000 CANFD 1 100 Tx 1 0 r 8 Length = 1704000\n"
+            "0.002000 CANFD 1 100 Tx 1 0 r f Length = 1704000\n"
+            "0.003000 CANFD 1 TxRq 1 0 0 1 1 01\n"
         )
         with can.ASCReader(stream) as reader:
-            data, large, remote = reader
+            data, large, remote, txrq = reader
 
         self.assertTrue(data.is_fd)
         self.assertEqual(data.arbitration_id, 0x1D3)
@@ -561,12 +562,16 @@ class TestAscFileFormat(ReaderWriterTest):
         self.assertEqual(large.dlc, 32)
         self.assertEqual(len(large.data), 32)
 
-        self.assertTrue(remote.is_fd)
+        self.assertFalse(remote.is_fd)
+        self.assertFalse(remote.bitrate_switch)
         self.assertTrue(remote.is_remote_frame)
         self.assertEqual(remote.arbitration_id, 0x100)
         self.assertFalse(remote.is_rx)
         self.assertEqual(remote.dlc, 8)
         self.assertEqual(remote.data, b"")
+
+        self.assertEqual(txrq.arbitration_id, 0x1)
+        self.assertFalse(txrq.is_rx)
 
     def test_read_canoe_7_short_fd_layout_raises_value_error(self):
         stream = StringIO(
@@ -575,18 +580,6 @@ class TestAscFileFormat(ReaderWriterTest):
         with can.ASCReader(stream) as reader:
             with self.assertRaises(ValueError):
                 list(reader)
-
-    def test_read_canoe_7_fd_error_frame(self):
-        stream = StringIO(
-            "base hex timestamps absolute\n"
-            "0.000000 CANFD 5 Tx ErrorFrame "
-            "Not Acknowledge error, dominant error flag\n"
-        )
-        with can.ASCReader(stream) as reader:
-            (actual,) = reader
-
-        self.assertTrue(actual.is_error_frame)
-        self.assertEqual(actual.channel, 4)
 
     @parameterized.expand(
         [

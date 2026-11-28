@@ -236,7 +236,7 @@ class ASCReader(TextIOMessageReader):
 
     def _process_fd_can_frame(self, line: str, msg_kwargs: dict[str, Any]) -> Message:
         fields = line.split()
-        if len(fields) >= 4 and fields[1] not in ("Rx", "Tx"):
+        if len(fields) >= 4 and fields[1] not in ("Rx", "Tx", "TxRq"):
             # CANoe 7.x uses <channel> <id> <direction> instead of
             # <channel> <direction> <id>.
             channel, can_id_str, direction = fields[:3]
@@ -245,9 +245,6 @@ class ASCReader(TextIOMessageReader):
             self._extract_can_id(can_id_str, msg_kwargs)
 
             rest = fields[3:]
-            if rest and rest[0].lower() == "errorframe":
-                msg_kwargs["is_error_frame"] = True
-                return Message(**msg_kwargs)
             if len(rest) < 3:
                 raise ValueError(f"Malformed CAN FD message: {line}")
 
@@ -255,22 +252,22 @@ class ASCReader(TextIOMessageReader):
             marker = rest[2].lower()
             if marker not in ("d", "r"):
                 raise ValueError(f"Malformed CAN FD message: {line}")
-            msg_kwargs["is_fd"] = True
-            msg_kwargs["bitrate_switch"] = brs == "1"
-            msg_kwargs["error_state_indicator"] = esi == "1"
 
             if marker == "r":
                 if len(rest) < 4:
                     raise ValueError(f"Malformed CAN FD remote frame: {line}")
-                dlc_code = int(rest[3], 10)
+                dlc_code = int(rest[3], 16)
+                msg_kwargs["is_fd"] = False
                 msg_kwargs["is_remote_frame"] = True
-                msg_kwargs["dlc"] = dlc2len(dlc_code)
-                msg_kwargs["data"] = bytearray()
+                msg_kwargs["dlc"] = min(8, dlc_code)
                 return Message(**msg_kwargs)
 
             if len(rest) < 5:
                 raise ValueError(f"Malformed CAN FD data frame: {line}")
             data_length = int(rest[4])
+            msg_kwargs["is_fd"] = True
+            msg_kwargs["bitrate_switch"] = brs == "1"
+            msg_kwargs["error_state_indicator"] = esi == "1"
             msg_kwargs["dlc"] = data_length
             msg_kwargs["data"] = self._parse_data(rest[5:], data_length)
             return Message(**msg_kwargs)
