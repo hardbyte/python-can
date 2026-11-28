@@ -1176,7 +1176,7 @@ class TestBlfFileFormat(ReaderWriterTest):
 class TestCanutilsFileFormat(ReaderWriterTest):
     """Tests can.CanutilsLogWriter and can.CanutilsLogReader"""
 
-    @parameterized.expand([(0, "123#R"), (5, "123#R5"), (8, "123#R8")])
+    @parameterized.expand([(0, "123#R"), (1, "123#R1"), (5, "123#R5"), (8, "123#R8")])
     def test_remote_frame_dlc(self, dlc, expected_frame):
         with can.CanutilsLogWriter(self.test_file_name) as writer:
             writer(
@@ -1271,6 +1271,132 @@ class TestCanutilsFileFormat(ReaderWriterTest):
             can.Message(timestamp=1.0, arbitration_id=0x080, is_error_frame=True),
             read_back,
         )
+
+    def test_read_raw_dlc(self):
+        # candump -L writes a Classical CAN DLC of 9 to 15 after an
+        # 8-byte payload as "_<dlc>", for data and remote frames alike
+        with open(self.test_file_name, "w", encoding="ascii") as file:
+            file.write("(1.000000) can0 123#1122334455667788_C R\n")
+            file.write("(2.000000) can0 12345678#0011223344556677_9 R\n")
+            file.write("(3.000000) can0 123#R8_F R\n")
+            file.write("(4.000000) can0 123#1122334455667788_c R\n")
+            file.write("(5.000000) can0 123#1122334455667788_8 R\n")
+            file.write("(6.000000) can0 123#1122334455667788_CA R\n")
+            file.write("(7.000000) can0 123#R08_C R\n")
+            file.write("(8.000000) can0 123#R9_C R\n")
+
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            messages = list(reader)
+
+        payload = bytes.fromhex("1122334455667788")
+        expected = [
+            can.Message(
+                timestamp=1.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                dlc=12,
+                data=payload,
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=2.0,
+                arbitration_id=0x12345678,
+                dlc=9,
+                data=bytes.fromhex("0011223344556677"),
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=3.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                is_remote_frame=True,
+                dlc=15,
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=4.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                dlc=12,
+                data=payload,
+                channel="can0",
+            ),
+            # outside 9 to 15 the suffix carries no DLC, as in can-utils
+            can.Message(
+                timestamp=5.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                dlc=8,
+                data=payload,
+                channel="can0",
+            ),
+            # can-utils reads only the first digit after the delimiter
+            can.Message(
+                timestamp=6.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                dlc=12,
+                data=payload,
+                channel="can0",
+            ),
+            # can-utils reads a one-digit remote length of 0 to 8 before the delimiter
+            can.Message(
+                timestamp=7.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                is_remote_frame=True,
+                dlc=0,
+                channel="can0",
+            ),
+            can.Message(
+                timestamp=8.0,
+                arbitration_id=0x123,
+                is_extended_id=False,
+                is_remote_frame=True,
+                dlc=0,
+                channel="can0",
+            ),
+        ]
+        self.assertEqual(len(messages), len(expected))
+        for actual, wanted in zip(messages, expected):
+            self.assertTrue(wanted.equals(actual), f"{actual!r} != {wanted!r}")
+
+    @parameterized.expand([("123#1122_C",), ("123##0R8_C",)])
+    def test_read_raw_dlc_invalid(self, frame):
+        # can-utils accepts the suffix only after 8 bytes of a Classical CAN frame
+        with open(self.test_file_name, "w", encoding="ascii") as file:
+            file.write(f"(1.000000) can0 {frame} R\n")
+
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            with self.assertRaises(ValueError):
+                list(reader)
+
+    @parameterized.expand(
+        [
+            (False, 12, "123#1122334455667788_C"),
+            (False, 8, "123#1122334455667788"),
+            (True, 15, "123#R8_F"),
+        ]
+    )
+    def test_write_raw_dlc(self, is_remote_frame, dlc, expected_frame):
+        message = can.Message(
+            timestamp=1.0,
+            arbitration_id=0x123,
+            is_extended_id=False,
+            is_remote_frame=is_remote_frame,
+            dlc=dlc,
+            data=None if is_remote_frame else bytes.fromhex("1122334455667788"),
+            channel="can0",
+        )
+        with can.CanutilsLogWriter(self.test_file_name) as writer:
+            writer(message)
+
+        self.assertEqual(
+            Path(self.test_file_name).read_text().split()[2], expected_frame
+        )
+        with can.CanutilsLogReader(self.test_file_name) as reader:
+            (read_back,) = reader
+        self.assertTrue(message.equals(read_back), f"{read_back!r}")
 
 
 class TestCsvFileFormat(ReaderWriterTest):
