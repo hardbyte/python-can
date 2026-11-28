@@ -244,6 +244,7 @@ class XLbusParams(ctypes.Structure):
 
 class XLchannelConfig(ctypes.Structure):
     _pack_ = 1
+    _layout_ = "ms"
     _fields_ = [
         ("name", ctypes.c_char * 32),
         ("hwType", ctypes.c_ubyte),
