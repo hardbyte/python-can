@@ -235,6 +235,43 @@ class ASCReader(TextIOMessageReader):
         return Message(**msg_kwargs)
 
     def _process_fd_can_frame(self, line: str, msg_kwargs: dict[str, Any]) -> Message:
+        fields = line.split()
+        if len(fields) >= 4 and fields[1] not in ("Rx", "Tx", "TxRq"):
+            # CANoe 7.x uses <channel> <id> <direction> instead of
+            # <channel> <direction> <id>.
+            channel, can_id_str, direction = fields[:3]
+            msg_kwargs["channel"] = int(channel) - 1
+            msg_kwargs["is_rx"] = direction == "Rx"
+            self._extract_can_id(can_id_str, msg_kwargs)
+
+            rest = fields[3:]
+            if len(rest) < 3:
+                raise ValueError(f"Malformed CAN FD message: {line}")
+
+            brs, esi = rest[0], rest[1]
+            marker = rest[2].lower()
+            if marker not in ("d", "r"):
+                raise ValueError(f"Malformed CAN FD message: {line}")
+
+            if marker == "r":
+                if len(rest) < 4:
+                    raise ValueError(f"Malformed CAN FD remote frame: {line}")
+                dlc_code = int(rest[3], 16)
+                msg_kwargs["is_fd"] = False
+                msg_kwargs["is_remote_frame"] = True
+                msg_kwargs["dlc"] = min(8, dlc_code)
+                return Message(**msg_kwargs)
+
+            if len(rest) < 5:
+                raise ValueError(f"Malformed CAN FD data frame: {line}")
+            data_length = int(rest[4])
+            msg_kwargs["is_fd"] = True
+            msg_kwargs["bitrate_switch"] = brs == "1"
+            msg_kwargs["error_state_indicator"] = esi == "1"
+            msg_kwargs["dlc"] = data_length
+            msg_kwargs["data"] = self._parse_data(rest[5:], data_length)
+            return Message(**msg_kwargs)
+
         channel, direction, rest_of_message = line.split(None, 2)
         # See ASCWriter
         msg_kwargs["channel"] = int(channel) - 1

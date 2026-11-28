@@ -1,0 +1,2 @@
+Fixed ``ASCReader`` support for CANoe 7.x CAN FD records that place the CAN
+identifier before the ``Rx``/``Tx`` direction.

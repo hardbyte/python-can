@@ -548,6 +548,52 @@ class TestAscFileFormat(ReaderWriterTest):
             (actual,) = reader
         self.assertTrue(msg.equals(actual, timestamp_delta=None))
 
+    def test_read_canoe_7_can_fd_layout(self):
+        stream = StringIO(
+            "date Mon Oct 12 06:42:09 PM 2026\n"
+            "base hex timestamps absolute\n"
+            "// version 7.0.0\n"
+            "0.000000 CANFD 1 1d3 Rx 1 0 d 8 8 "
+            "78 88 00 00 00 00 0c e6\n"
+            "0.001000 CANFD 1 1e3 Rx 1 0 d 13 32 " + " ".join(["00"] * 32) + "\n"
+            "0.002000 CANFD 1 100 Tx 1 0 r f Length = 1704000\n"
+            "0.003000 CANFD 1 TxRq 1 0 0 1 1 01\n"
+        )
+        with can.ASCReader(stream) as reader:
+            data, large, remote, txrq = reader
+
+        self.assertTrue(data.is_fd)
+        self.assertEqual(data.arbitration_id, 0x1D3)
+        self.assertEqual(data.channel, 0)
+        self.assertTrue(data.is_rx)
+        self.assertTrue(data.bitrate_switch)
+        self.assertEqual(data.dlc, 8)
+        self.assertEqual(data.data, b"\x78\x88\x00\x00\x00\x00\x0c\xe6")
+
+        self.assertTrue(large.is_fd)
+        self.assertEqual(large.arbitration_id, 0x1E3)
+        self.assertEqual(large.dlc, 32)
+        self.assertEqual(len(large.data), 32)
+
+        self.assertFalse(remote.is_fd)
+        self.assertFalse(remote.bitrate_switch)
+        self.assertTrue(remote.is_remote_frame)
+        self.assertEqual(remote.arbitration_id, 0x100)
+        self.assertFalse(remote.is_rx)
+        self.assertEqual(remote.dlc, 8)
+        self.assertEqual(remote.data, b"")
+
+        self.assertEqual(txrq.arbitration_id, 0x1)
+        self.assertFalse(txrq.is_rx)
+
+    def test_read_canoe_7_short_fd_layout_raises_value_error(self):
+        stream = StringIO(
+            "base hex timestamps absolute\n" "0.000000 CANFD 1 1e3 Rx 1 0 d\n"
+        )
+        with can.ASCReader(stream) as reader:
+            with self.assertRaises(ValueError):
+                list(reader)
+
     @parameterized.expand(
         [
             ("empty_data", "0 0 0 0 0", False, 0, b""),
